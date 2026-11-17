@@ -60,7 +60,7 @@ sm_config <- function(set = c(sm_sets, sm_extra_sets), build = NULL) {
 # the multi-time-point method differs. `ends`: the first and last time point, a
 # two-time-point fit.
 sm_methods <- function() {
-  # `options`: alfak2's internal options set during the fit (the variants
+  # `options`: karst's internal options set during the fit (the variants
   # compared while choosing a method's details).
   series <- function(columns, ..., options = list()) {
     list(type = "series", birth_rate = 1, min_cn = 1L, max_cn = 8L, columns = columns, arguments = list(...),
@@ -74,7 +74,7 @@ sm_methods <- function() {
     # population's age at its first time point (default), or over the history
     # alone.
     pairwise = series("all", series = "pairwise"),
-    pairwise_same = series("all", series = "pairwise", options = list(alfak2.pair_history = "same")),
+    pairwise_same = series("all", series = "pairwise", options = list(karst.pair_history = "same")),
     state_space = series("all", series = "state_space")
   )
   # Choosing the missegregation rate (validation/sparse_joint/beta_choice,
@@ -311,7 +311,7 @@ sm_stage_datasets <- function(config, workers) {
 }
 
 # How far each dataset's time points in between lie from the majors of the
-# first and last time points (with the installed alfak2's own functions, defaults of
+# first and last time points (with the installed karst's own functions, defaults of
 # fit_sparse_joint()): the gate of e2 is that clonal sweeps reproduce what the
 # Salehi trajectories show.
 sm_sweep_table <- function(config) {
@@ -320,8 +320,8 @@ sm_sweep_table <- function(config) {
     dataset <- readRDS(stt_dataset_path(config, id))
     counts <- dataset$counts
     k <- ncol(counts)
-    coverage <- alfak2:::sparse_joint_domain_coverage(
-      counts, alfak2:::sparse_joint_domain(counts, 0.01, 3, 5000, 1L, 8L, c(1L, k)), 0.01, 3)
+    coverage <- karst:::sparse_joint_domain_coverage(
+      counts, karst:::sparse_joint_domain(counts, 0.01, 3, 5000, 1L, 8L, c(1L, k)), 0.01, 3)
     middle <- if (k > 2L) seq(2L, k - 1L) else integer(0)
     data.frame(dataset_id = id, samples = k,
                middle_no_major = sum(coverage$majors[middle] == 0),
@@ -351,7 +351,7 @@ sm_fit_series <- function(config, dataset, nodes, method) {
   }
   warnings <- character()
   fit <- withCallingHandlers(
-    do.call(alfak2::fit_sparse_joint, c(
+    do.call(karst::fit_sparse_joint, c(
       list(counts, times = times,
            beta = (if (is.null(config$fit_beta)) dataset$beta else config$fit_beta) *
              (if (is.null(method$beta_multiple)) 1 else method$beta_multiple),
@@ -408,10 +408,10 @@ sm_stage_fit <- function(config, workers, method_names, datasets = NULL) {
   if (!is.null(datasets)) index <- index[grepl(datasets, index$dataset_id), , drop = FALSE]
   if (any(vapply(config$methods[method_names], function(m) m$type == "series", logical(1)))) {
     library_dir <- si_library(config$build, config$library_root)
-    if (!dir.exists(file.path(library_dir, "alfak2"))) stop("No alfak2 build in ", library_dir, call. = FALSE)
+    if (!dir.exists(file.path(library_dir, "karst"))) stop("No karst build in ", library_dir, call. = FALSE)
     .libPaths(c(library_dir, .libPaths()))
-    loadNamespace("alfak2")
-    cat("alfak2 from", dirname(find.package("alfak2")), "\n")
+    loadNamespace("karst")
+    cat("karst from", dirname(find.package("karst")), "\n")
   }
   tasks <- list()
   for (dataset_id in index$dataset_id) for (method_name in method_names) {

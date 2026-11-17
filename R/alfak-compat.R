@@ -1,5 +1,5 @@
-# Outputs in the format of alfakR, so that analyses written for alfakR run on
-# alfak2 fits.
+# Outputs in the format of alfak, so that analyses written for alfak run on
+# karst fits.
 #
 # alfakR::alfak() (branch dev) returns its cross-validation R2R invisibly and
 # writes four files: bootstrap_res.Rds (fitness of the frequent karyotypes and
@@ -11,10 +11,10 @@
 # its prediction, and the cross-validation holds out the counts of each
 # frequent karyotype and its neighbours in turn.
 
-# One-step neighbours of `ids` in alfakR's order (gen_all_neighbours()): for
+# One-step neighbours of `ids` in alfak's order (gen_all_neighbours()): for
 # each id, chromosome by chromosome, one copy fewer then one more; first
 # occurrence kept, the ids themselves and nullisomic karyotypes removed.
-alfakR_neighbours <- function(ids) {
+alfak_neighbours <- function(ids) {
   if (!length(ids)) return(character())
   k <- parse_karyotypes(ids)
   n_chr <- ncol(k)
@@ -28,8 +28,8 @@ alfakR_neighbours <- function(ids) {
   labels[!labels %in% ids]
 }
 
-# R-squared of alfakR's cross-validation: both series centred first.
-alfakR_r2r <- function(observation, prediction) {
+# R-squared of alfak's cross-validation: both series centred first.
+alfak_r2r <- function(observation, prediction) {
   observation <- observation - mean(observation)
   prediction <- prediction - mean(prediction)
   1 - sum((prediction - observation)^2) / sum(observation^2)
@@ -85,7 +85,7 @@ sparse_joint_relative_draws <- function(fit, solver, labels, prediction, k) {
 # `nboot` is odd. Each row is then scaled to standard deviation `sd`. Row
 # means and medians equal `mean` and row standard deviations equal `sd`
 # exactly, while correlations between rows are those of the draws.
-alfakR_symmetric_columns <- function(mean, sd, deviation, nboot) {
+alfak_symmetric_columns <- function(mean, sd, deviation, nboot) {
   pairs <- nboot %/% 2L
   columns <- matrix(0, length(mean), nboot)
   if (pairs > 0L) {
@@ -97,14 +97,14 @@ alfakR_symmetric_columns <- function(mean, sd, deviation, nboot) {
   mean + columns
 }
 
-alfakR_row_summary <- function(x, f) {
+alfak_row_summary <- function(x, f) {
   apply(x, 1L, function(v) {
     v <- v[is.finite(v)]
     if (!length(v) || (identical(f, stats::sd) && length(v) < 2L)) NA_real_ else f(v)
   })
 }
 
-# Cross-validation in alfakR's folds: each frequent karyotype with those of
+# Cross-validation in alfak's folds: each frequent karyotype with those of
 # its one-step neighbours not already in an earlier fold. A fold's karyotypes
 # inside the model domain are treated as never observed: their counts leave
 # the likelihood, their initial abundance gets the prior of an unseen
@@ -114,7 +114,7 @@ alfakR_row_summary <- function(x, f) {
 # held-out karyotype is compared with its fitness from all the data.
 # Karyotypes outside the domain are not tested: their fitness never came from
 # their own counts.
-sparse_joint_alfakR_xval <- function(fit, fq, observation, level, divisor) {
+sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
   empty <- list(R2R = NA_real_, predictions = numeric(0), observations = numeric(0),
                 xval_data = data.frame(k = character(0), observation = numeric(0), prediction = numeric(0),
                                        stringsAsFactors = FALSE),
@@ -124,7 +124,7 @@ sparse_joint_alfakR_xval <- function(fit, fq, observation, level, divisor) {
   n <- nrow(summary)
   n_major <- fit$diagnostics$n_major
   fold <- unlist(lapply(seq_along(fq), function(i) {
-    members <- c(fq[[i]], alfakR_neighbours(fq[[i]]))
+    members <- c(fq[[i]], alfak_neighbours(fq[[i]]))
     stats::setNames(rep(i, length(members)), members)
   }))
   fold <- fold[!duplicated(names(fold))]
@@ -175,58 +175,58 @@ sparse_joint_alfakR_xval <- function(fit, fq, observation, level, divisor) {
   tmp <- tmp[stats::complete.cases(tmp), , drop = FALSE]
   observations <- tmp[, "test_f"]
   predictions <- tmp[, "est_f"]
-  list(R2R = if (nrow(tmp) >= 2L) alfakR_r2r(observations, predictions) else NA_real_,
+  list(R2R = if (nrow(tmp) >= 2L) alfak_r2r(observations, predictions) else NA_real_,
        predictions = predictions, observations = observations,
        xval_data = data.frame(k = rownames(tmp), observation = unname(observations),
                               prediction = unname(predictions), stringsAsFactors = FALSE),
        tmp = tmp)
 }
 
-#' Convert a sparse joint fit to the outputs of alfakR
+#' Convert a sparse joint fit to the outputs of alfak
 #'
 #' Produces, from a fit of [fit_sparse_joint()], the objects that
 #' `alfakR::alfak()` (branch dev) saves, with the same names, columns and
-#' layout, so that code written for alfakR results can read them.
-#' [write_alfakR_outputs()] saves them under alfakR's file names, and
-#' [alfak_compat()] does both in one call with alfakR's arguments.
+#' layout, so that code written for alfak results can read them.
+#' [write_alfak_outputs()] saves them under alfak's file names, and
+#' [alfak_compat()] does both in one call with alfak's arguments.
 #'
 #' Fits of two or more time points are converted alike. The karyotypes are
-#' chosen as alfakR chooses them. The frequent karyotypes
+#' chosen as alfak chooses them. The frequent karyotypes
 #' (`fq`) have at least `minobs` cells over all time points; `nn` are their
 #' one-step neighbours without nullisomy; the landscape covers both and the
 #' one-step neighbours of `nn`. `minobs` affects only this choice. The fit
 #' itself uses every cell, with its own major karyotypes.
 #'
-#' Where alfakR has bootstrap replicates, these are draws from the posterior
+#' Where alfak has bootstrap replicates, these are draws from the posterior
 #' of the model: jointly for all karyotypes, so that a difference between two
 #' karyotypes has the uncertainty the model gives it, and widened to the
-#' calibrated standard deviation of [predict.alfak2_sparse_joint_fit()]. They
+#' calibrated standard deviation of [predict.karst_sparse_joint_fit()]. They
 #' come in mirrored pairs. As a result the landscape's `mean` and `median` are
 #' the model's prediction and its `sd` the calibrated standard deviation,
 #' while each is also the summary of `landscape_posterior_samples`, as in
-#' alfakR. `initial_fitness` equals `final_fitness`: the model has no
+#' alfak. `initial_fitness` equals `final_fitness`: the model has no
 #' separate first estimate.
 #'
-#' The frequencies of the frequent karyotypes follow alfakR's convention:
-#' they are the frequencies at time 0 of alfakR's time axis, from which
-#' alfakR projects to time `t` as `x0 * exp(f * t)`. The model estimates them
+#' The frequencies of the frequent karyotypes follow alfak's convention:
+#' they are the frequencies at time 0 of alfak's time axis, from which
+#' alfak projects to time `t` as `x0 * exp(f * t)`. The model estimates them
 #' at the first time point, so each draw is moved back from `first_time`, the
 #' time of the first time point on that axis, with the draw's `final_fitness`;
-#' projecting the reported frequencies to `first_time` in alfakR's way gives
+#' projecting the reported frequencies to `first_time` in alfak's way gives
 #' back the model's frequencies at the first time point. With `first_time = 0`
 #' the two coincide.
 #'
-#' The scale is alfakR's. Fitness is the net growth rate per unit of time,
+#' The scale is alfak's. Fitness is the net growth rate per unit of time,
 #' shifted so that the count-weighted mean of the major karyotypes is
-#' `log(nb / n0) / dt`, the growth rate alfakR assigns to the population,
-#' with `dt` the first interval between time points, as in alfakR.
-#' alfakR weights by the estimated initial frequencies of the frequent
+#' `log(nb / n0) / dt`, the growth rate alfak assigns to the population,
+#' with `dt` the first interval between time points, as in alfak.
+#' alfak weights by the estimated initial frequencies of the frequent
 #' karyotypes instead. With `n0 = NULL` and `nb = NULL` the model's own level
 #' at its assumed birth rate is kept. `correct_efflux = TRUE` divides by
 #' `2 P_ii - 1`, the share of divisions that return the parent's karyotype,
-#' and so reports birth rates, as alfakR's efflux correction does.
+#' and so reports birth rates, as alfak's efflux correction does.
 #'
-#' The cross-validation uses alfakR's folds: each frequent karyotype with its
+#' The cross-validation uses alfak's folds: each frequent karyotype with its
 #' one-step neighbours, each karyotype in the first fold that contains it. The
 #' counts of a fold are held out and treated as never observed, the posterior
 #' mode is found again with the fitted scales, and the predictions for the
@@ -234,36 +234,36 @@ sparse_joint_alfakR_xval <- function(fit, fq, observation, level, divisor) {
 #' karyotypes also leave the trend's reference points: the distance
 #' covariate is measured to the remaining major karyotypes. Only karyotypes
 #' inside the model domain are tested, and a fold holding every major
-#' karyotype is skipped. `R2R` is alfakR's statistic on these pairs.
+#' karyotype is skipped. `R2R` is alfak's statistic on these pairs.
 #'
-#' @param fit An `alfak2_sparse_joint_fit`, or an
-#'   `alfak2_sparse_joint_rate_fit`, whose point fit is then used.
+#' @param fit An `karst_sparse_joint_fit`, or an
+#'   `karst_sparse_joint_rate_fit`, whose point fit is then used.
 #' @param minobs Minimum number of cells, over all time points, of a frequent
 #'   karyotype.
-#' @param nboot Number of posterior draws, alfakR's bootstrap replicates.
-#' @param n0,nb Population sizes that set the scale as in alfakR, or both
+#' @param nboot Number of posterior draws, alfak's bootstrap replicates.
+#' @param n0,nb Population sizes that set the scale as in alfak, or both
 #'   `NULL` to keep the model's level.
 #' @param correct_efflux Logical; report birth rates instead of net growth
 #'   rates.
 #' @param xval Logical; run the cross-validation. With `FALSE`, `xval` holds
 #'   no pairs and `R2R` is `NA`.
 #' @param landscape_data_output Logical; also return `landscape_data`, the
-#'   counterpart of alfakR's Kriging models: a list with elements `mean` and
+#'   counterpart of alfak's Kriging models: a list with elements `mean` and
 #'   `median`, each an object whose [predict()] method returns the fitness of
 #'   any karyotypes on the same scale as `landscape`.
-#' @param first_time Time of the first time point on alfakR's time axis (the
+#' @param first_time Time of the first time point on alfak's time axis (the
 #'   first passage time, or column name times `dt`); sets the time 0 of the
 #'   reported frequencies.
 #'
-#' @return An `alfak2_alfakR_output` list with `bootstrap_res`, `landscape`,
+#' @return An `karst_alfak_output` list with `bootstrap_res`, `landscape`,
 #'   `landscape_posterior_samples`, `xval` (`R2R`, `predictions`,
 #'   `observations`, `xval_data`, and `tmp`, the paired matrix of earlier
-#'   alfakR versions), `landscape_data` (`NULL` unless requested) and `fit`.
+#'   alfak versions), `landscape_data` (`NULL` unless requested) and `fit`.
 #' @export
-as_alfakR <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_efflux = FALSE,
+as_alfak <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_efflux = FALSE,
                       xval = TRUE, landscape_data_output = FALSE, first_time = 0) {
-  if (inherits(fit, "alfak2_sparse_joint_rate_fit")) fit <- fit$fits[[fit$point]]
-  if (!inherits(fit, "alfak2_sparse_joint_fit")) {
+  if (inherits(fit, "karst_sparse_joint_rate_fit")) fit <- fit$fits[[fit$point]]
+  if (!inherits(fit, "karst_sparse_joint_fit")) {
     stop("`fit` must come from fit_sparse_joint() or fit_sparse_joint_rates().", call. = FALSE)
   }
   validate_scalar(minobs, "minobs", lower = 0)
@@ -290,24 +290,24 @@ as_alfakR <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_
     stop(sprintf("no frequent karyotypes detected for minobs = %s; frequent karyotypes require rowSums(x) >= minobs",
                  format(minobs, trim = TRUE)), call. = FALSE)
   }
-  nn <- alfakR_neighbours(fq)
-  k <- unique(c(fq, nn, alfakR_neighbours(nn)))
+  nn <- alfak_neighbours(fq)
+  k <- unique(c(fq, nn, alfak_neighbours(nn)))
   prediction <- stats::predict(fit, k)
-  # alfakR's population growth per unit of time: log(nb / n0) over the first
+  # alfak's population growth per unit of time: log(nb / n0) over the first
   # interval between time points of the input (the whole interval for two).
-  level <- if (is.null(n0)) fit$trend$reference$fitness else log(nb / n0) / diff(alfak2_data_times(input))[[1L]]
+  level <- if (is.null(n0)) fit$trend$reference$fitness else log(nb / n0) / diff(karst_data_times(input))[[1L]]
   divisor <- if (correct_efflux) 2 * sparse_joint_self_probability(parse_karyotypes(k), fit$data$beta) - 1 else
     rep(1, length(k))
   names(divisor) <- k
 
   solver <- sparse_joint_rebuild(fit)$solver
   draws <- sparse_joint_relative_draws(fit, solver, k, prediction, max(nboot %/% 2L, 1L))
-  samples <- alfakR_symmetric_columns(prediction$relative_fitness + level, prediction$relative_sd,
+  samples <- alfak_symmetric_columns(prediction$relative_fitness + level, prediction$relative_sd,
                                       draws$relative, nboot) / divisor
   landscape <- data.frame(k = k,
-                          mean = alfakR_row_summary(samples, mean),
-                          median = alfakR_row_summary(samples, stats::median),
-                          sd = alfakR_row_summary(samples, stats::sd),
+                          mean = alfak_row_summary(samples, mean),
+                          median = alfak_row_summary(samples, stats::median),
+                          sd = alfak_row_summary(samples, stats::sd),
                           fq = k %in% fq, nn = k %in% nn, stringsAsFactors = FALSE)
 
   final_fitness <- t(samples[match(fq, k), , drop = FALSE])
@@ -354,37 +354,37 @@ as_alfakR <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_
 
   observation <- stats::setNames(landscape$mean, k)
   cross_validation <- if (xval) {
-    sparse_joint_alfakR_xval(fit, fq, observation, level, divisor)
+    sparse_joint_alfak_xval(fit, fq, observation, level, divisor)
   } else {
-    sparse_joint_alfakR_xval(fit, character(0), observation, level, divisor)
+    sparse_joint_alfak_xval(fit, character(0), observation, level, divisor)
   }
 
   landscape_data <- if (landscape_data_output) {
     model <- structure(list(fit = fit, level = level, correct_efflux = correct_efflux),
-                       class = "alfak2_alfakR_landscape")
+                       class = "karst_alfak_landscape")
     list(mean = model, median = model)
   } else NULL
 
   structure(list(bootstrap_res = bootstrap_res, landscape = landscape, landscape_posterior_samples = unname(samples),
                  xval = cross_validation, landscape_data = landscape_data, fit = fit),
-            class = "alfak2_alfakR_output")
+            class = "karst_alfak_output")
 }
 
-#' Save alfakR outputs
+#' Save alfak outputs
 #'
-#' Writes the objects of [as_alfakR()] under the file names of
+#' Writes the objects of [as_alfak()] under the file names of
 #' `alfakR::alfak()`: `bootstrap_res.Rds`, `landscape.Rds`,
 #' `landscape_posterior_samples.Rds`, `xval.Rds` and, when present,
-#' `landscape_data.Rds`. The alfak2 fit is saved beside them as
-#' `alfak2_fit.Rds`.
+#' `landscape_data.Rds`. The karst fit is saved beside them as
+#' `karst_fit.Rds`.
 #'
-#' @param x An `alfak2_alfakR_output` from [as_alfakR()].
+#' @param x An `karst_alfak_output` from [as_alfak()].
 #' @param outdir Directory, created if needed.
 #'
 #' @return The paths written, invisibly.
 #' @export
-write_alfakR_outputs <- function(x, outdir) {
-  if (!inherits(x, "alfak2_alfakR_output")) stop("`x` must come from as_alfakR().", call. = FALSE)
+write_alfak_outputs <- function(x, outdir) {
+  if (!inherits(x, "karst_alfak_output")) stop("`x` must come from as_alfak().", call. = FALSE)
   if (!is.character(outdir) || length(outdir) != 1L || !nzchar(outdir)) {
     stop("`outdir` must be one directory path.", call. = FALSE)
   }
@@ -392,27 +392,27 @@ write_alfakR_outputs <- function(x, outdir) {
   objects <- list(bootstrap_res.Rds = x$bootstrap_res, landscape.Rds = x$landscape,
                   landscape_posterior_samples.Rds = x$landscape_posterior_samples, xval.Rds = x$xval)
   if (!is.null(x$landscape_data)) objects$landscape_data.Rds <- x$landscape_data
-  objects$alfak2_fit.Rds <- x$fit
+  objects$karst_fit.Rds <- x$fit
   paths <- file.path(outdir, names(objects))
   for (i in seq_along(objects)) saveRDS(objects[[i]], file = paths[[i]])
   invisible(paths)
 }
 
-#' Fit a landscape with the arguments and outputs of alfakR
+#' Fit a landscape with the arguments and outputs of alfak
 #'
 #' A replacement for `alfakR::alfak()` (branch dev) that fits the sparse
 #' joint model, [fit_sparse_joint()], instead. It takes the same input,
-#' writes the same files to `outdir` (see [as_alfakR()] for how each is
+#' writes the same files to `outdir` (see [as_alfak()] for how each is
 #' obtained) and returns the cross-validation R-squared invisibly, so that a
-#' pipeline built on alfakR can switch by calling this function. The fit
-#' itself is also saved, as `alfak2_fit.Rds`.
+#' pipeline built on alfak can switch by calling this function. The fit
+#' itself is also saved, as `karst_fit.Rds`.
 #'
 #' `yi$x` has one column per time point, two or more; their times are
 #' `passage_times` or, without `passage_times`,
-#' `as.numeric(colnames(yi$x)) * yi$dt`, as in alfakR. The fit uses the times
+#' `as.numeric(colnames(yi$x)) * yi$dt`, as in alfak. The fit uses the times
 #' between them; the time of the first sets the time 0 of the reported
-#' frequencies (`first_time` of [as_alfakR()]). `pm` is the
-#' missegregation rate, `beta` of [fit_sparse_joint()]. alfakR's arguments
+#' frequencies (`first_time` of [as_alfak()]). `pm` is the
+#' missegregation rate, `beta` of [fit_sparse_joint()]. alfak's arguments
 #' for its own neighbour prior and Kriging (`nn_prior`, `nn_prior_sd`,
 #' `nn_prior_sd_floor`, `krig_bootstrap_mode`) have no counterpart; giving
 #' one is an error.
@@ -428,7 +428,7 @@ write_alfakR_outputs <- function(x, outdir) {
 #' @param passage_times Optional times of the time points, one per column of
 #'   `yi$x`.
 #' @param minobs,nboot,n0,nb,correct_efflux,landscape_data_output See
-#'   [as_alfakR()].
+#'   [as_alfak()].
 #' @param pm Missegregation rate per chromosome copy and division.
 #' @param allow_noninteger_counts Logical; round non-integer counts with a
 #'   warning instead of stopping.
@@ -443,7 +443,7 @@ alfak_compat <- function(yi, outdir, passage_times = NULL, minobs = 20, nboot = 
   extra <- names(list(...))
   unsupported <- intersect(extra, c("nn_prior", "nn_prior_sd", "nn_prior_sd_floor", "krig_bootstrap_mode"))
   if (length(unsupported)) {
-    stop(sprintf("alfak2 has no counterpart of alfakR's %s.", paste0("`", unsupported, "`", collapse = ", ")),
+    stop(sprintf("karst has no counterpart of alfak's %s.", paste0("`", unsupported, "`", collapse = ", ")),
          call. = FALSE)
   }
   if (!is.list(yi) || is.null(yi$x)) stop("`yi` must be a list containing a count matrix `x`.", call. = FALSE)
@@ -451,7 +451,7 @@ alfak_compat <- function(yi, outdir, passage_times = NULL, minobs = 20, nboot = 
   if (is.data.frame(x)) x <- as.matrix(x)
   if (!is.matrix(x) || !is.numeric(x)) stop("`yi$x` must be a numeric matrix.", call. = FALSE)
   if (ncol(x) < 2L) {
-    stop(sprintf("alfak2 fits two or more time points; `yi$x` has %d column.", ncol(x)), call. = FALSE)
+    stop(sprintf("karst fits two or more time points; `yi$x` has %d column.", ncol(x)), call. = FALSE)
   }
   if (any(abs(x - round(x)) > sqrt(.Machine$double.eps), na.rm = TRUE)) {
     if (!isTRUE(allow_noninteger_counts)) {
@@ -480,21 +480,21 @@ alfak_compat <- function(yi, outdir, passage_times = NULL, minobs = 20, nboot = 
   # Two time points as before; more with their times.
   fit <- if (ncol(x) == 2L) fit_sparse_joint(x, dt = interval, beta = pm, ...) else
     fit_sparse_joint(x, times = as.numeric(times), beta = pm, ...)
-  out <- as_alfakR(fit, minobs = minobs, nboot = nboot, n0 = n0, nb = nb, correct_efflux = correct_efflux,
+  out <- as_alfak(fit, minobs = minobs, nboot = nboot, n0 = n0, nb = nb, correct_efflux = correct_efflux,
                    landscape_data_output = landscape_data_output, first_time = as.numeric(times)[1L])
-  write_alfakR_outputs(out, outdir)
+  write_alfak_outputs(out, outdir)
   invisible(out$xval$R2R)
 }
 
-#' Fitness from an alfakR-style landscape model
+#' Fitness from an alfak-style landscape model
 #'
-#' @param object An element of `landscape_data` from [as_alfakR()].
+#' @param object An element of `landscape_data` from [as_alfak()].
 #' @param x Karyotypes, as a matrix with one row per karyotype or as labels.
 #' @param ... Unused.
 #'
 #' @return A one-column matrix of fitness on the scale of the landscape.
 #' @export
-predict.alfak2_alfakR_landscape <- function(object, x, ...) {
+predict.karst_alfak_landscape <- function(object, x, ...) {
   labels <- if (is.character(x)) x else {
     karyotypes <- round(as.matrix(x))
     storage.mode(karyotypes) <- "integer"
@@ -508,8 +508,8 @@ predict.alfak2_alfakR_landscape <- function(object, x, ...) {
 }
 
 #' @export
-print.alfak2_alfakR_output <- function(x, ...) {
-  cat("<alfak2_alfakR_output>\n")
+print.karst_alfak_output <- function(x, ...) {
+  cat("<karst_alfak_output>\n")
   cat("  frequent karyotypes:", sum(x$landscape$fq), " neighbours:", sum(x$landscape$nn),
       " landscape rows:", nrow(x$landscape), "\n")
   cat("  posterior draws:", ncol(x$landscape_posterior_samples), " xval R2R:", format(x$xval$R2R), "\n")

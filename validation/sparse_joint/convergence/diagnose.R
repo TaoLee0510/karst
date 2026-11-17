@@ -6,7 +6,7 @@
 #
 # Refits the 120 development-benchmark items of the stage-0 reference set
 # (patient 1 of the 12 development landscapes, 8 core and 2 short-interval
-# scenarios) with the package build `results/lib/alfak2_<build>` of
+# scenarios) with the package build `results/lib/karst_<build>` of
 # ../multi_timepoint, at the defaults, and probes every candidate history
 # where its scale optimisation ended:
 #
@@ -129,7 +129,7 @@ cv_item <- function(id) {
   storage.mode(counts) <- "integer"
   .cv_runs <<- list()
   started <- proc.time()[["elapsed"]]
-  fit <- alfak2::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = 1,
+  fit <- karst::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = 1,
                                   min_cn = 1L, max_cn = 8L)
   d <- fit$diagnostics
   list(id = id, seconds = proc.time()[["elapsed"]] - started, candidates = .cv_runs,
@@ -142,10 +142,10 @@ cv_main <- function() {
   build <- if (is.null(args$build)) "ff13cf4" else args$build
   workers <- if (is.null(args$workers)) 6L else as.integer(args$workers)
   Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
-  .libPaths(c(file.path(cv_mt, "lib", paste0("alfak2_", build)), .libPaths()))
-  loadNamespace("alfak2")
-  cat("alfak2 from", dirname(find.package("alfak2")), "\n")
-  trace("sparse_joint_optimise_scales", where = asNamespace("alfak2"), print = FALSE,
+  .libPaths(c(file.path(cv_mt, "lib", paste0("karst_", build)), .libPaths()))
+  loadNamespace("karst")
+  cat("karst from", dirname(find.package("karst")), "\n")
+  trace("sparse_joint_optimise_scales", where = asNamespace("karst"), print = FALSE,
         exit = quote(cv_probe(objective, optimum, lower, upper)))
   reference <- file.path(cv_mt, "reference", "ff13cf4", "dev")
   ids <- sub("[.]rds$", "", list.files(reference, pattern = "[.]rds$"))

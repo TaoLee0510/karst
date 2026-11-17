@@ -1,11 +1,11 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_IS_SOURCE"));out<-normalizePath(Sys.getenv("ALFAK2_IS_CASE_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_IS_SOURCE"));out<-normalizePath(Sys.getenv("KARST_IS_CASE_OUTPUT"))
 source(file.path(src,"model.R"));source(file.path(src,"integrate.R"));runtime<-is_load(repo,src)
-casefile<-normalizePath(Sys.getenv("ALFAK2_IS_CASE"));contextfile<-normalizePath(Sys.getenv("ALFAK2_IS_CONTEXT"))
+casefile<-normalizePath(Sys.getenv("KARST_IS_CASE"));contextfile<-normalizePath(Sys.getenv("KARST_IS_CONTEXT"))
 case<-readRDS(casefile);context<-readRDS(contextfile)
 stopifnot(!file.exists(file.path(out,"result.rds")))
-fit<-is_integrate(case,context,runtime,as.integer(Sys.getenv("ALFAK2_IS_SEED")),save_directory=out)
+fit<-is_integrate(case,context,runtime,as.integer(Sys.getenv("KARST_IS_SEED")),save_directory=out)
 fit$sample_checkpoint<-normalizePath(file.path(out,"sample_checkpoint.rds"))
 if(fit$specification$n>8L)fit$samples<-NULL
 saveRDS(fit,file.path(out,"result.rds"),compress=FALSE);write.csv(fit$moments,file.path(out,"moments.csv"),row.names=FALSE)

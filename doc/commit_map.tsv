@@ -1,0 +1,94 @@
+old_commit	new_commit	old_short	new_short	date	subject
+eb6f118e4b8b8b95ec5054f903f1d8088638d7af	eb6f118e4b8b8b95ec5054f903f1d8088638d7af	eb6f118	eb6f118	2026-04-27	Initial commit from alfakR dev branch
+ec99c4568594495956648a52024877bf2331bf85	ec99c4568594495956648a52024877bf2331bf85	ec99c45	ec99c45	2026-04-27	Refactor alfak2 into compiled-first inference package
+c5c50196ea240a26858c86fddf9c3095718780fa	c5c50196ea240a26858c86fddf9c3095718780fa	c5c5019	c5c5019	2026-04-27	Update DESCRIPTION
+5dde7716b00408fe82c8387dcfbe76195c2a34d7	5dde7716b00408fe82c8387dcfbe76195c2a34d7	5dde771	5dde771	2026-04-28	Add real-sample validation and multi-threshold alfak2 workflows
+12381fce5f92508be9cfbece659abc838fe2ae90	12381fce5f92508be9cfbece659abc838fe2ae90	12381fc	12381fc	2026-04-28	benchmark: add reference workflows for alfak2 evaluation
+dcbdcb59563d28c0a8545edb72ecbb8e2b78e482	dcbdcb59563d28c0a8545edb72ecbb8e2b78e482	dcbdcb5	dcbdcb5	2026-04-28	benchmark: use L1 GP reference landscapes only
+dadac0b30b08fbf2f88c799b6311d2fe176d9d86	dadac0b30b08fbf2f88c799b6311d2fe176d9d86	dadac0b	dadac0b	2026-05-07	Improve sparse fitting and alfakR-scale compatibility
+8cf26e4660548b0cf356f963fb105815c8b704cc	8cf26e4660548b0cf356f963fb105815c8b704cc	8cf26e4	8cf26e4	2026-05-07	benchmark: compare alfak2 against alfakR GRF nn_prior modes
+328e6b17131aeacacf385baef82206672345b874	328e6b17131aeacacf385baef82206672345b874	328e6b1	328e6b1	2026-05-14	Add beta-calibrated GRF benchmark pipeline
+29add7e016bc5bf513964ce41cda790d3b4f3e0b	29add7e016bc5bf513964ce41cda790d3b4f3e0b	29add7e	29add7e	2026-05-15	Harden sparse fitting failure handling
+69b214cd6ce01b047c625e41768b86ea665b8dd1	69b214cd6ce01b047c625e41768b86ea665b8dd1	69b214c	69b214c	2026-05-15	Harden sparse holdout graph fitting
+838bcb04411812294890a0893a07e6c4a10db447	838bcb04411812294890a0893a07e6c4a10db447	838bcb0	838bcb0	2026-05-15	Improve sparse alfak2 weighting and calibration
+c9fdfab016c64c52610ec7e1b4c6e3306a5aa316	c9fdfab016c64c52610ec7e1b4c6e3306a5aa316	c9fdfab	c9fdfab	2026-05-15	Improve sparse graph anchoring and transition modeling
+c323caf949517027507ac2ea30763f4034ca3f48	c323caf949517027507ac2ea30763f4034ca3f48	c323caf	c323caf	2026-05-15	Tighten calibration holdout validation
+6c1c9212793bd8168a774cc5b6fb0df2945fc133	6c1c9212793bd8168a774cc5b6fb0df2945fc133	6c1c921	6c1c921	2026-05-15	Tighten sparse weighting and holdout calibration
+37fb47032af69a3240ed26c7b6c2f0e4a1fdec92	37fb47032af69a3240ed26c7b6c2f0e4a1fdec92	37fb470	37fb470	2026-05-16	Use text diagnostics and split benchmark fit memory
+2acba0afab093d0776025e785925e9608a392e12	2acba0afab093d0776025e785925e9608a392e12	2acba0a	2acba0a	2026-05-16	feat(benchmark): add method-blind GRF smoke benchmark
+44d4d253d6d3d96fc40dd0e37db70014ffba4186	aaf33ba8b499efc1ac8bf400d04db0f0d2c2f1ef	44d4d25	aaf33ba	2026-05-19	Merge pull request #2 from TaoLee0510/dev
+3e3fad33e7093246a9d5928ea89e1f186aa0b08c	47b057a8662db1768235bd44ba3c0098c9f841b3	3e3fad3	47b057a	2026-05-19	Merge pull request #3 from TaoLee0510/dev
+158ee42a00e0cf011404a145c152872d6196b51a	158ee42a00e0cf011404a145c152872d6196b51a	158ee42	158ee42	2026-05-19	benchmark: add farfield shape probes
+86c7c8ea909f76000773f6e89b5f53ada9f91c49	86c7c8ea909f76000773f6e89b5f53ada9f91c49	86c7c8e	86c7c8e	2026-05-19	docs: name package ALFA-K2
+7ea9ee05fe4b3ebc95a580832c0525006b494129	7ea9ee05fe4b3ebc95a580832c0525006b494129	7ea9ee0	7ea9ee0	2026-05-20	feat: add experimental native NN/kriging backend
+effa9813aca1fae06d66cae738f20f4ad42843f6	effa9813aca1fae06d66cae738f20f4ad42843f6	effa981	effa981	2026-05-21	Add 22-chromosome HPC benchmark workflow
+1437a5e2ba04cddaae979e9c24c0be1376383a7c	1437a5e2ba04cddaae979e9c24c0be1376383a7c	1437a5e	1437a5e	2026-05-21	Fix 22-chromosome benchmark graph bounds
+8af14d695bb0a9e192126564862360a0a3694a2d	8af14d695bb0a9e192126564862360a0a3694a2d	8af14d6	8af14d6	2026-05-21	Increase HPC task resources for 22chr benchmark
+fc29a44c70f97ecd05456f82f21ac340aac2782f	fc29a44c70f97ecd05456f82f21ac340aac2782f	fc29a44	fc29a44	2026-05-29	Add ground truth benchmark workflow
+871d292d9ee973171ef849b5b0a1247d8e73da81	871d292d9ee973171ef849b5b0a1247d8e73da81	871d292	871d292	2026-05-29	Fix ground truth benchmark time handling
+c6fdfb213709b0e27223118700184b6fa35d2446	c6fdfb213709b0e27223118700184b6fa35d2446	c6fdfb2	c6fdfb2	2026-05-29	Force benchmark source repo loading
+f2283d51a9be8bde243463a460132b719c74ff40	f2283d51a9be8bde243463a460132b719c74ff40	f2283d5	f2283d5	2026-05-29	Handle benchmark metric shell compatibility
+bb55c94eb21e4712f292961bccfcdf37bdaac2a0	bb55c94eb21e4712f292961bccfcdf37bdaac2a0	bb55c94	bb55c94	2026-05-29	Load R module in benchmark submitter
+dd035d0dbe2e3af3d8f5c68f5374ab23da416ff4	dd035d0dbe2e3af3d8f5c68f5374ab23da416ff4	dd035d0	dd035d0	2026-06-15	Add ALFA-K aligned benchmark evaluation
+9d1429f6ac208cb8204185fefcf3939b37de36c6	9d1429f6ac208cb8204185fefcf3939b37de36c6	9d1429f	9d1429f	2026-06-15	Fix benchmark submitter module loading
+83a7b9d7e3e1e4461888475e405be23bae20bdd6	83a7b9d7e3e1e4461888475e405be23bae20bdd6	83a7b9d	83a7b9d	2026-06-15	Fix benchmark summary extraction
+0b0b5d135f6b09d2b8336eb3ae9e1e3706632508	0b0b5d135f6b09d2b8336eb3ae9e1e3706632508	0b0b5d1	0b0b5d1	2026-06-15	Speed up benchmark summary aggregation
+fdbbd94d6eb661c8b0b0100c05e9c9407b1bf4fc	fdbbd94d6eb661c8b0b0100c05e9c9407b1bf4fc	fdbbd94	fdbbd94	2026-06-15	Use R 4.4.2 module for benchmark jobs
+f685e703b0101aa454c7945c70629788121df5e2	f685e703b0101aa454c7945c70629788121df5e2	f685e70	f685e70	2026-06-15	Use available R 4.4 module for benchmark submitter
+03ec9cbd614006d83b42dfeae033ae4fa662669a	03ec9cbd614006d83b42dfeae033ae4fa662669a	03ec9cb	03ec9cb	2026-06-15	Use ml R 4.4 for alfa2 benchmark Slurm
+4fc57801ed82d5b287deb56e012e917cf60a0297	4fc57801ed82d5b287deb56e012e917cf60a0297	4fc5780	4fc5780	2026-06-22	Use late ABM window for ground truth benchmark
+0241b5da12184ac34e3e5c1c501ac007315a31f5	0241b5da12184ac34e3e5c1c501ac007315a31f5	0241b5d	0241b5d	2026-06-27	Support failed benchmark task resubmission
+8d82f03c50f5fbda2d3611bb078580e1b5afdbea	8d82f03c50f5fbda2d3611bb078580e1b5afdbea	8d82f03	8d82f03	2026-06-27	Use R 4.4 module for benchmark Slurm jobs
+b329d834a14bca18d32254f4c02610de4b5cc22d	169728d67586359645bcf0af1e99234882c41fb2	b329d83	169728d	2026-11-10	Add joint count landscape model and division-process dynamics
+7696f173d7873cc6370e0b2c0c34932aff7059f4	494d603f3c13212ec017c015f82671ea894aa822	7696f17	494d603	2026-11-10	Add sparse joint count model for two sparse samples
+556299e38c8f30bb3c0aeb897021d42802b02a5c	92793c716aaccf67bac25d087ecfe9c732f88265	556299e	92793c7	2026-11-10	Add sparse two-timepoint benchmark
+29ebf168b900f634fa996767a0eda6bbacb1c8c6	d448462030472b8055b656fca27967259e5a15e3	29ebf16	d448462	2026-11-10	Remove superseded benchmark workflows
+08eefccaa75b73c1ee1ebd365e306a3a56482f30	7e43dbc54d7ea0fff02ecd5d68bc3c1099cf0880	08eefcc	7e43dbc	2026-11-10	Score the sparse joint model in the sparse two-timepoint benchmark
+6bb5a886b560c37409884369650f1b6f46dc33c6	2d57e11d04a516e933ee1e524dfa2eb945c99a60	6bb5a88	2d57e11	2026-11-10	Track validation scripts and reports, ignore validation results
+61ef06e185eb6ae55e47d197b2e556721d88d27a	06609a1cb894b6d912749a3a4c9c09626d78dba0	61ef06e	06609a1	2026-11-11	Add cohort fit, rate ranges and calibrated uncertainty to the sparse joint model
+401d38160a81be9c2d417eec2eb9730678a2764a	928bb9fb8650d3194dd8e8a2dc7059a73dfa5122	401d381	928bb9f	2026-11-11	Benchmark all second-layer methods and keep other scores when scoring
+4bc6c4ed6b44cf75ccda25f6022875eb576a337f	d2859a2ce6a0875bdf8ae5abe18051fcb13a277c	4bc6c4e	d2859a2	2026-11-11	Benchmark the cohort trend choice and add a depth-limit check
+7d4078e9a244b93a6d4027cb32aac5bd0b085f3b	e5d44e3f24d68f035313c7a65dcb579bb1b19f03	7d4078e	e5d44e3	2026-11-11	Benchmark the sparse joint variants and add stress scenarios
+1523434fcd1854101438f04617ff86b7de26e17b	6db78718996e416087d3f9a2cfb4052448141ae3	1523434	6db7871	2026-11-11	Choose the cohort trend by marginal likelihood; point predictions at the lowest rate
+137a69e228cdfa56aaf79ed5bd9225c9b9f65fe3	bcd726711cbde99cd5e356c9074bdc92eafc6a68	137a69e	bcd7267	2026-11-11	Define what sparse, joint and count mean in the model's name
+4853e7b41c515c14dfbf3c2812272e5ab4361f7e	a8a67253182017a35276809ea63d59b58328e9f1	4853e7b	a8a6725	2026-11-11	Describe the default pipeline step by step and restructure the method document
+a4b7c0cf1ad7ac03d4c74bdece5bd35c9c4fa489	bb4471796e2957dda4a9ef433c9f4f1f34ea034f	a4b7c0c	bb44717	2026-11-11	Explain the ranking exception on smooth landscapes and describe the data
+ab6c1e4c71b89a44ec67d22d3036bc259e68820b	a58c572d1a802b2b1c0612707a1f2d37a6b3cd5f	ab6c1e4	a58c572	2026-11-11	Make the sparse joint model the default and write alfakR's outputs
+26b607e56ddf5840725f53f56fa66e7b20af1237	d663877a5672b138e3201634bf57e8c9e7559cf8	26b607e	d663877	2026-11-11	Pin benchmarked sparse joint variants to free initial abundances
+e8f174786188096aceb9b41e6c1a9fdf0613a08f	8dff648a73bb475f6ff06301169c639d4f65a7db	e8f1747	8dff648	2026-11-11	Record held-out confirmation, cohort trend choice and limits
+554ca9ebba3d74b58bb05cf72b1cf038a1b2c904	127d25f173545c1492f9dd69328fd9a63667871c	554ca9e	127d25f	2026-11-11	Remove the local handoff document from version control
+2533ed409266e6511fdd37cc7065f8cd5ee78ac2	bfcdf5d251c8b7ecea4cb73f34b7eeadec21ae23	2533ed4	bfcdf5d	2026-11-11	Report held-out results by sampling design
+16fca89dfed77402e7b7272bc720d4d58d7bca1b	ebb361281572078fa7a60bd7fe687b3b554b9049	16fca89	ebb3612	2026-11-11	Rewrite the method document as a methods paper and report results by wavelength
+e483df0267940bf463838ecf3fd5dc9e0b650d3c	4d0973235fd3d8445ba52ca550ea992a0b803e17	e483df0	4d09732	2026-11-11	Show alfakR in the figures by sampling design
+a5c2fdf1284a4eec933e27a64de43e9d2947d0d8	4cd2003ab909ecf654f07d4b4745b06f5d9ab685	a5c2fdf	4cd2003	2026-11-11	State how scenario results are combined into each wavelength value
+8a33a65540158a0be78bf312aa6f3da8d67a6f4b	d9a50aef2862082c06837767f5d72089bdaec2bb	8a33a65	d9a50ae	2026-11-11	Stop tracking the local handoff document
+a0c970dffdf1878cd3b5ac4d7b5cc246b4880ff8	0aab863e962c3237642b67122aee2fcf400bde4b	a0c970d	0aab863	2026-11-11	Update ALFA-K minobs 5 coverage and open items in the design record
+8d2eac1858349a23c14d8ffc60d97e62841dc196	0eefa7a57e2960d9bca36a70df776068f050db6c	8d2eac1	0eefa7a	2026-11-11	Validate extrapolation to distances 3 and 4
+8327282028e9059449c81250351d8310eef0d418	0be61fa30dace515b31b58b2ec3415890da50682	8327282	0be61fa	2026-11-12	Keep talk slides out of version control
+175882cb9a612466c8c976fb491a778a1dfd3d51	1b949d30ac873d9d086da98cebdf15652f3df0ec	175882c	1b949d3	2026-11-12	Report alfakR-format frequencies at time 0, as alfakR does
+dea7bd860da3ae2985bb937e490f532f8c7c9137	d614154d1785ba4cfd0a394c2e38abdca1dc31c2	dea7bd8	d614154	2026-11-12	Report numerical accuracy, direction accuracy and rank similarity
+27bffabf4b50f920292063a3c1fe9ac631cc0afa	fe22efa16afc117053e77a5d4377ce8acb8d5afc	27bffab	fe22efa	2026-11-13	Add the short-interval study of the sparse joint model
+5c7ef4d924937bf30714155ed438315f19c762f7	7a89af2f6dd406d78f0d872cd5cb0133e4c330a1	5c7ef4d	7a89af2	2026-11-13	Bring the README's account of short intervals up to date
+af362af1a5db2cf430e6fec9e65e4e8cb8188e87	97726a6e8d61a1ad695a09b793b3dc9da238e4fa	af362af	97726a6	2026-11-13	Choose the balance prior's history by marginal likelihood
+ff13cf47ce0bc024fc618ffc424dced68e80fbb6	ef8416520f588e9c3a97c95a365eb9bcbf45cc92	ff13cf4	ef84165	2026-11-13	Give unobserved karyotypes a deficit of their own
+2d86b39cb6e3d47a611d16f857cb56b16aa36d64	33dadee53173f227ddaf48fe7bc24221285b1e49	2d86b39	33dadee	2026-11-13	Report how much of each sample the model domain holds
+33a045ca62a631a79699ef276759744213144374	56c1b5a25c7af068d249bbe4905fde10a6647775	33a045c	56c1b5a	2026-11-13	Screen a lattice-correlated residual before building it
+34e43a5abab233e72f7bc7e2b64a14b62a9ef1d5	b3bfaea450b6a2756d5c3e329ecfb8fcb1c014fc	34e43a5	b3bfaea	2026-11-13	Study the overestimate of unobserved karyotypes
+21aedcab43d093db04e5ad5113b22f029fbb5185	712171f4da7ff807fd7eaafd616d46c0e1c4a790	21aedca	712171f	2026-11-14	Fit more than two timepoints in the sparse joint model
+c7f809c656635d984061a0ce5df3c5e9e72c393a	51d1320be0e8ce0f82e1ca05ea0b1376ee5bb57e	c7f809c	51d1320	2026-11-14	Fit series of samples pair by pair or as a state space
+8512694f4c88081fe603cc85e0466bff4b7fab8e	8e4e20965721157e4e1c355b4dce22f658ac7653	8512694	8e4e209	2026-11-14	Leave out samples in between that carry no information
+94cef55f5313251af425bdb9a0bfa965fe36b721	d14763de52b6425460c06409b02b86d451d8a556	94cef55	d14763d	2026-11-15	Call the columns time points, and drop the automatic choice
+dbc35fefddbd75f94d3faf7ee3e6142986a0ec6f	5344989890906c0a17fa0f1a229ccc7d3ebd5547	dbc35fe	5344989	2026-11-15	Check why alfak2 reverses the paper's Fig. 4d
+4ff8906f36dab7698aa0826587cfcead80923ac0	ad74d4d71ec4092ef7350be8b163f2ab8c6b5479	4ff8906	ad74d4d	2026-11-15	Choose the series method from the data, and chart the fit
+05a88558d6196d439c137f4b5ba97c5f7ab4f2ed	2ac72b26eca459a6b312b346a4e7513b5859d15c	05a8855	2ac72b2	2026-11-15	Leave out samples that leave a pair without coverage
+ac36fd1c08bef241c3d695da4b73dc94fbdce1b1	0359636adb6d1d9f6fc8adfa8386d2ecf621a9f3	ac36fd1	0359636	2026-11-15	Let fit_sparse_joint() choose the missegregation rate
+1f1c7222ce8b1a2cea6cd191c50a52120c799d31	ed52875cc614e1aec058785c68ef1ca606b8f5cf	1f1c722	ed52875	2026-11-15	Test whether the marginal likelihood can pick the missegregation rate
+827c4b5bbb19a6672d955c94a704a784e6a1fb42	49aed096d03a5aa317917eb856b6945c8a02307f	827c4b5	49aed09	2026-11-16	Choose between the balance prior and free initial abundances by the cloud
+a1cfd7bd708d4857da417a593bbd19ac5ce35bb1	5b209e145411aaf9122c0eb3491328e0a391dd2c	a1cfd7b	5b209e1	2026-11-16	Drop the choice of the missegregation rate: it fails at short intervals
+1df8a5d9a8e2ab46c579db04d25f120a82d564d3	d37a9078082e332f85c1ebc25c5bdc1ffd8601aa	1df8a5d	d37a907	2026-11-16	Fit over a range of missegregation rates; no rule makes choosing it safe
+bf86c855398403ce29af4fa9b0c0cdd2dde63ffb	43a48535f803d0bbf73ea7540e61cacb4013b374	bf86c85	43a4853	2026-11-16	Record why a drift term is not added to choose the missegregation rate
+9b374673e673a7feecd36b350faae1f0cac4324e	bfe5a6f9b73844560d4db78290f6a95f620b5fdf	9b37467	bfe5a6f	2026-11-16	Record why the corrected rule for initial_state = "auto" was stopped
+348addd451c0d1775425527fc693cecd8a05307c	64814c7e438706fed71ce7f75dcb9798d367fd8c	348addd	64814c7	2026-11-16	Return the default to the balance prior; add the Salehi horizon test
+b9a3b9e1dbc0ac4483639c6a3ba34d94fad156be	f3d6043a2606033b66d89b90565211bdabf42baf	b9a3b9e	f3d6043	2026-11-16	Test the all-time-point fits against later Salehi passages
+e3c9b70394dff194d34d76e072169eb51093701a	9bea37b7f787a80ad8f09a38d196a0a23a8f3737	e3c9b70	9bea37b	2026-11-17	Merge pull request #4 from TaoLee0510/dev
+15c6ef4293aad176bece2b6d1ce2873c068a47bf	6c4d8a0443acd1c9b05f45c0954aaa69450a9573	15c6ef4	6c4d8a0	2026-11-17	Release alfak2 0.2.0

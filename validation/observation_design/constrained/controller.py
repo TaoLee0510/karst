@@ -12,10 +12,10 @@ def main():
     parser.add_argument("--part", type=int, choices=[0, 1], required=True)
     parser.add_argument("--phase", choices=["preflight", "main"], required=True)
     args = parser.parse_args()
-    repo = Path(os.environ["ALFAK2_REPO"])
+    repo = Path(os.environ["KARST_REPO"])
     root = repo / "validation/observation_design"
-    source = Path(os.environ["ALFAK2_CONSTRAINED_SOURCE"])
-    out = Path(os.environ["ALFAK2_CONSTRAINED_OUTPUT"])
+    source = Path(os.environ["KARST_CONSTRAINED_SOURCE"])
+    out = Path(os.environ["KARST_CONSTRAINED_OUTPUT"])
     loader = importlib.util.spec_from_file_location("guard", root / "results/control_source_v1/bounded_run.py")
     guard = importlib.util.module_from_spec(loader)
     loader.loader.exec_module(guard)
@@ -29,7 +29,7 @@ def main():
         if case_dir.exists():
             raise RuntimeError("Existing attempt must be preserved: " + case)
         env = os.environ.copy()
-        env["ALFAK2_CONSTRAINED_CASE"] = case
+        env["KARST_CONSTRAINED_CASE"] = case
         (destination / "active_case.json").write_text(json.dumps({"case": case, "owner": os.getpid()}))
         resource = guard.execute(["Rscript", str(source / "run_case.R")], env,
                                  str(destination / (case + ".log")), 300)

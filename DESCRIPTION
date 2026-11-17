@@ -1,6 +1,6 @@
-Package: alfak2
-Title: ALFA-K2: Adaptive Local-to-Global Fitness Landscapes for Aneuploid Karyotypes
-Version: 0.2.0
+Package: karst
+Title: KARST: Karyotype Abundance-Based Reconstruction from Sparse Time Points
+Version: 1.0.0
 Authors@R: c(
     person(given = "Richard", family = "Beck",
            email = "richard.beck@moffitt.org", role = "aut"),
@@ -9,12 +9,17 @@ Authors@R: c(
     )
 Author: Richard Beck [aut], Tao Li [aut, cre]
 Maintainer: Tao Li <Tao.Li2@moffitt.org>
-Description: ALFA-K2 (Adaptive Local-to-Global Fitness Landscapes for Aneuploid
-    Karyotypes) provides methods to infer fitness landscapes for aneuploid karyotypes from
-    sparse two-timepoint count data and use those landscapes to study karyotype
-    evolution. The package builds bounded karyotype graphs, fits a local
-    hierarchical Bayesian model, and propagates estimates across the graph with
-    a Gaussian-process prior and ordered copy-number epistasis penalties.
+Description: KARST (Karyotype Abundance-based Reconstruction from Sparse Time
+    points) infers fitness landscapes of aneuploid karyotypes from sparse
+    single-cell karyotype counts at two or more time points. Its default model,
+    the sparse joint count model, fits the counts of the well-sampled
+    karyotypes and of all their one-step neighbours, observed or not, with one
+    likelihood, and predicts fitness further away from a fitted trend. It
+    writes the outputs of alfak (the R package alfakR of the ALFA-K paper), so
+    that analyses built on alfak read its results unchanged. KARST was
+    released as alfak2 up to version 0.2.0.
+URL: https://github.com/TaoLee0510/karst
+BugReports: https://github.com/TaoLee0510/karst/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

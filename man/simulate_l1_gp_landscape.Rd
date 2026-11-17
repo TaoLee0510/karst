@@ -65,7 +65,7 @@ centroids.}
 queries.}
 }
 \value{
-An \code{alfak2_grf_landscape} object.
+An \code{karst_grf_landscape} object.
 }
 \description{
 Backward-compatible entry point for the package's synthetic landscape

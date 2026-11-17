@@ -159,8 +159,8 @@ simulate_sparse_counts <- function(landscape,
                                    carrying_capacity = Inf,
                                    passage_fraction = 0.2,
                                    max_unique = 50000) {
-  if (!inherits(landscape, "alfak2_grf_landscape")) {
-    stop("`landscape` must be an `alfak2_grf_landscape` object.", call. = FALSE)
+  if (!inherits(landscape, "karst_grf_landscape")) {
+    stop("`landscape` must be an `karst_grf_landscape` object.", call. = FALSE)
   }
   beta <- validate_grf_scalar(beta, "beta", lower = 0, upper = 1)
   dt <- validate_grf_scalar(dt, "dt", lower = 0, lower_open = TRUE)

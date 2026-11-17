@@ -1,7 +1,7 @@
 # Checks of the benchmark simulator against quantities known in closed form.
 #
 # The daughter distribution is compared with the single-chromosome
-# missegregation kernel of alfak2 (`alfak2_pij_cpp`), which is an independent
+# missegregation kernel of karst (`karst_pij_cpp`), which is an independent
 # implementation of the same biology.
 
 stt_validate_abm <- function(config) {
@@ -25,7 +25,7 @@ stt_validate_abm <- function(config) {
                 record_days = delta_t, seed = seed, beta = beta)[[1L]]
   }
   kernel <- function(child, beta) {
-    prod(mapply(function(from, to) alfak2:::alfak2_pij_cpp(from, to, beta), parent, child))
+    prod(mapply(function(from, to) karst:::karst_pij_cpp(from, to, beta), parent, child))
   }
 
   # 1. Daughter distribution without viability losses.

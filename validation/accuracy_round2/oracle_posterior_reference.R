@@ -113,7 +113,7 @@ oracle_posterior_reference_main <- function(args = commandArgs(TRUE)) {
   run_root <- oracle_read_argument(args, "run-root", "/private/tmp/alfak2_iteration2_20261104_0518")
   output <- oracle_read_argument(args, "output", file.path(run_root, "oracle-reference"))
   frozen <- oracle_read_argument(args, "v1-source", file.path(run_root, "v1-source"))
-  dll <- oracle_read_argument(args, "dll", file.path(run_root, "current-lib/alfak2/libs/alfak2.so"))
+  dll <- oracle_read_argument(args, "dll", file.path(run_root, "current-lib/karst/libs/karst.so"))
   dir.create(output, recursive = TRUE, showWarnings = FALSE)
   requireNamespace("Rcpp"); requireNamespace("TMB")
   binary <- dyn.load(normalizePath(dll))
@@ -137,7 +137,7 @@ oracle_posterior_reference_main <- function(args = commandArgs(TRUE)) {
   dt <- 1.5; eta_sd <- 2
   population_growth <- log(0.5 * exp(dt * 0.7) + 0.5 * exp(dt * 1.3))
   population <- c(1000, 1000 * exp(population_growth))
-  data <- package$prepare_alfak2_data(counts, dt = dt, beta = 0)
+  data <- package$prepare_karst_data(counts, dt = dt, beta = 0)
   arms <- list(count_only = list(), known_pi0 = list(oracle_initial_probability = c("1" = 0.5, "2" = 0.5)),
     population_growth = list(population_sizes = population, population_log_growth_sd = 0.1),
     known_pi0_and_growth = list(oracle_initial_probability = c("1" = 0.5, "2" = 0.5),

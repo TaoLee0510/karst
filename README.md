@@ -1,16 +1,27 @@
-# alfak2
+# KARST
 
-`alfak2` implements **ALFA-K2: Adaptive Local-to-Global Fitness Landscapes for
-Aneuploid Karyotypes**. It provides methods to infer fitness landscapes for
-aneuploid karyotypes from sparse count data of two or more timepoints and to support
-analyses of karyotype evolution. It combines bounded karyotype graph
-construction, local hierarchical Bayesian inference, and a graph
-Gaussian-process posterior with ordered copy-number epistasis penalties.
+**KARST: Karyotype Abundance-based Reconstruction from Sparse Time points.**
+The R package `karst` infers fitness landscapes of aneuploid karyotypes from
+sparse single-cell karyotype counts at two or more time points, and supports
+analyses of karyotype evolution.
 
-The default pipeline, `fit_alfak2()` or `fit_sparse_joint()`, is the sparse
+KARST was developed and released as `alfak2` up to version 0.2.0. The history
+of this repository includes that work; commit ids that the documents and
+result folders cite from before the history was cleaned of tool attribution
+lines are mapped to the current ones in [doc/commit_map.tsv](doc/commit_map.tsv).
+Here *alfak* is the R package `alfakR` of the ALFA-K paper; its versions are
+named by branch and commit: alfak main@4ad82b0 (the version the paper's fits
+were made with, inferred from their dates) and alfak dev2@f93b2d2 (the version
+the benchmarks fit).
+
+```r
+remotes::install_github("TaoLee0510/karst")
+```
+
+The default pipeline, `fit_karst()` or `fit_sparse_joint()`, is the sparse
 joint count model, described [below](#sparse-joint-model-for-sparse-counts-at-two-time-points).
 `alfak_compat()` runs it with the arguments of `alfakR::alfak()` and writes
-alfakR's output files, so that analyses built on alfakR read its results
+alfak's output files, so that analyses built on alfak read its results
 unchanged.
 
 The earlier two-layer pipeline, `pipeline = "two_layer"`, is:
@@ -41,7 +52,7 @@ accuracy validation compares these paths at every exact support distance.
 ## Minimal Example
 
 ```r
-library(alfak2)
+library(karst)
 
 landscape <- simulate_grf_landscape(
   n_chr = 4,
@@ -62,18 +73,18 @@ sim <- simulate_sparse_counts(
   initial_population = 1000
 )
 
-fit <- fit_alfak2(
+fit <- fit_karst(
   sim$counts,
   dt = 1,
   beta = 0.00005,
   sparse_joint_control = list(min_cn = 1, max_cn = 4)
 )
 
-head(summarize_alfak2(fit))
+head(summarize_karst(fit))
 predict(fit, c("2.2.2.2", "2.3.2.2"))
 
 # the earlier two-layer pipeline
-two_layer <- fit_alfak2(
+two_layer <- fit_karst(
   sim$counts,
   dt = 1,
   beta = 0.00005,
@@ -82,7 +93,7 @@ two_layer <- fit_alfak2(
   max_cn = 4,
   max_nodes = 5000
 )
-plot_alfak2(two_layer)
+plot_karst(two_layer)
 ```
 
 ## Inference and biological dynamics
@@ -114,7 +125,7 @@ independent new data. Its default prior scales were selected on development
 landscapes and fixed before independent calibration and testing. For example:
 
 ```r
-joint <- fit_alfak2(
+joint <- fit_karst(
   sim$counts, dt = 1, beta = 0.00005,
   min_cn = 1, max_cn = 4, max_nodes = 5000,
   pipeline = "joint_count", forward_model = "division_process"
@@ -138,7 +149,7 @@ quantile approximations; they do not claim exact full posterior integration.
 
 ## Sparse joint model for sparse counts at two time points
 
-`fit_sparse_joint()`, the default pipeline of `fit_alfak2()`, is built for the
+`fit_sparse_joint()`, the default pipeline of `fit_karst()`, is built for the
 case the package is meant for: a few hundred cells at each of two time points. It fits both time points with one
 count likelihood on the well-sampled karyotypes and all their one-step
 neighbours, observed or not. A rare karyotype is held at mutation-selection
@@ -152,7 +163,7 @@ fit$summary                                  # karyotypes of the fitted domain
 predict(fit, c("2.2.3.2.2", "2.2.3.3.2"))    # any karyotype, also two steps away
 
 # the same model through the main entry point
-fit <- fit_alfak2(counts, dt = 180, beta = 0.00005,
+fit <- fit_karst(counts, dt = 180, beta = 0.00005,
                   sparse_joint_control = list(birth_rate = 0.5))
 ```
 
@@ -241,7 +252,7 @@ first time point. The time over which the balance built up (`history`) is chosen
 by marginal likelihood among the interval and longer spans. With time points only
 about 30 divisions apart, its errors were 4-10% larger than those of the free
 model, but it ranked karyotypes better; at about 60 divisions the two were
-equally accurate. Up to alfak2 8327282 the balance built up over the interval
+equally accurate. Up to KARST 8327282 the balance built up over the interval
 alone, and at about 30 divisions its errors were twice those of the free
 model.
 
@@ -258,7 +269,7 @@ is than the balance over the interval allows, and above a factor of e it fits
   cloud is far larger than the balance over one interval even at the true
   rate. `"auto"` switched there in most fits, and their landscapes were
   clearly less accurate (correlation with the truth 0.58 against 0.75). It
-  was the default in alfak2 827c4b5 only.
+  was the default in KARST 827c4b5 only.
 - Where the rate is uncertain or calls are noisy, and the interval spans many
   divisions, `"free"` or `"auto"` can be the safer fit
   ([cloud level](validation/sparse_joint/cloud_level/README.md)).
@@ -268,7 +279,7 @@ karyotype. `fit$diagnostics$domain_coverage` gives, for each time point, how man
 of its cells lie inside the fitted domain. When one time point has none, typically
 because the two time points share no karyotype and all well-sampled ones come from
 the other, the fit stops with an error of class
-`alfak2_domain_coverage_error`, which carries the same table.
+`karst_domain_coverage_error`, which carries the same table.
 `check_sparse_joint_counts()` summarises a count matrix before fitting: the
 share of cells on repeated karyotypes and how far each cell lies from the
 nearest other cell at its time point.
@@ -382,7 +393,7 @@ majors.
   other time points. Its depth is free, so under the model it carries no
   information.
 - `fit$diagnostics$dropped_samples` lists the time points left out.
-- `as_alfakR()` still picks its karyotypes from every time point, as alfakR
+- `as_alfak()` still picks its karyotypes from every time point, as alfak
   does.
 - With `"pairwise"` and `"state_space"`, both time points of each consecutive
   pair need a cell in that pair's own domain. A time point in between without
@@ -395,7 +406,7 @@ majors.
   - the pair rule left out one time point in each of 42;
   - no trajectory stops.
 
-### Outputs in the format of alfakR
+### Outputs in the format of alfak
 
 `alfak_compat()` takes the arguments of `alfakR::alfak()` (branch `dev`), fits
 the sparse joint model, writes the same files to `outdir` and returns the
@@ -410,28 +421,28 @@ readRDS(file.path(outdir, "landscape.Rds"))   # k, mean, median, sd, fq, nn
 
 | File | Content |
 | --- | --- |
-| `landscape.Rds` | Frequent karyotypes (`fq`, at least `minobs` cells), their one-step neighbours (`nn`) and the neighbours' neighbours, in alfakR's order, with `mean`, `median` and `sd` of fitness |
-| `landscape_posterior_samples.Rds` | One row per landscape karyotype, one column per draw: joint draws from the model's posterior, in place of alfakR's Kriging bootstrap |
-| `bootstrap_res.Rds` | `initial_fitness`, `final_fitness`, `initial_frequencies`, `final_frequencies` and `nn_fitness`, one row per draw, with alfakR's retry attributes; the frequencies are at time 0 of alfakR's time axis, so `x0 * exp(f * t)` gives them at time `t` as in alfakR |
-| `xval.Rds` | `R2R`, `predictions`, `observations` and `xval_data`, plus `tmp`, the paired matrix earlier alfakR versions saved |
+| `landscape.Rds` | Frequent karyotypes (`fq`, at least `minobs` cells), their one-step neighbours (`nn`) and the neighbours' neighbours, in alfak's order, with `mean`, `median` and `sd` of fitness |
+| `landscape_posterior_samples.Rds` | One row per landscape karyotype, one column per draw: joint draws from the model's posterior, in place of alfak's Kriging bootstrap |
+| `bootstrap_res.Rds` | `initial_fitness`, `final_fitness`, `initial_frequencies`, `final_frequencies` and `nn_fitness`, one row per draw, with alfak's retry attributes; the frequencies are at time 0 of alfak's time axis, so `x0 * exp(f * t)` gives them at time `t` as in alfak |
+| `xval.Rds` | `R2R`, `predictions`, `observations` and `xval_data`, plus `tmp`, the paired matrix earlier alfak versions saved |
 | `landscape_data.Rds` | With `landscape_data_output = TRUE`: `mean` and `median` models whose `predict()` gives the fitness of any karyotype |
-| `alfak2_fit.Rds` | The alfak2 fit itself |
+| `karst_fit.Rds` | The KARST fit itself |
 
-`yi$x` may have more than two columns, as in alfakR; they are fitted as
+`yi$x` may have more than two columns, as in alfak; they are fitted as
 described [above](#more-than-two-time-points).
 
-The scale is alfakR's: net growth rate per unit of time, with the
+The scale is alfak's: net growth rate per unit of time, with the
 count-weighted mean of the major karyotypes set to `log(nb / n0) / dt`, `dt`
-the first interval between time points as in alfakR.
+the first interval between time points as in alfak.
 `correct_efflux = TRUE` reports birth rates. `minobs` only chooses which
 karyotypes are listed as frequent; the fit uses every cell. The
 cross-validation holds out each frequent karyotype with its neighbours, as in
-alfakR's folds, but by removing their counts and refitting the model, so its
-R-squared measures how well alfak2 predicts a karyotype it has not seen.
-`as_alfakR()` and `write_alfakR_outputs()` do the same for an existing fit.
+alfak's folds, but by removing their counts and refitting the model, so its
+R-squared measures how well KARST predicts a karyotype it has not seen.
+`as_alfak()` and `write_alfak_outputs()` do the same for an existing fit.
 
-[`doc/alfak2_workflow.md`](doc/alfak2_workflow.md) follows the default pipeline
-step by step, and [`doc/alfak2_method.tex`](doc/alfak2_method.tex) gives the
+[`doc/karst_workflow.md`](doc/karst_workflow.md) follows the default pipeline
+step by step, and [`doc/karst_method.tex`](doc/karst_method.tex) gives the
 mathematics. Design, benchmark results and checks on real data are recorded in
 [`validation/sparse_joint/README.md`](validation/sparse_joint/README.md); the
 benchmark is [`benchmark/sparse_two_timepoint`](benchmark/sparse_two_timepoint/README.md).

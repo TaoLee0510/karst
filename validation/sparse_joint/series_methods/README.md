@@ -61,7 +61,7 @@ Each pair is modelled as two time points are (`sparse_joint_model.h`):
 All pairs share the birth rates and the trend. A pair starts at balance over
 the history plus the population's age at its first time point (`"age"`, the
 default). The alternative `"same"` uses the history alone; it is an internal
-option, `alfak2.pair_history`, compared as `pairwise_same`.
+option, `karst.pair_history`, compared as `pairwise_same`.
 
 The trend is centred on the count-weighted mean karyotype over all time points.
 
@@ -326,7 +326,7 @@ between `anchored` (0.93) and the best fitted method per dataset (0.74).
 - Choosing the thresholds on landscapes 1–6 and scoring on 7–12 (and back)
   says nothing: on a half, even `anchored` fails the e1 gate.
 
-The paper benchmark (E4, alfak2 05a8855, by the `benchmark` session) was the
+The paper benchmark (E4, KARST 05a8855, by the `benchmark` session) was the
 held-out check. Its criterion was fixed beforehand: on each of 13 tests, auto
 must not be worse than `anchored` by more than a set margin on the same inputs.
 - Auto passed 10 of the 13 and failed 3, so it was not adopted.

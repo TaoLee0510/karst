@@ -8,29 +8,29 @@ series_settings <- function(...) {
 test_that("count data take two or more timepoints", {
   counts <- cbind(c(5, 1, 0), c(3, 2, 1), c(1, 4, 2))
   rownames(counts) <- c("2.2", "2.3", "3.3")
-  two <- prepare_alfak2_data(counts[, 1:2], dt = 10)
+  two <- prepare_karst_data(counts[, 1:2], dt = 10)
   expect_null(two$times)
   expect_equal(two$dt, 10)
   expect_equal(colnames(two$counts), c("t0", "t1"))
-  expect_equal(alfak2_data_times(two), c(0, 10))
-  three <- prepare_alfak2_data(counts, dt = c(10, 20))
+  expect_equal(karst_data_times(two), c(0, 10))
+  three <- prepare_karst_data(counts, dt = c(10, 20))
   expect_equal(colnames(three$counts), c("t0", "t1", "t2"))
   expect_equal(three$times, c(0, 10, 30))
   expect_equal(three$dt, 30)
-  expect_equal(alfak2_data_times(three), c(0, 10, 30))
-  expect_equal(prepare_alfak2_data(counts, times = c(5, 15, 35))$times, c(0, 10, 30))
-  expect_equal(prepare_alfak2_data(counts[, 1:2], times = c(3, 7))$dt, 4)
+  expect_equal(karst_data_times(three), c(0, 10, 30))
+  expect_equal(prepare_karst_data(counts, times = c(5, 15, 35))$times, c(0, 10, 30))
+  expect_equal(prepare_karst_data(counts[, 1:2], times = c(3, 7))$dt, 4)
   expect_output(print(three), "times: ")
-  expect_error(prepare_alfak2_data(counts, dt = 10), "intervals between consecutive")
-  expect_error(prepare_alfak2_data(counts, dt = c(10, 20), times = c(0, 1, 2)), "not both")
-  expect_error(prepare_alfak2_data(counts, times = c(0, 2, 1)), "strictly increasing")
-  expect_error(prepare_alfak2_data(counts, times = c(0, 2)), "3 finite times")
-  expect_error(prepare_alfak2_data(counts[, 1, drop = FALSE]), "at least two")
+  expect_error(prepare_karst_data(counts, dt = 10), "intervals between consecutive")
+  expect_error(prepare_karst_data(counts, dt = c(10, 20), times = c(0, 1, 2)), "not both")
+  expect_error(prepare_karst_data(counts, times = c(0, 2, 1)), "strictly increasing")
+  expect_error(prepare_karst_data(counts, times = c(0, 2)), "3 finite times")
+  expect_error(prepare_karst_data(counts[, 1, drop = FALSE]), "at least two")
 })
 
 test_that("the series template gives the two-timepoint objective for two timepoints", {
   sim <- simulate_sparse_joint_counts()
-  data <- prepare_alfak2_data(sim$counts, dt = sim$dt, beta = sim$beta)
+  data <- prepare_karst_data(sim$counts, dt = sim$dt, beta = sim$beta)
   pair <- sparse_joint_problem(data, series_settings())
   series <- sparse_joint_problem(data, series_settings(template = "series"))
   expect_equal(pair$template, "pair")
@@ -47,8 +47,8 @@ test_that("the series template gives the two-timepoint objective for two timepoi
   at_series$log_scale <- at_pair$log_scale
   # The level of the balance prior, which only the two-time-point template has,
   # stays fixed as in a fit.
-  a <- TMB::MakeADFun(pair$tmb_data, at_pair, map = list(balance_level = factor(NA)), DLL = "alfak2", silent = TRUE)
-  b <- TMB::MakeADFun(series$tmb_data, at_series, DLL = "alfak2", silent = TRUE)
+  a <- TMB::MakeADFun(pair$tmb_data, at_pair, map = list(balance_level = factor(NA)), DLL = "karst", silent = TRUE)
+  b <- TMB::MakeADFun(series$tmb_data, at_series, DLL = "karst", silent = TRUE)
   expect_equal(b$fn(), a$fn(), tolerance = 1e-12)
   expect_equal(b$gr(), a$gr(), tolerance = 1e-10)
   expect_equal(b$report()$log_intensity[, 1L], as.numeric(a$report()$log_intensity1), tolerance = 1e-12)
@@ -59,7 +59,7 @@ test_that("two-timepoint fits are the same with either template", {
   fit <- function() fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05, max_cn = 4,
                                      initial_state = "balance", history = 100)
   pair <- fit()
-  old <- options(alfak2.sparse_joint_template = "series")
+  old <- options(karst.sparse_joint_template = "series")
   series <- tryCatch(fit(), finally = options(old))
   expect_null(pair$settings$template)
   expect_equal(series$settings$template, "series")
@@ -74,7 +74,7 @@ test_that("two-timepoint fits are the same with either template", {
 
 test_that("compiled series model evaluates the closed form at every time point", {
   sim <- simulate_series_counts()
-  data <- prepare_alfak2_data(sim$counts, beta = sim$beta, times = sim$times)
+  data <- prepare_karst_data(sim$counts, beta = sim$beta, times = sim$times)
   problem <- sparse_joint_problem(data, series_settings(initial_state = "free"))
   expect_equal(problem$template, "series")
   expect_equal(problem$tmb_data$tau, c(20, 40, 60))
@@ -85,7 +85,7 @@ test_that("compiled series model evaluates the closed form at every time point",
   parameters$zeta <- stats::rnorm(n, -1, 2)
   parameters$g <- stats::rnorm(n, 0, 0.1)
   parameters$theta <- c(0.3, -0.2, 0.1)
-  objective <- TMB::MakeADFun(problem$tmb_data, parameters, DLL = "alfak2", silent = TRUE)
+  objective <- TMB::MakeADFun(problem$tmb_data, parameters, DLL = "karst", silent = TRUE)
   report <- objective$report()
   net <- (2 * exp(problem$kernel$log_self) - 1) * exp(parameters$g)
   reference <- problem$tmb_data$reference + 1L
@@ -103,7 +103,7 @@ test_that("a series fit uses every time point", {
   sim <- simulate_series_counts()
   fit <- fit_sparse_joint(sim$counts, times = sim$times, beta = sim$beta, birth_rate = 1, major_frequency = 0.05,
                           max_cn = 4)
-  expect_s3_class(fit, "alfak2_sparse_joint_fit")
+  expect_s3_class(fit, "karst_sparse_joint_fit")
   expect_true(fit$diagnostics$finite_uncertainty)
   expect_equal(fit$diagnostics$times, c(0, 20, 40, 60))
   expect_equal(fit$diagnostics$n_major, 3L)
@@ -132,7 +132,7 @@ test_that("a series fit uses every time point", {
   expect_true(all(is.finite(prediction$relative_fitness)) && all(prediction$relative_sd > 0))
   expect_equal(sparse_joint_rebuild(fit, posterior = FALSE)$g, fit$posterior$g, tolerance = 1e-6)
   # The main entry point takes the intervals or the times.
-  entry <- fit_alfak2(sim$counts, dt = c(20, 20, 20), beta = sim$beta,
+  entry <- fit_karst(sim$counts, dt = c(20, 20, 20), beta = sim$beta,
                       sparse_joint_control = list(birth_rate = 1, major_frequency = 0.05, max_cn = 4,
                                                   history = fit$settings$history))
   expect_equal(entry$summary$fitness_mean, fit$summary$fitness_mean, tolerance = 1e-8)
@@ -150,8 +150,8 @@ test_that("a karyotype first seen later is centred on its frequency then", {
 test_that("a timepoint with no cell next to a major names the timepoints the majors come from", {
   counts <- rbind("2.2.2" = c(0, 20, 15), "3.3.2" = c(1, 0, 0), "1.1.2" = c(1, 0, 0), "2.4.2" = c(1, 0, 0),
                   "4.2.3" = c(1, 0, 0))
-  err <- tryCatch(fit_sparse_joint(counts, dt = c(10, 10), beta = 0.001), alfak2_domain_coverage_error = function(e) e)
-  expect_s3_class(err, "alfak2_domain_coverage_error")
+  err <- tryCatch(fit_sparse_joint(counts, dt = c(10, 10), beta = 0.001), karst_domain_coverage_error = function(e) e)
+  expect_s3_class(err, "karst_domain_coverage_error")
   expect_match(conditionMessage(err), "^A timepoint has no cell inside the model domain\\. ")
   expect_match(conditionMessage(err), "the majors come from t1, t2, it shares no karyotype with another timepoint",
                fixed = TRUE)
@@ -160,7 +160,7 @@ test_that("a timepoint with no cell next to a major names the timepoints the maj
 
 test_that("functions that take two timepoints say so", {
   sim <- simulate_series_counts()
-  expect_error(fit_alfak2(sim$counts, dt = c(20, 20, 20), beta = sim$beta, pipeline = "two_layer"),
+  expect_error(fit_karst(sim$counts, dt = c(20, 20, 20), beta = sim$beta, pipeline = "two_layer"),
                "two_layer pipeline fits two timepoints")
   expect_error(fit_sparse_joint_cohort(list(a = sim$counts, b = sim$counts[, 1:2]), dt = 20),
                "two timepoints per dataset; a has 4")
@@ -223,7 +223,7 @@ test_that("a time point in between with no counted cell is left out", {
     expect_warning(
       fit <- fit_sparse_joint(counts, times = sim$times, beta = sim$beta, max_cn = 4, history = 60,
                               intermediate = mode, intermediate_weight = if (mode == "majors") 1),
-      class = "alfak2_samples_left_out_warning")
+      class = "karst_samples_left_out_warning")
     # The same as the fit to the other time points.
     rest <- fit_sparse_joint(counts[, -2L], times = sim$times[-2L], beta = sim$beta, max_cn = 4, history = 60,
                              intermediate = mode, intermediate_weight = if (mode == "majors") 1)
@@ -250,18 +250,18 @@ test_that("a time point in between with no counted cell is left out", {
   expect_equal(pair$summary, two$summary)
   expect_null(two$diagnostics$dropped_samples)
   expect_equal(pair$diagnostics$dropped_samples$sample, 2:3)
-  # as_alfakR() takes its karyotypes and level from the input as given.
-  out <- as_alfakR(pair, minobs = 2, nboot = 3, xval = FALSE)
+  # as_alfak() takes its karyotypes and level from the input as given.
+  out <- as_alfak(pair, minobs = 2, nboot = 3, xval = FALSE)
   expect_true(far %in% out$landscape$k)
   plain <- pair
   plain$input <- NULL
-  expect_false(far %in% as_alfakR(plain, minobs = 2, nboot = 3, xval = FALSE)$landscape$k)
+  expect_false(far %in% as_alfak(plain, minobs = 2, nboot = 3, xval = FALSE)$landscape$k)
   # A first or a last time point with no cell in the domain still stops the fit.
   last <- counts
   last[, 4L] <- 0
   last[far, 4L] <- 2
   expect_error(fit_sparse_joint(last, times = sim$times, beta = sim$beta, max_cn = 4, history = 60),
-               class = "alfak2_domain_coverage_error")
+               class = "karst_domain_coverage_error")
 })
 
 test_that("with majors only, a time point in between with cells on their neighbours only is left out", {
@@ -275,12 +275,12 @@ test_that("with majors only, a time point in between with cells on their neighbo
   expect_warning(
     fit <- fit_sparse_joint(counts, times = sim$times, beta = sim$beta, max_cn = 4, history = 60,
                             intermediate_weight = 1),
-    "no cell on the major karyotypes", class = "alfak2_samples_left_out_warning")
+    "no cell on the major karyotypes", class = "karst_samples_left_out_warning")
   expect_equal(fit$diagnostics$dropped_samples$sample, 2L)
   expect_gt(fit$diagnostics$dropped_samples$cells_in_domain, 0)
   # Counted for every karyotype, the time point says something and stays.
   expect_no_warning(all <- fit_sparse_joint(counts, times = sim$times, beta = sim$beta, max_cn = 4, history = 60,
                                             intermediate = "all"),
-                    class = "alfak2_samples_left_out_warning")
+                    class = "karst_samples_left_out_warning")
   expect_equal(nrow(all$diagnostics$dropped_samples), 0L)
 })

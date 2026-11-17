@@ -47,9 +47,9 @@ fit_local_posterior(
 )
 }
 \arguments{
-\item{data}{An \code{alfak2_data} object.}
+\item{data}{An \code{karst_data} object.}
 
-\item{graph}{Optional \code{alfak2_graph}; defaults to a local depth-2 graph.}
+\item{graph}{Optional \code{karst_graph}; defaults to a local depth-2 graph.}
 
 \item{observation_model}{\code{"multinomial"} or \code{"dirichlet_multinomial"}.}
 
@@ -160,7 +160,7 @@ multistart jitter applied to eta, fitness, and context-effect initial values.}
 local fits leave this as \code{NULL}.}
 }
 \value{
-An \code{alfak2_local_fit} object.
+An \code{karst_local_fit} object.
 }
 \description{
 The likelihood and hierarchical prior objective are implemented in TMB. This

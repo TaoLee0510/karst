@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the alfak2 flowcharts (PDF) included by doc/alfak2_method.tex.
+# Build the karst flowcharts (PDF) included by doc/karst_method.tex.
 #   doc/flowcharts/build.sh
 set -euo pipefail
 cd "$(dirname "$0")"

@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # Fig. 4d check, step 3: refit one Salehi trajectory (first and last time
-# point, as the benchmark's "alfak2 2 time points" arm) under variants that
-# isolate what drives alfak2's delta f of unseen neighbours:
+# point, as the benchmark's "karst 2 time points" arm) under variants that
+# isolate what drives karst's delta f of unseen neighbours:
 #   baseline    the benchmark's call (beta 5e-5, min_cn 0)
 #   depth320    every time point drawn down to 320 cells without replacement
 #               (the PDX median), seed fixed per trajectory
@@ -9,13 +9,13 @@
 #   history_T   history fixed at the interval (no longer candidates)
 #   free        initial_state = "free" (no balance prior)
 # For each variant: f of every frequent karyotype (at least min_obs cells over
-# the time points, as alfakR's fq) and of its 44 one-chromosome neighbours from
+# the time points, as alfak's fq) and of its 44 one-chromosome neighbours from
 # predict(); delta f = f(frequent) - f(neighbour), with the neighbour's source.
 #
 # Runs inside the benchmark image (run_hpc.sh), one trajectory per array task:
 #   Rscript refit_variants.R TASKS.tsv OUT_DIR   (SLURM_ARRAY_TASK_ID = row)
 
-suppressPackageStartupMessages(library(alfak2))
+suppressPackageStartupMessages(library(karst))
 args <- commandArgs(TRUE)
 tasks <- utils::read.delim(args[1], stringsAsFactors = FALSE)
 out_dir <- args[2]

@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
-# Fig. 4d check, step 2: is alfak2's delta f between a frequent karyotype and
+# Fig. 4d check, step 2: is karst's delta f between a frequent karyotype and
 # its one-chromosome neighbours right where the truth is known?
 #
 # Reads the ABM and missegregation fits of the paper benchmark round 05a8855
 # (read only) and the true Gaussian-random-field landscapes of the paper's
 # simulations. For each fit (minobs 10), each frequent karyotype (landscape
 # fq) and each of its 44 neighbours: delta f estimated (landscape mean) and
-# true (the paper's getf), and where alfak2's value of the neighbour comes
+# true (the paper's getf), and where karst's value of the neighbour comes
 # from (observed_D, unseen_D, observed_out, trend; see decompose.R).
 #
 # Runs inside the benchmark image on HPC (run_hpc.sh):
@@ -43,9 +43,9 @@ one_sim <- function(src, sim_id) {
   w <- wavelength(sim_id)
   rows <- list()
   for (design in c("w2_ends", "w4_ends", "w8_ends", "w4_all", "w8_all")) {
-    a2dir <- file.path(fits_root, src, sim_id, design, "alfak2", "minobs_10")
-    fit <- if (file.exists(file.path(a2dir, "alfak2_fit.Rds"))) readRDS(file.path(a2dir, "alfak2_fit.Rds")) else NULL
-    for (method in c("alfak2", "alfakR")) {
+    a2dir <- file.path(fits_root, src, sim_id, design, "karst", "minobs_10")
+    fit <- if (file.exists(file.path(a2dir, "karst_fit.Rds"))) readRDS(file.path(a2dir, "karst_fit.Rds")) else NULL
+    for (method in c("karst", "alfak")) {
       lp <- file.path(fits_root, src, sim_id, design, method, "minobs_10", "landscape.Rds")
       if (!file.exists(lp)) next
       ls <- readRDS(lp)

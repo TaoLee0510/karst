@@ -14,7 +14,7 @@ global_accuracy_prior <- function() {
 
 test_that("graph CV is a proper predictive score including latent variance", {
   args <- global_accuracy_chain()
-  out <- do.call(alfak2_graph_posterior_cpp, args)
+  out <- do.call(karst_graph_posterior_cpp, args)
   K <- solve(global_accuracy_prior())
   expected <- vapply(args$sigma_obs_grid, function(sigma) {
     C <- K + diag(0.01 + sigma^2, 3)
@@ -37,7 +37,7 @@ test_that("correlated anchor posterior and CV match exact Gaussian conditioning"
   covariance <- matrix(c(.01, .006, .002, .006, .01, .004, .002, .004, .01), 3)
   args$anchor_covariance <- covariance
   args$compute_covariance <- TRUE
-  out <- do.call(alfak2_graph_posterior_cpp, args)
+  out <- do.call(karst_graph_posterior_cpp, args)
   noise <- covariance + diag(out$sigma_obs^2, 3)
   expected_cov <- solve(global_accuracy_prior() + solve(noise))
   expected_mean <- as.numeric(expected_cov %*% solve(noise, args$anchor_mean))
@@ -79,7 +79,7 @@ global_accuracy_local <- function(graph, means, variances = rep(.01, length(mean
     support_distance = graph$support_distance, fitness_mean = means,
     fitness_sd = sqrt(variances), covariance_status = "TMB_sdreport",
     effective_count_total = counts, count_total = counts
-  )), class = "alfak2_local_fit")
+  )), class = "karst_local_fit")
 }
 
 test_that("graph fitting uses aligned joint local covariance and returns contrasts", {

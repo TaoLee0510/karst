@@ -14,7 +14,7 @@
 #   fitted           run forward with the fitted birth rates;
 #   true fitness     run forward with the true rates: the best this forward
 #                    model and this starting point can do.
-# Set STT_R_LIB to the library holding the alfak2 build under test.
+# Set STT_R_LIB to the library holding the karst build under test.
 
 library_dir <- Sys.getenv("STT_R_LIB", unset = "")
 if (nzchar(library_dir)) .libPaths(c(library_dir, .libPaths()))
@@ -34,7 +34,7 @@ if (identical(split, "heldout") && !isTRUE(option("unseal-heldout", FALSE))) {
 horizon <- as.numeric(option("horizon", "180"))
 workers <- as.integer(option("workers", "2"))
 config <- stt_config()
-method <- config$methods$alfak2_sparse_joint
+method <- config$methods$karst_sparse_joint
 index <- utils::read.csv(file.path(config$output_dir, sprintf("dataset_index_%s.csv", split)), stringsAsFactors = FALSE)
 index <- index[index$scoreboard & index$role == "core", ]
 Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
@@ -48,15 +48,15 @@ forecast <- function(dataset_id) {
   if (is.null(later) || dataset$bottleneck > 0) return(NULL)
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
-  fit <- alfak2::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta,
+  fit <- karst::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta,
                                   birth_rate = method$birth_rate, min_cn = method$min_cn, max_cn = method$max_cn)
   summary <- fit$summary
-  karyotypes <- alfak2:::parse_karyotypes(summary$karyotype)
-  kernel <- alfak2:::sparse_division_kernel(karyotypes, dataset$beta)
+  karyotypes <- karst:::parse_karyotypes(summary$karyotype)
+  kernel <- karst:::sparse_division_kernel(karyotypes, dataset$beta)
   self <- 2 * exp(kernel$log_self) - 1
   start <- log(summary$expected_t1)
   run <- function(log_birth) {
-    exp(alfak2:::closed_form_forward_r(start, log_birth, kernel, horizon, order = 1L) - max(start))
+    exp(karst:::closed_form_forward_r(start, log_birth, kernel, horizon, order = 1L) - max(start))
   }
   true_rate <- stt_true_growth_rate(summary$karyotype, dataset$truth)
   truth_later <- later[summary$karyotype]

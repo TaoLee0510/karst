@@ -13,8 +13,8 @@ def main():
     parser.add_argument("--part",type=int,choices=[0,1],required=True)
     parser.add_argument("--cases",nargs="*")
     args=parser.parse_args()
-    repo=Path(os.environ["ALFAK2_REPO"]);root=repo/"validation/observation_design"
-    src=Path(os.environ["ALFAK2_ADAPTIVE_SOURCE"]);out=Path(os.environ["ALFAK2_ADAPTIVE_OUTPUT"])
+    repo=Path(os.environ["KARST_REPO"]);root=repo/"validation/observation_design"
+    src=Path(os.environ["KARST_ADAPTIVE_SOURCE"]);out=Path(os.environ["KARST_ADAPTIVE_OUTPUT"])
     out.mkdir(exist_ok=True)
     spec=importlib.util.spec_from_file_location("guard",root/"results/control_source_v1/bounded_run.py")
     guard=importlib.util.module_from_spec(spec);spec.loader.exec_module(guard)
@@ -32,7 +32,7 @@ def main():
     print("Adaptive controller",os.getpid(),args.mode,"cases",cases,flush=True)
     for case in cases:
         if (out/args.mode/case/"status.csv").exists():raise RuntimeError("Existing case attempt must be retained")
-        env=os.environ.copy();env.update(ALFAK2_ADAPTIVE_CASE=case,ALFAK2_ADAPTIVE_MODE=args.mode)
+        env=os.environ.copy();env.update(KARST_ADAPTIVE_CASE=case,KARST_ADAPTIVE_MODE=args.mode)
         (destination/"active_case.json").write_text(json.dumps({"case":case,"owner_pid":os.getpid()}))
         result=guard.execute(["Rscript",str(src/"run_case.R")],env,str(destination/(case+".log")),300)
         p=out/args.mode/case/"status.csv"

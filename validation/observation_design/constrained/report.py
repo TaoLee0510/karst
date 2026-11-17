@@ -19,8 +19,8 @@ def table(headers, rows):
 
 
 def main():
-    root = Path(os.environ["ALFAK2_REPO"]) / "validation/observation_design"
-    out = Path(os.environ["ALFAK2_CONSTRAINED_OUTPUT"])
+    root = Path(os.environ["KARST_REPO"]) / "validation/observation_design"
+    out = Path(os.environ["KARST_CONSTRAINED_OUTPUT"])
     status = read(out / "all_fit_status.csv")
     selected = read(out / "selected_designs.csv")
     noise = read(out / "noise/variance_decomposition.csv")

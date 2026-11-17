@@ -7,7 +7,7 @@ source(file.path(repo,"validation/accuracy_round2/common.R"))
 source(file.path(repo,"validation/accuracy_round2/score_models.R"))
 source(file.path(directory,"quadrature.R"))
 runtime <- reference_load(repo,compile=FALSE)
-parity <- as.integer(Sys.getenv("ALFAK2_PILOT_PARITY","0"))
+parity <- as.integer(Sys.getenv("KARST_PILOT_PARITY","0"))
 stopifnot(parity %in% 0:1)
 output <- file.path(directory,"results",paste0("pilot_part",parity))
 dir.create(output,recursive=TRUE,showWarnings=FALSE)
@@ -60,7 +60,7 @@ for(i in seq_len(nrow(manifest))) {
   original_fit <- runtime$pkg$fit_local_posterior
   # This bridge changes only fixture defaults to the explicitly fixed deployment
   # defaults; every conditional prior vector is checked against frozen V1.
-  bridge <- list(prepare_alfak2_data=runtime$pkg$prepare_alfak2_data,
+  bridge <- list(prepare_karst_data=runtime$pkg$prepare_karst_data,
     fit_local_posterior=function(...) {
       a <- list(...); a$eta_prior_sd <- 5; a$eta_borrowed_prior_mean <- -6
       a$eta_borrowed_prior_sd <- 1.5; a$eta_distance_penalty <- .75

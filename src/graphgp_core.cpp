@@ -1,5 +1,5 @@
 // [[Rcpp::depends(RcppEigen)]]
-#include "alfak2_core.h"
+#include "karst_core.h"
 
 using Eigen::SparseMatrix;
 using Eigen::Triplet;
@@ -120,7 +120,7 @@ static SparseMatrix<double> assemble_precision(const Rcpp::IntegerMatrix& karyot
   for (int i = 0; i < n; ++i) {
     std::vector<int> x(p);
     for (int c = 0; c < p; ++c) x[c] = karyotypes(i, c);
-    id[alfak2::make_key(x)] = i;
+    id[karst::make_key(x)] = i;
   }
 
   for (int i = 0; i < n; ++i) {
@@ -130,8 +130,8 @@ static SparseMatrix<double> assemble_precision(const Rcpp::IntegerMatrix& karyot
       std::vector<int> lo = x, hi = x;
       lo[c] -= 1;
       hi[c] += 1;
-      auto it_lo = id.find(alfak2::make_key(lo));
-      auto it_hi = id.find(alfak2::make_key(hi));
+      auto it_lo = id.find(karst::make_key(lo));
+      auto it_hi = id.find(karst::make_key(hi));
       if (it_lo != id.end() && it_hi != id.end()) {
         add_penalty(triplets,
                     {{it_lo->second, 1.0}, {i, -2.0}, {it_hi->second, 1.0}},
@@ -145,9 +145,9 @@ static SparseMatrix<double> assemble_precision(const Rcpp::IntegerMatrix& karyot
         xd[c2] += 1;
         xcd[c1] += 1;
         xcd[c2] += 1;
-        auto it_c = id.find(alfak2::make_key(xc));
-        auto it_d = id.find(alfak2::make_key(xd));
-        auto it_cd = id.find(alfak2::make_key(xcd));
+        auto it_c = id.find(karst::make_key(xc));
+        auto it_d = id.find(karst::make_key(xd));
+        auto it_cd = id.find(karst::make_key(xcd));
         if (it_c != id.end() && it_d != id.end() && it_cd != id.end()) {
           add_penalty(triplets,
                       {{i, 1.0}, {it_c->second, -1.0},
@@ -332,7 +332,7 @@ static CvScoreResult cv_score_grid(const Rcpp::IntegerMatrix& karyotypes,
 }
 
 // [[Rcpp::export]]
-Rcpp::List alfak2_graph_posterior_cpp(Rcpp::IntegerMatrix karyotypes,
+Rcpp::List karst_graph_posterior_cpp(Rcpp::IntegerMatrix karyotypes,
                                       Rcpp::IntegerVector edge_from,
                                       Rcpp::IntegerVector edge_to,
                                       Rcpp::NumericVector edge_weight,

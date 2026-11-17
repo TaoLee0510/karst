@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # Numerical compatibility only: no generating truths are used here.
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-out<-Sys.getenv("ALFAK2_ADAPTIVE_OUTPUT")
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+out<-Sys.getenv("KARST_ADAPTIVE_OUTPUT")
 source(file.path(root,"results/computation_source_v4/score.R"))
 old_status<-read.csv(file.path(root,"results/analysis_input/all_fit_status.csv"))
 manifest<-read.csv(file.path(root,"results/dataset_manifest.csv"))

@@ -136,7 +136,7 @@ sparse_joint_coverage_error <- function(coverage, first, by_sample = FALSE, unit
             where, plural(row$cells, "cell"), source, shared, format(row$median_distance_outside))
   }, character(1))
   message <- paste(c(first, reasons, "The time points may be too far apart, or one of them may be noisy."), collapse = " ")
-  stop(errorCondition(message, class = "alfak2_domain_coverage_error", coverage = coverage, call = NULL))
+  stop(errorCondition(message, class = "karst_domain_coverage_error", coverage = coverage, call = NULL))
 }
 
 # Coverage of a dataset's domain; an error if a timepoint in `required` (all by
@@ -229,7 +229,7 @@ sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random,
   # The balance prior on initial abundances is not log-linear either: its
   # curvature is taken at zero residual in the same way.
   if (!series_method) expected$balance_offset <- as.numeric(report$balance_residual)
-  information <- TMB::MakeADFun(expected, parameters, map = map, random = random, DLL = "alfak2",
+  information <- TMB::MakeADFun(expected, parameters, map = map, random = random, DLL = "karst",
                                 silent = TRUE, inner.control = inner_control)$env$spHess(mode, random = TRUE)
   factor <- Matrix::Cholesky(information, LDL = FALSE)
   n <- nrow(information)
@@ -296,7 +296,7 @@ sparse_joint_coef_covariance <- function(solver, coef_index = which(solver$names
 sparse_joint_default_calibration <- c(floor = 0.009, deficit = 0.6, deficit_unobserved = 1.1)
 
 # Calibration constants in full. Without `deficit_unobserved`, unobserved
-# karyotypes take the deficit of observed ones, as up to alfak2 33a045c.
+# karyotypes take the deficit of observed ones, as up to karst 33a045c.
 sparse_joint_validate_calibration <- function(calibration) {
   if (is.null(calibration)) return(c(floor = 0, deficit = 0, deficit_unobserved = 0))
   two <- c("floor", "deficit")
@@ -384,7 +384,7 @@ sparse_joint_fitness_columns <- function(self, log_birth, log_birth_sd) {
 
 # Probability that a daughter has exactly its parent's karyotype.
 sparse_joint_self_probability <- function(karyotypes, beta) {
-  stay <- vapply(0:max(karyotypes), function(cn) alfak2_pij_cpp(cn, cn, beta), numeric(1))
+  stay <- vapply(0:max(karyotypes), function(cn) karst_pij_cpp(cn, cn, beta), numeric(1))
   exp(rowSums(matrix(log(stay)[karyotypes + 1L], nrow = nrow(karyotypes))))
 }
 
@@ -433,14 +433,14 @@ sparse_joint_uncounted_samples <- function(coverage, intermediate) {
 }
 
 # The data with only the time points in `kept` (in order, the first among them),
-# as prepare_alfak2_data() would give them: karyotypes with no cell left are
+# as prepare_karst_data() would give them: karyotypes with no cell left are
 # dropped.
 sparse_joint_keep_samples <- function(data, kept) {
-  times <- alfak2_data_times(data)[kept]
+  times <- karst_data_times(data)[kept]
   times <- times - times[[1L]]
   counts <- data$counts[, kept, drop = FALSE]
   counts <- counts[rowSums(counts) > 0, , drop = FALSE]
-  new_alfak2_data(counts = counts, dt = times[[length(times)]], beta = data$beta,
+  new_karst_data(counts = counts, dt = times[[length(times)]], beta = data$beta,
                   metadata = data$metadata, times = if (length(kept) > 2L) times else NULL)
 }
 
@@ -507,7 +507,7 @@ sparse_joint_problem <- function(data, settings) {
   counts_data <- if (template == "pair") {
     list(model = "sparse_joint", y0 = domain$y0, y1 = domain$y1, dt = data$dt)
   } else {
-    list(model = "sparse_joint_series", y = domain$y, tau = alfak2_data_times(data)[-1L],
+    list(model = "sparse_joint_series", y = domain$y, tau = karst_data_times(data)[-1L],
          sample_weight = attr(used, "sample_weight"))
   }
   tmb_data <- c(counts_data, list(
@@ -564,7 +564,7 @@ sparse_joint_problem <- function(data, settings) {
 sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zeta_prior_sd = NULL,
                                  design = NULL, posterior = TRUE) {
   if (is.null(fit$settings) || is.null(fit$posterior)) {
-    stop("This fit predates stored settings; refit it with the current alfak2.", call. = FALSE)
+    stop("This fit predates stored settings; refit it with the current karst.", call. = FALSE)
   }
   problem <- sparse_joint_problem(fit$data, fit$settings)
   tmb_data <- problem$tmb_data
@@ -582,7 +582,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
   map <- problem$map
   map$log_scale <- factor(rep(NA, length(parameters$log_scale)))
   inner_control <- fit$settings$inner_control
-  objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = problem$random, DLL = "alfak2",
+  objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = problem$random, DLL = "karst",
                               silent = TRUE, inner.control = inner_control)
   if (!posterior) {
     objective$fn(numeric(0))
@@ -627,7 +627,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #' (`diagnostics$dropped_samples`). Its depth is free, so such a time point says
 #' nothing under the model, and the fit is the fit to the other time points.
 #' Leaving it out is the limit of its own likelihood. The input as given is
-#' kept in `input`, for [as_alfakR()].
+#' kept in `input`, for [as_alfak()].
 #'
 #' With `series` `"pairwise"` or `"state_space"`, each pair of consecutive
 #' time points has its own domain, and both time points of a pair need a cell in it.
@@ -648,7 +648,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #' cells lie inside the domain. If a timepoint has none, typically because
 #' every major karyotype comes from the other time point and the two time points share
 #' no karyotype, there is nothing to fit and the function stops with an error
-#' of class `alfak2_domain_coverage_error`. Its message begins "A timepoint
+#' of class `karst_domain_coverage_error`. Its message begins "A timepoint
 #' has no cell inside the model domain." and its `coverage` element holds the
 #' same table. [check_sparse_joint_counts()] summarises a count matrix before
 #' fitting.
@@ -661,12 +661,12 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #' itself (healthy inner Hessian, the same objective from its own mode, no
 #' better inner mode from the initial values, a small finite-difference
 #' gradient). `diagnostics$convergence` is 0 when the point was accepted and 1
-#' when not, with a warning of class `alfak2_convergence_warning`;
+#' when not, with a warning of class `karst_convergence_warning`;
 #' `diagnostics$optimisation` tells how (`status`, `stage`, `reasons`,
 #' `restarts`, `evaluations`, `nlminb_convergence`, `nlminb_message`,
 #' `min_eigen`, `projected_gradient`, `objective_difference`,
 #' `joint_difference`, `flat_direction`, `flat_composition`). The fit itself
-#' is the same as before this check (alfak2 ff13cf4); so is the choice of
+#' is the same as before this check (karst ff13cf4); so is the choice of
 #' history, by the lowest objective.
 #'
 #' Most fits that are not accepted have a karyotype with very few cells, whose
@@ -706,7 +706,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #' conclusion depends on it.
 #'
 #' @param counts Count matrix with karyotype row names and one column per
-#'   timepoint, at least two, in time order; or an `alfak2_data` object.
+#'   timepoint, at least two, in time order; or an `karst_data` object.
 #' @param dt Time between the time points, if `counts` is a matrix: one interval
 #'   for two timepoints, or one per pair of consecutive timepoints. See also
 #'   `times`.
@@ -759,7 +759,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   landscapes were clearly less accurate (correlation with the truth 0.58
 #'   against 0.75). Do not use it at such intervals
 #'   (validation/sparse_joint/cloud_level). With more than two time points
-#'   `"auto"` is `"balance"`. alfak2 827c4b5 had `"auto"` as its default.
+#'   `"auto"` is `"balance"`. karst 827c4b5 had `"auto"` as its default.
 #' @param auto_level With `initial_state = "auto"`, the log factor of the
 #'   cloud over the balance above which the fit is `"free"`.
 #' @param balance_level With the balance prior and two time points, whether
@@ -777,7 +777,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   each and the fit with the highest marginal likelihood is kept, so a fit
 #'   takes up to six times as long; `diagnostics$history_profile` lists the
 #'   candidates. A single value fixes the history; several values are the
-#'   candidates. Up to alfak2 8327282 the history was the interval itself
+#'   candidates. Up to karst 8327282 the history was the interval itself
 #'   (`history = dt`). With time points a few weeks apart that is far shorter than
 #'   the population has been evolving: the balance prior then holds the
 #'   neighbours of the major karyotypes far below their observed abundance, and
@@ -788,7 +788,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   that turn the model's posterior standard deviation of relative fitness
 #'   into the reported `relative_sd`; see Details. Without
 #'   `deficit_unobserved`, unobserved karyotypes take `deficit`, as up to
-#'   alfak2 33a045c (`c(floor = 0.009, deficit = 0.6)`). `NULL` reports the
+#'   karst 33a045c (`c(floor = 0.009, deficit = 0.6)`). `NULL` reports the
 #'   model's own.
 #' @param control List passed to [stats::nlminb()] for the first search of
 #'   the scale parameters; see Details for what follows it.
@@ -819,7 +819,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   shortest history), at most 1, so that a population that drifts between
 #'   time points (small passaging bottlenecks) leans on the first and the last.
 #'
-#' @return An `alfak2_sparse_joint_fit` object. `summary` has one row per
+#' @return An `karst_sparse_joint_fit` object. `summary` has one row per
 #'   domain karyotype, with its counts (`count_t0`, `count_t1`, ..., one
 #'   column per timepoint) and the counts the fit expects (`expected_t0`, ...);
 #'   `fitness_mean` is the net growth rate per unit of `dt`,
@@ -866,12 +866,12 @@ fit_sparse_joint <- function(counts,
                              series = c("anchored", "pairwise", "state_space"),
                              intermediate = c("majors", "all"),
                              intermediate_weight = NULL) {
-  data <- if (inherits(counts, "alfak2_data")) {
+  data <- if (inherits(counts, "karst_data")) {
     counts
   } else if (is.null(times)) {
-    prepare_alfak2_data(counts, dt = dt, beta = beta)
+    prepare_karst_data(counts, dt = dt, beta = beta)
   } else {
-    prepare_alfak2_data(counts, beta = beta, times = times)
+    prepare_karst_data(counts, beta = beta, times = times)
   }
   validate_scalar(birth_rate, "birth_rate", lower = .Machine$double.eps)
   validate_scalar(birth_rate_log_sd, "birth_rate_log_sd", lower = .Machine$double.eps)
@@ -893,7 +893,7 @@ fit_sparse_joint <- function(counts,
   # implemented in the two-time-point template, which an internal option can
   # replace by the series template to check that both give the same fit).
   if (initial_state == "auto" &&
-      (ncol(data$counts) != 2L || identical(getOption("alfak2.sparse_joint_template"), "series"))) {
+      (ncol(data$counts) != 2L || identical(getOption("karst.sparse_joint_template"), "series"))) {
     initial_state <- "balance"
   }
   if (initial_state == "auto") {
@@ -906,7 +906,7 @@ fit_sparse_joint <- function(counts,
     check$history <- data$dt
     started <- proc.time()[["elapsed"]]
     first <- withCallingHandlers(do.call(fit_sparse_joint, check),
-                                 alfak2_convergence_warning = function(w) invokeRestart("muffleWarning"))
+                                 karst_convergence_warning = function(w) invokeRestart("muffleWarning"))
     level <- if (is.null(first$diagnostics$balance_level)) NA_real_ else first$diagnostics$balance_level
     chosen <- if (is.finite(level) && level > auto_level) "free" else "balance"
     arguments$initial_state <- chosen
@@ -953,7 +953,7 @@ fit_sparse_joint <- function(counts,
     if (length(left_out)) {
       # `uncovered`: the time point without a cell in its pair's domain, the left
       # out one itself or a first or last time point next to it.
-      detail <- data.frame(sample = left_out, time = alfak2_data_times(data)[left_out],
+      detail <- data.frame(sample = left_out, time = karst_data_times(data)[left_out],
                            timepoint = colnames(counts)[left_out], cells = colSums(counts)[left_out],
                            uncovered = pairs$uncovered, stringsAsFactors = FALSE)
       reason <- paste("a pair of consecutive time points had a time point with no cell in its domain",
@@ -971,7 +971,7 @@ fit_sparse_joint <- function(counts,
     # is left out (see sparse_joint_uncounted_samples()), and the rest fitted.
     left_out <- sparse_joint_uncounted_samples(coverage, intermediate)
     if (length(left_out)) {
-      detail <- cbind(data.frame(sample = left_out, time = alfak2_data_times(data)[left_out]),
+      detail <- cbind(data.frame(sample = left_out, time = karst_data_times(data)[left_out]),
                       coverage[left_out, , drop = FALSE])
       reason <- sprintf("no cell on the %s", if (intermediate == "majors") "major karyotypes" else "model domain")
     }
@@ -983,12 +983,12 @@ fit_sparse_joint <- function(counts,
       sprintf(paste0("Left out %d of %d time points (%s): %s. Such a time point carries no information ",
                      "under the model; see diagnostics$dropped_samples."),
               length(left_out), n_input, paste(colnames(counts)[left_out], collapse = ", "), reason),
-      class = "alfak2_samples_left_out_warning", call = NULL))
+      class = "karst_samples_left_out_warning", call = NULL))
     arguments <- mget(names(formals(sys.function())), envir = environment())
     arguments$counts <- sparse_joint_keep_samples(data, setdiff(seq_len(n_input), left_out))
     fit <- do.call(fit_sparse_joint, arguments)
     fit$diagnostics$dropped_samples <- dropped_samples
-    # The input as given, for as_alfakR(): alfakR picks its karyotypes from
+    # The input as given, for as_alfak(): alfak picks its karyotypes from
     # every time point.
     fit$input <- data
     return(fit)
@@ -1003,7 +1003,7 @@ fit_sparse_joint <- function(counts,
       arguments$history <- history[[1L]]
       arguments$intermediate_weight <- 1
       first <- withCallingHandlers(do.call(fit_sparse_joint, arguments),
-                                   alfak2_convergence_warning = function(w) invokeRestart("muffleWarning"))
+                                   karst_convergence_warning = function(w) invokeRestart("muffleWarning"))
       dispersion <- sparse_joint_intermediate_dispersion(first)
       intermediate_weight <- if (is.finite(dispersion)) 1 / max(1, dispersion) else 1
     }
@@ -1019,7 +1019,7 @@ fit_sparse_joint <- function(counts,
     fits <- lapply(history, function(h) {
       arguments$history <- h
       withCallingHandlers(do.call(fit_sparse_joint, arguments),
-                          alfak2_convergence_warning = function(w) invokeRestart("muffleWarning"))
+                          karst_convergence_warning = function(w) invokeRestart("muffleWarning"))
     })
     objective <- vapply(fits, function(f) f$diagnostics$objective, numeric(1))
     convergence <- vapply(fits, function(f) f$diagnostics$convergence, numeric(1))
@@ -1056,12 +1056,12 @@ fit_sparse_joint <- function(counts,
   } else if (ncol(data$counts) > 2L) {
     settings$series <- series
     # Internal options of the evaluation (validation/sparse_joint/series_methods).
-    if (series == "pairwise") settings$pair_history <- getOption("alfak2.pair_history", "age")
-    if (series == "state_space") settings$drift <- getOption("alfak2.state_space_drift")
+    if (series == "pairwise") settings$pair_history <- getOption("karst.pair_history", "age")
+    if (series == "state_space") settings$drift <- getOption("karst.state_space_drift")
   }
   # Internal: fit two timepoints with the template for more, to check that it
   # gives the same fit.
-  if (identical(getOption("alfak2.sparse_joint_template"), "series")) settings$template <- "series"
+  if (identical(getOption("karst.sparse_joint_template"), "series")) settings$template <- "series"
   problem <- sparse_joint_problem(data, settings)
   domain <- problem$domain
   n <- length(domain$labels)
@@ -1076,7 +1076,7 @@ fit_sparse_joint <- function(counts,
   free_scale <- problem$free_scale
   map <- problem$map
   random <- problem$random
-  objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = random, DLL = "alfak2",
+  objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = random, DLL = "karst",
                               silent = TRUE, inner.control = inner_control)
   latent_names <- names(objective$env$par)[objective$env$random]
   labels <- sparse_joint_latent_labels(
@@ -1150,14 +1150,14 @@ fit_sparse_joint <- function(counts,
       min_cn = as.integer(min_cn), max_cn = as.integer(max_cn),
       seconds = proc.time()[["elapsed"]] - started
     )
-  ), class = "alfak2_sparse_joint_fit")
+  ), class = "karst_sparse_joint_fit")
   if (n_time > 2L) {
     if (!is.null(settings$series)) {
       fit$diagnostics$series <- settings$series
       if (settings$series == "pairwise") fit$diagnostics$pair_history <- settings$pair_history
       if (settings$series == "state_space") fit$diagnostics$drift <- scale[["drift"]]
     }
-    fit$diagnostics$times <- alfak2_data_times(data)
+    fit$diagnostics$times <- karst_data_times(data)
     # None left out here; a caller that left time points out replaces it.
     fit$diagnostics$dropped_samples <- cbind(data.frame(sample = integer(0), time = numeric(0)), coverage[0L, ])
   }
@@ -1176,7 +1176,7 @@ fit_sparse_joint <- function(counts,
 #' mean karyotype, and distance to the nearest major karyotype, with the
 #' residual scale as additional uncertainty.
 #'
-#' @param object An `alfak2_sparse_joint_fit`.
+#' @param object An `karst_sparse_joint_fit`.
 #' @param karyotypes Character labels or an integer matrix of karyotypes.
 #' @param ... Unused.
 #'
@@ -1189,7 +1189,7 @@ fit_sparse_joint <- function(counts,
 #'   see [fit_sparse_joint()]. Neither includes the uncertainty of the
 #'   baseline birth rate, which is common to all karyotypes.
 #' @export
-predict.alfak2_sparse_joint_fit <- function(object, karyotypes, ...) {
+predict.karst_sparse_joint_fit <- function(object, karyotypes, ...) {
   labels <- if (is.character(karyotypes)) karyotypes else format_karyotypes(as.matrix(karyotypes))
   inside <- match(labels, object$summary$karyotype)
   out <- data.frame(karyotype = labels, fitness_mean = NA_real_, fitness_sd = NA_real_,
@@ -1230,9 +1230,9 @@ predict.alfak2_sparse_joint_fit <- function(object, karyotypes, ...) {
 }
 
 #' @export
-print.alfak2_sparse_joint_fit <- function(x, ...) {
+print.karst_sparse_joint_fit <- function(x, ...) {
   d <- x$diagnostics
-  cat("<alfak2_sparse_joint_fit>\n")
+  cat("<karst_sparse_joint_fit>\n")
   cat("  states:", d$n_states, "(", d$n_major, "major )\n")
   cat("  observed karyotypes outside the domain:", d$dropped_karyotypes, "(", d$dropped_cells, "cells )\n")
   if (!is.null(d$domain_coverage)) cat("  cells in the domain:", sparse_joint_format_coverage(d$domain_coverage), "\n")

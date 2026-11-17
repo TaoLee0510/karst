@@ -49,7 +49,7 @@ centroids.}
 queries.}
 }
 \value{
-An \code{alfak2_grf_landscape} object.
+An \code{karst_grf_landscape} object.
 }
 \description{
 Constructs a lightweight Gaussian-random-field fitness oracle following the

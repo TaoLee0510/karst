@@ -1,16 +1,16 @@
 #!/usr/bin/env Rscript
 # Deterministic Laplace-evidence verification at saved modes; no optimization.
 # Original worker failures and caches are never overwritten.
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
 root<-file.path(repo,"validation/observation_design")
-out<-Sys.getenv("ALFAK2_DESIGN_OUTPUT",file.path(root,"results"))
-Sys.setenv(ALFAK2_DESIGN_SOURCE=file.path(out,"computation_source_v4"))
+out<-Sys.getenv("KARST_DESIGN_OUTPUT",file.path(root,"results"))
+Sys.setenv(KARST_DESIGN_SOURCE=file.path(out,"computation_source_v4"))
 source(file.path(root,"model.R"))
 source(file.path(repo,"validation/accuracy_round2/oracle_posterior_reference.R"))
 source(file.path(repo,"validation/baseline_quadrature/quadrature.R"))
 source(file.path(repo,"validation/accuracy_round2/common.R"))
-case_id<-Sys.getenv("ALFAK2_DESIGN_RECONSTRUCT_CASE","design_rough_L01_R1_composition_anchor600")
-input<-Sys.getenv("ALFAK2_DESIGN_RECONSTRUCT_INPUT","")
+case_id<-Sys.getenv("KARST_DESIGN_RECONSTRUCT_CASE","design_rough_L01_R1_composition_anchor600")
+input<-Sys.getenv("KARST_DESIGN_RECONSTRUCT_INPUT","")
 paths<-if(nzchar(input))input else file.path(out,paste0("fits_",0:1),paste0(case_id,"_result.rds"))
 paths<-paths[file.exists(paths)];stopifnot(length(paths)==1L)
 original<-readRDS(paths);stopifnot(original$fit$status!="passed_quadrature_refinement")

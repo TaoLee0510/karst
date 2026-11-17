@@ -12,7 +12,7 @@
      expected$y <- cbind(exp(unname(mode[names(mode) == "zeta"])), exp(report$log_intensity))
 @@ -219,10 +222,40 @@
    expected$balance_offset <- as.numeric(report$balance_residual)
-   information <- TMB::MakeADFun(expected, parameters, map = map, random = random, DLL = "alfak2",
+   information <- TMB::MakeADFun(expected, parameters, map = map, random = random, DLL = "karst",
                                  silent = TRUE, inner.control = inner_control)$env$spHess(mode, random = TRUE)
 +  expected_counts <- if (is.null(expected$y)) cbind(expected$y0, expected$y1) else expected$y
 +  sparse_joint_posterior_solver(information, mode, latent, expected_counts)
@@ -30,14 +30,14 @@
 +  parameters <- objective$env$parList(par = mode)
 +  minor <- seq_along(parameters$zeta) > tmb_data$n_major
 +  parameters$zeta[minor] <- report$log_expected0[minor]
-+  joint <- TMB::MakeADFun(joint_data, parameters, map = joint_map, random = random, DLL = "alfak2",
++  joint <- TMB::MakeADFun(joint_data, parameters, map = joint_map, random = random, DLL = "karst",
 +                          silent = TRUE, inner.control = inner_control)
 +  joint_mode <- joint$env$par
 +  expected <- joint_data
 +  expected$y0 <- exp(as.numeric(report$log_expected0))
 +  expected$y1 <- exp(as.numeric(report$log_intensity1))
 +  expected$balance_offset <- as.numeric(joint$report(joint_mode)$balance_residual)
-+  information <- TMB::MakeADFun(expected, parameters, map = joint_map, random = random, DLL = "alfak2",
++  information <- TMB::MakeADFun(expected, parameters, map = joint_map, random = random, DLL = "karst",
 +                                silent = TRUE, inner.control = inner_control)$env$spHess(joint_mode, random = TRUE)
 +  sparse_joint_posterior_solver(information, joint_mode, joint$env$random, cbind(expected$y0, expected$y1))
 +}
@@ -92,7 +92,7 @@
    map <- list(log_scale = factor(rep(NA, length(parameters$log_scale))))
 +  if (!is.null(problem$map$zeta)) map$zeta <- problem$map$zeta
    inner_control <- fit$settings$inner_control
-   objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = problem$random, DLL = "alfak2",
+   objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = problem$random, DLL = "karst",
                                silent = TRUE, inner.control = inner_control)
 @@ -540,6 +593,14 @@
  #' singular. On simulated data, fits that searching again turned into
@@ -119,7 +119,7 @@
 +#'   karyotype at a time. Experimental, and for two timepoints only; see
 +#'   Details.
  #'
- #' @return An `alfak2_sparse_joint_fit` object. `summary` has one row per
+ #' @return An `karst_sparse_joint_fit` object. `summary` has one row per
  #'   domain karyotype, with its counts (`count_t0`, `count_t1`, ..., one
 @@ -659,7 +725,8 @@
                               calibration = sparse_joint_default_calibration,
@@ -128,7 +128,7 @@
 -                             times = NULL) {
 +                             times = NULL,
 +                             minor_initial = c("laplace", "quadrature")) {
-   data <- if (inherits(counts, "alfak2_data")) {
+   data <- if (inherits(counts, "karst_data")) {
      counts
    } else if (is.null(times)) {
 @@ -680,6 +747,10 @@
@@ -150,7 +150,7 @@
 +  if (minor_initial == "quadrature") settings$minor_initial <- minor_initial
    # Internal: fit two timepoints with the template for more, to check that it
    # gives the same fit.
-   if (identical(getOption("alfak2.sparse_joint_template"), "series")) settings$template <- "series"
+   if (identical(getOption("karst.sparse_joint_template"), "series")) settings$template <- "series"
 --- a/src/sparse_joint_model.h
 +++ b/src/sparse_joint_model.h
 @@ -30,8 +30,15 @@
@@ -172,8 +172,8 @@
 --- /dev/null
 +++ b/src/sparse_joint_quadrature_model.h
 @@ -0,0 +1,177 @@
-+#ifndef ALFAK2_SPARSE_JOINT_QUADRATURE_MODEL_H
-+#define ALFAK2_SPARSE_JOINT_QUADRATURE_MODEL_H
++#ifndef KARST_SPARSE_JOINT_QUADRATURE_MODEL_H
++#define KARST_SPARSE_JOINT_QUADRATURE_MODEL_H
 +
 +// The pair model of sparse_joint_model.h with the initial abundance of every
 +// non-major state integrated out by quadrature rather than by the Laplace

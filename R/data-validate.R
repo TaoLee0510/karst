@@ -42,19 +42,19 @@ match_observation_weight_mode <- function(x) {
   match.arg(x, c("likelihood", "fractional_count"))
 }
 
-alfak2_error_log_dir <- function() {
-  env_dir <- Sys.getenv("ALFAK2_ERROR_LOG_DIR", unset = NA_character_)
-  opt_dir <- getOption("alfak2.error_log_dir", default = NULL)
+karst_error_log_dir <- function() {
+  env_dir <- Sys.getenv("KARST_ERROR_LOG_DIR", unset = NA_character_)
+  opt_dir <- getOption("karst.error_log_dir", default = NULL)
   out <- if (!is.na(env_dir) && nzchar(env_dir)) env_dir else opt_dir
-  if (is.null(out)) out <- file.path(tempdir(), "alfak2_error_logs")
+  if (is.null(out)) out <- file.path(tempdir(), "karst_error_logs")
   out
 }
 
-alfak2_write_condition_log <- function(log_dir, prefix, message, diagnostics = list()) {
+karst_write_condition_log <- function(log_dir, prefix, message, diagnostics = list()) {
   dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
   stamp <- format(Sys.time(), "%Y%m%d_%H%M%OS3")
   stamp <- gsub("[^0-9A-Za-z_.-]+", "_", stamp)
-  path <- file.path(log_dir, paste0("alfak2_", prefix, "_", stamp, "_", Sys.getpid(), ".log"))
+  path <- file.path(log_dir, paste0("karst_", prefix, "_", stamp, "_", Sys.getpid(), ".log"))
   diagnostic_lines <- utils::capture.output(utils::str(diagnostics, give.attr = FALSE, vec.len = 50, max.level = 12))
   writeLines(
     c(
@@ -72,26 +72,26 @@ alfak2_write_condition_log <- function(log_dir, prefix, message, diagnostics = l
   path
 }
 
-alfak2_write_error_log <- function(message, diagnostics = list()) {
-  alfak2_write_condition_log(alfak2_error_log_dir(), "error", message, diagnostics)
+karst_write_error_log <- function(message, diagnostics = list()) {
+  karst_write_condition_log(karst_error_log_dir(), "error", message, diagnostics)
 }
 
-alfak2_warning_log_dir <- function() {
-  env_dir <- Sys.getenv("ALFAK2_WARNING_LOG_DIR", unset = NA_character_)
-  opt_dir <- getOption("alfak2.warning_log_dir", default = NULL)
+karst_warning_log_dir <- function() {
+  env_dir <- Sys.getenv("KARST_WARNING_LOG_DIR", unset = NA_character_)
+  opt_dir <- getOption("karst.warning_log_dir", default = NULL)
   out <- if (!is.na(env_dir) && nzchar(env_dir)) env_dir else opt_dir
-  if (is.null(out)) out <- alfak2_error_log_dir()
+  if (is.null(out)) out <- karst_error_log_dir()
   out
 }
 
-alfak2_write_warning_log <- function(message, diagnostics = list()) {
-  alfak2_write_condition_log(alfak2_warning_log_dir(), "warning", message, diagnostics)
+karst_write_warning_log <- function(message, diagnostics = list()) {
+  karst_write_condition_log(karst_warning_log_dir(), "warning", message, diagnostics)
 }
 
-alfak2_warn <- function(message, diagnostics = list()) {
+karst_warn <- function(message, diagnostics = list()) {
   log_error <- NULL
   log_path <- tryCatch(
-    alfak2_write_warning_log(message, diagnostics),
+    karst_write_warning_log(message, diagnostics),
     error = function(e) {
       log_error <<- conditionMessage(e)
       NA_character_
@@ -107,10 +107,10 @@ alfak2_warn <- function(message, diagnostics = list()) {
   invisible(log_path)
 }
 
-alfak2_abort <- function(message, diagnostics = list()) {
+karst_abort <- function(message, diagnostics = list()) {
   log_error <- NULL
   log_path <- tryCatch(
-    alfak2_write_error_log(message, diagnostics),
+    karst_write_error_log(message, diagnostics),
     error = function(e) {
       log_error <<- conditionMessage(e)
       NA_character_
@@ -129,6 +129,6 @@ alfak2_abort <- function(message, diagnostics = list()) {
       log_path = log_path,
       log_error = log_error
     ),
-    class = c("alfak2_error", "error", "condition")
+    class = c("karst_error", "error", "condition")
   ))
 }

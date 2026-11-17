@@ -17,7 +17,7 @@ second_layer_counts_input <- function() {
 }
 
 test_that("unified extrapolation method validation works", {
-  dat <- prepare_alfak2_data(second_layer_counts_input(), dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(second_layer_counts_input(), dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 1, min_cn = 1, max_cn = 3, max_nodes = 200)
   local <- suppressWarnings(fit_local_posterior(dat, graph, control = list(eval.max = 100, iter.max = 100)))
   expect_error(fit_extrapolation_layer(local, graph, method = "not_a_method"), "arg")
@@ -25,11 +25,11 @@ test_that("unified extrapolation method validation works", {
 
 test_that("all extrapolation methods return the common global summary schema", {
   counts <- second_layer_counts_input()
-  dat <- prepare_alfak2_data(counts, dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(counts, dt = 1, beta = 0.01)
   local_graph <- build_karyotype_graph(dat, shell_depth = 2, min_cn = 0, max_cn = 4, max_nodes = 500)
   global_graph <- build_karyotype_graph(dat, shell_depth = 3, min_cn = 0, max_cn = 4, max_nodes = 500)
   local <- suppressWarnings(fit_local_posterior(dat, local_graph, control = list(eval.max = 120, iter.max = 120)))
-  methods <- alfak2:::alfak2_extrapolation_methods()
+  methods <- karst:::karst_extrapolation_methods()
   required <- c(
     "node_id", "karyotype", "support_tier", "support_distance",
     "fitness_mean", "fitness_sd", "conf_low", "conf_high",
@@ -45,7 +45,7 @@ test_that("all extrapolation methods return the common global summary schema", {
       sigma_obs_grid = 0.05,
       graph_edge_weight = "unit"
     )
-    expect_s3_class(fit, "alfak2_global_fit")
+    expect_s3_class(fit, "karst_global_fit")
     expect_true(all(c("graph", "summary", "anchors", "hyperparameters", "tuning_grid", "diagnostics") %in% names(fit)))
     expect_true(all(required %in% names(fit$summary)))
     expect_true(any(is.finite(fit$summary$fitness_mean[fit$summary$support_distance <= 2])))
@@ -58,11 +58,11 @@ test_that("all extrapolation methods return the common global summary schema", {
 
 test_that("nearfield methods do not report reliable farfield means", {
   counts <- second_layer_counts_input()
-  dat <- prepare_alfak2_data(counts, dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(counts, dt = 1, beta = 0.01)
   local_graph <- build_karyotype_graph(dat, shell_depth = 2, min_cn = 0, max_cn = 4, max_nodes = 500)
   global_graph <- build_karyotype_graph(dat, shell_depth = 3, min_cn = 0, max_cn = 4, max_nodes = 500)
   local <- suppressWarnings(fit_local_posterior(dat, local_graph, control = list(eval.max = 120, iter.max = 120)))
-  methods <- setdiff(alfak2:::alfak2_extrapolation_methods(), "graph_gaussian_baseline")
+  methods <- setdiff(karst:::karst_extrapolation_methods(), "graph_gaussian_baseline")
   for (method in methods) {
     fit <- fit_extrapolation_layer(
       local,
@@ -114,14 +114,14 @@ test_that("second-layer benchmark metrics match hand-computed examples", {
 
 test_that("full second-layer run index preserves requested combination counts", {
   idx <- second_layer_build_run_index("full")
-  expect_equal(sum(idx$package == "alfak2"), 405)
-  expect_equal(sum(idx$package == "alfakR"), 225)
+  expect_equal(sum(idx$package == "karst"), 405)
+  expect_equal(sum(idx$package == "alfak"), 225)
   expect_equal(nrow(idx), 630)
   quick <- second_layer_build_run_index("quick")
-  expect_equal(sum(quick$package == "alfak2"), 27)
-  expect_equal(sum(quick$package == "alfakR"), 5)
+  expect_equal(sum(quick$package == "karst"), 27)
+  expect_equal(sum(quick$package == "alfak"), 5)
   expect_equal(nrow(quick), 32)
-  weighted <- idx$NN_prior_slot[idx$package == "alfakR" & grepl("weighted", idx$NN_prior_slot)]
+  weighted <- idx$NN_prior_slot[idx$package == "alfak" & grepl("weighted", idx$NN_prior_slot)]
   expect_true("empirical_censored_weighted_slot4" %in% weighted)
   expect_true("empirical_censored_weighted_slot5" %in% weighted)
 })

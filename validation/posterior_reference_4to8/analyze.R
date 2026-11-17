@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 repo <- normalizePath(".")
 directory <- file.path(repo, "validation/posterior_reference_4to8")
-output <- Sys.getenv("ALFAK2_REFERENCE_OUTPUT", file.path(directory, "results"))
+output <- Sys.getenv("KARST_REFERENCE_OUTPUT", file.path(directory, "results"))
 source(file.path(directory, "reference.R"))
 source(file.path(repo, "validation/accuracy_round2/common.R"))
 runtime <- reference_load(repo)

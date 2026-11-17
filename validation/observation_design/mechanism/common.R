@@ -1,7 +1,7 @@
 mechanism_load<-function(repo,src,compile_reference=TRUE) {
   root<-file.path(repo,"validation/observation_design")
   cpp<-file.path(root,"results/direct_forward_source_v2")
-  Sys.setenv(ALFAK2_DESIGN_SOURCE=cpp)
+  Sys.setenv(KARST_DESIGN_SOURCE=cpp)
   sys.source(file.path(cpp,"model.R"),.GlobalEnv)
   sys.source(file.path(root,"results/direct_source_v7/direct_joint.R"),.GlobalEnv)
   sys.source(file.path(root,"results/adaptive_source_v1/quadrature.R"),.GlobalEnv)
@@ -20,7 +20,7 @@ mechanism_load<-function(repo,src,compile_reference=TRUE) {
 mechanism_source_manifest<-function(repo,src,out,case_files,runtime) {
   root<-file.path(repo,"validation/observation_design")
   dlls<-vapply(getLoadedDLLs(),function(x)x[["path"]],character(1))
-  sampler_dlls<-dlls[grepl("alfak2_mechanism_reference_cpp",dlls,fixed=TRUE)]
+  sampler_dlls<-dlls[grepl("karst_mechanism_reference_cpp",dlls,fixed=TRUE)]
   files<-c(list.files(src,full.names=TRUE),
     file.path(root,"results/direct_forward_source_v2",c("model.R","observation_model.cpp","positive_taylor_forward.h")),
     file.path(root,"results/direct_source_v7/direct_joint.R"),

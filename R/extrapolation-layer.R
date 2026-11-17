@@ -1,4 +1,4 @@
-alfak2_extrapolation_methods <- function() {
+karst_extrapolation_methods <- function() {
   c(
     "graph_gaussian_baseline",
     "edge_effect_empirical_bayes",
@@ -20,7 +20,7 @@ match_extrapolation_method <- function(method) {
     graph_trend_filtering = "kronecker_or_graph_trend_filtering"
   )
   if (length(method) > 1L) method <- method[[1L]]
-  method <- match.arg(method, c(alfak2_extrapolation_methods(), names(aliases)))
+  method <- match.arg(method, c(karst_extrapolation_methods(), names(aliases)))
   if (method %in% names(aliases)) unname(aliases[[method]]) else method
 }
 
@@ -82,10 +82,10 @@ prepare_extrapolation_anchors <- function(local_fit,
                                           anchor_min_effective_count = 0,
                                           anchor_exclude = character(),
                                           anchor_covariance = NULL) {
-  if (!inherits(local_fit, "alfak2_local_fit")) {
-    stop("`local_fit` must be an alfak2_local_fit object.", call. = FALSE)
+  if (!inherits(local_fit, "karst_local_fit")) {
+    stop("`local_fit` must be an karst_local_fit object.", call. = FALSE)
   }
-  if (!inherits(graph, "alfak2_graph")) stop("`graph` must be an alfak2_graph object.", call. = FALSE)
+  if (!inherits(graph, "karst_graph")) stop("`graph` must be an karst_graph object.", call. = FALSE)
   anchor_tiers <- resolve_anchor_tiers(anchor_support_tiers)
   if (!is.null(anchor_min_effective_count)) {
     validate_scalar(as.numeric(anchor_min_effective_count), "anchor_min_effective_count", lower = 0)
@@ -109,7 +109,7 @@ prepare_extrapolation_anchors <- function(local_fit,
   count_ok <- rep(TRUE, nrow(local_fit$summary))
   if (!is.null(anchor_min_effective_count)) {
     if (!any(is.finite(anchor_count_all))) {
-      alfak2_abort(
+      karst_abort(
         "`anchor_min_effective_count` requires finite local effective counts.",
         diagnostics = list(stage = "extrapolation_anchor_filter")
       )
@@ -118,7 +118,7 @@ prepare_extrapolation_anchors <- function(local_fit,
   }
   keep <- which(!is.na(anchor_match) & is.finite(local_fit$summary$fitness_mean) & tier_ok & count_ok)
   if (!length(keep)) {
-    alfak2_abort(
+    karst_abort(
       "No local posterior anchors are present in the extrapolation graph.",
       diagnostics = list(
         stage = "extrapolation_anchor_filter",
@@ -130,13 +130,13 @@ prepare_extrapolation_anchors <- function(local_fit,
   }
   anchor_var_base <- as.numeric(local_fit$summary$fitness_sd[keep])^2
   if (any(!is.finite(anchor_var_base) | anchor_var_base <= 0)) {
-    alfak2_abort(
+    karst_abort(
       "Extrapolation anchors contain non-finite local fitness variances.",
       diagnostics = list(stage = "extrapolation_anchor_variance", bad_indices = keep[!is.finite(anchor_var_base) | anchor_var_base <= 0])
     )
   }
   if (!"covariance_status" %in% names(local_fit$summary)) {
-    alfak2_abort(
+    karst_abort(
       "Local fit summary is missing covariance status.",
       diagnostics = list(stage = "extrapolation_anchor_covariance_status")
     )
@@ -430,7 +430,7 @@ finish_extrapolation_fit <- function(graph,
                                      hyperparameters,
                                      tuning_grid,
                                      diagnostics) {
-  new_alfak2_global_fit(list(
+  new_karst_global_fit(list(
     graph = graph,
     summary = summary,
     anchors = anchors,
@@ -1157,7 +1157,7 @@ induce_graph_nodes <- function(graph, keep) {
     max_cn = graph$max_cn,
     original_node_id = keep
   )
-  new_alfak2_graph(out)
+  new_karst_graph(out)
 }
 
 dense_graph_penalty_matrix <- function(n, rows) {
@@ -1263,7 +1263,7 @@ graph_trend_filtering_fit <- function(local_fit,
     fallback$diagnostics$extrapolation_method <- method
     fallback$diagnostics$convergence_status <- "fallback_path_ensemble"
     fallback$diagnostics$warnings <- c(fallback$diagnostics$warnings, warnings)
-    return(new_alfak2_global_fit(fallback))
+    return(new_karst_global_fit(fallback))
   }
   edge <- graph_edge_table(subgraph, graph_edge_weight)
   sol <- trend_filter_solve(
@@ -1421,20 +1421,20 @@ wrap_graph_gaussian_fit <- function(local_fit,
   out$diagnostics$runtime_seconds <- as.numeric(proc.time()[["elapsed"]] - started)
   out$diagnostics$warnings <- character()
   out$diagnostics$dependency_status <- "ok"
-  new_alfak2_global_fit(out)
+  new_karst_global_fit(out)
 }
 
 #' Fit a second-layer extrapolation model
 #'
 #' @inheritParams fit_graph_posterior
-#' @param local_fit An `alfak2_local_fit` object.
+#' @param local_fit An `karst_local_fit` object.
 #' @param graph Optional global graph. Defaults to `local_fit$graph`.
 #' @param method Extrapolation method.
 #' @param max_prediction_distance Maximum near-field support distance reported as
 #'   a valid prediction for near-field methods.
 #' @param ... Method-specific controls.
 #'
-#' @return An `alfak2_global_fit` compatible list with `graph`, `summary`,
+#' @return An `karst_global_fit` compatible list with `graph`, `summary`,
 #'   `anchors`, `hyperparameters`, `tuning_grid`, and `diagnostics`.
 #' @export
 fit_extrapolation_layer <- function(local_fit,
@@ -1473,11 +1473,11 @@ fit_extrapolation_layer <- function(local_fit,
                                     anchor_covariance = NULL,
                                     compute_covariance = FALSE,
                                     ...) {
-  if (!inherits(local_fit, "alfak2_local_fit")) {
-    stop("`local_fit` must be an alfak2_local_fit object.", call. = FALSE)
+  if (!inherits(local_fit, "karst_local_fit")) {
+    stop("`local_fit` must be an karst_local_fit object.", call. = FALSE)
   }
   if (is.null(graph)) graph <- local_fit$graph
-  if (!inherits(graph, "alfak2_graph")) stop("`graph` must be an alfak2_graph object.", call. = FALSE)
+  if (!inherits(graph, "karst_graph")) stop("`graph` must be an karst_graph object.", call. = FALSE)
   method <- match_extrapolation_method(method)
   max_prediction_distance <- validate_prediction_distance(max_prediction_distance)
   graph_edge_weight <- match.arg(graph_edge_weight)

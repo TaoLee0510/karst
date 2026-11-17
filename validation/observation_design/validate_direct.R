@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-cpp_source<-Sys.getenv("ALFAK2_DIRECT_CPP_SOURCE",file.path(root,"results/direct_forward_source_v1"))
-Sys.setenv(ALFAK2_DESIGN_SOURCE=cpp_source)
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+cpp_source<-Sys.getenv("KARST_DIRECT_CPP_SOURCE",file.path(root,"results/direct_forward_source_v1"))
+Sys.setenv(KARST_DESIGN_SOURCE=cpp_source)
 source(file.path(cpp_source,"model.R"))
-source(Sys.getenv("ALFAK2_DIRECT_SOURCE",file.path(root,"direct_joint.R")))
+source(Sys.getenv("KARST_DIRECT_SOURCE",file.path(root,"direct_joint.R")))
 source(file.path(repo,"validation/posterior_reference_4to8/reference.R"))
 runtime<-design_load(repo)
 library(testthat);reporter<-ListReporter$new()

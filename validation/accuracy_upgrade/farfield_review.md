@@ -1,4 +1,4 @@
-# alfak2 accuracy development benchmark
+# KARST accuracy development benchmark
 
 These are development results on 1 landscapes and 1 paired datasets. Calibration and test landscape seeds are reserved and unopened. No truth-based affine rescaling, tuning, or interval calibration is applied.
 

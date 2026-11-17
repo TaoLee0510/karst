@@ -39,7 +39,7 @@ si_devbench_config <- function(split = "dev") {
   config <- stt_config(output_dir)
   study <- si_config()
   sparse <- function(build, ...) {
-    list(type = "alfak2_sparse_joint", build = build, birth_rate = 1, min_cn = 1L, max_cn = 8L,
+    list(type = "karst_sparse_joint", build = build, birth_rate = 1, min_cn = 1L, max_cn = 8L,
          arguments = list(...))
   }
   config$methods <- list(
@@ -62,10 +62,10 @@ si_devbench_config <- function(split = "dev") {
   # The package with the new default (build si4), at its defaults.
   config$methods$default_new <- sparse("si4")
   # Cohort fit of the eight patients of a landscape with the balance prior
-  # (the benchmark's alfak2_sparse_joint_cohort_balance), scored on patient 1:
+  # (the benchmark's karst_sparse_joint_cohort_balance), scored on patient 1:
   # history = interval (8327282) and each dataset's chosen history (si4).
   cohort <- function(build) {
-    list(type = "alfak2_sparse_joint_cohort", build = build, birth_rate = 1, min_cn = 1L, max_cn = 8L,
+    list(type = "karst_sparse_joint_cohort", build = build, birth_rate = 1, min_cn = 1L, max_cn = 8L,
          members = "landscape", dataset_dir = file.path(output_dir, "datasets"),
          landscapes = config$landscapes[c("landscape_id", "split")], cohort_size = 8L,
          arguments = list(trend = "select", initial_state = "balance"))
@@ -96,14 +96,14 @@ si_devbench_setup <- function(config) {
   cat("Copied", nrow(index), "datasets and their nodes to", config$output_dir, "\n")
 }
 
-# stt_method_alfak2_sparse_joint() of the benchmark, also keeping the fit's
+# stt_method_karst_sparse_joint() of the benchmark, also keeping the fit's
 # diagnostics: objective, history (and its profile), trend terms, scales.
 si_devbench_sparse_joint <- function(dataset, nodes, method) {
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
   started <- proc.time()[["elapsed"]]
   out <- tryCatch({
-    fit <- do.call(alfak2::fit_sparse_joint, c(
+    fit <- do.call(karst::fit_sparse_joint, c(
       list(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = method$birth_rate,
            min_cn = method$min_cn, max_cn = method$max_cn),
       method$arguments
@@ -128,7 +128,7 @@ si_devbench_tasks <- function(config, method_names) {
   index <- utils::read.csv(file.path(config$output_dir, sprintf("dataset_index_%s.csv", config$split)), stringsAsFactors = FALSE)
   grid <- expand.grid(method_name = method_names, dataset_id = index$dataset_id, stringsAsFactors = FALSE)
   # Cohort methods exist for the cohort scenario only.
-  cohort <- vapply(config$methods[grid$method_name], function(m) identical(m$type, "alfak2_sparse_joint_cohort"),
+  cohort <- vapply(config$methods[grid$method_name], function(m) identical(m$type, "karst_sparse_joint_cohort"),
                    logical(1))
   grid <- grid[!cohort | grepl(paste0("_", config$cohort_scenario, "$"), grid$dataset_id), , drop = FALSE]
   lapply(seq_len(nrow(grid)), function(i) list(dataset_id = grid$dataset_id[i], method_name = grid$method_name[i]))
@@ -137,11 +137,11 @@ si_devbench_tasks <- function(config, method_names) {
 si_devbench_fit <- function(config, workers, method_names, task = NULL) {
   index <- utils::read.csv(file.path(config$output_dir, sprintf("dataset_index_%s.csv", config$split)), stringsAsFactors = FALSE)
   builds <- unique(unlist(lapply(config$methods[method_names], function(m) m$build)))
-  if (length(builds) > 1L) stop("Methods of one run must share an alfak2 build.", call. = FALSE)
+  if (length(builds) > 1L) stop("Methods of one run must share an karst build.", call. = FALSE)
   if (length(builds)) {
     .libPaths(c(si_library(builds, config$library_root), .libPaths()))
-    loadNamespace("alfak2")
-    cat("alfak2 from", dirname(find.package("alfak2")), "\n")
+    loadNamespace("karst")
+    cat("karst from", dirname(find.package("karst")), "\n")
   }
   tasks <- si_devbench_tasks(config, method_names)
   if (!is.null(task)) {
@@ -161,7 +161,7 @@ si_devbench_fit <- function(config, workers, method_names, task = NULL) {
       method$arguments$history <- si_history_profile(dataset$interval)
     }
     set.seed(dataset$seed)
-    result <- if (identical(method$type, "alfak2_sparse_joint") && !identical(method$build, "8327282")) {
+    result <- if (identical(method$type, "karst_sparse_joint") && !identical(method$build, "8327282")) {
       si_devbench_sparse_joint(dataset, nodes, method)
     } else stt_run_method(method, dataset, nodes, tempdir())
     result$dataset_id <- task$dataset_id

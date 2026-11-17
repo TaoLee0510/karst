@@ -41,10 +41,10 @@ sparse_stress_input <- function() {
 }
 
 test_that("local TMB fit smoke test returns finite intervals and tiers", {
-  dat <- prepare_alfak2_data(stable_counts_input(), dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(stable_counts_input(), dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 1, min_cn = 1, max_cn = 3, max_nodes = 200)
   fit <- fit_local_posterior(dat, graph, control = list(eval.max = 120, iter.max = 120))
-  expect_s3_class(fit, "alfak2_local_fit")
+  expect_s3_class(fit, "karst_local_fit")
   expect_true(all(is.finite(fit$summary$fitness_mean)))
   expect_true(all(is.finite(fit$summary$fitness_sd)))
   expect_true(all(is.finite(fit$summary$conf_low)))
@@ -59,7 +59,7 @@ test_that("local TMB fit smoke test returns finite intervals and tiers", {
 })
 
 test_that("graph posterior and end-to-end fit smoke tests work", {
-  dat <- prepare_alfak2_data(stable_counts_input(), dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(stable_counts_input(), dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 1, min_cn = 1, max_cn = 3, max_nodes = 200)
   local <- fit_local_posterior(dat, graph, control = list(eval.max = 120, iter.max = 120))
   gp <- fit_graph_posterior(local, graph, lambda_l_grid = 1, lambda_e_grid = 0.1, sigma_obs_grid = 0.05)
@@ -69,14 +69,14 @@ test_that("graph posterior and end-to-end fit smoke tests work", {
   expect_equal(nrow(gp$anchors), sum(local$summary$effective_count_total > 0))
   expect_gt(gp$diagnostics$anchor_count_excluded, 0)
 
-  full <- fit_alfak2(pipeline = "two_layer", dat, local_shell_depth = 1, global_extra_shell = 0,
+  full <- fit_karst(pipeline = "two_layer", dat, local_shell_depth = 1, global_extra_shell = 0,
                      min_cn = 1, max_cn = 3, max_nodes = 200,
                      graph_edge_weight = "unit",
                      anchor_count_reference = 20,
                      anchor_exclude = "1.2.2",
                      control = list(eval.max = 120, iter.max = 120))
-  expect_s3_class(full, "alfak2_fit")
-  expect_gt(nrow(summarize_alfak2(full)), 0)
+  expect_s3_class(full, "karst_fit")
+  expect_gt(nrow(summarize_karst(full)), 0)
   expect_equal(full$diagnostics$graph_edge_weight, "unit")
   expect_equal(full$diagnostics$transition_kernel, "exact")
   expect_equal(full$diagnostics$anchor_support_tiers, "all")
@@ -89,7 +89,7 @@ test_that("observation weights downweight low-support rows in the local likeliho
   weights <- matrix(1, nrow = nrow(counts), ncol = 2L, dimnames = list(rownames(counts), c("t0", "t1")))
   weights["1.2.2", ] <- 0.25
   attr(counts, "observation_weights") <- weights
-  dat <- prepare_alfak2_data(counts, dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(counts, dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 1, min_cn = 1, max_cn = 3, max_nodes = 200)
   fit <- fit_local_posterior(dat, graph, control = list(eval.max = 120, iter.max = 120))
   row <- fit$summary[fit$summary$karyotype == "1.2.2", , drop = FALSE]
@@ -111,7 +111,7 @@ test_that("zero-effective-count local rows are not global anchors by default", {
   weights <- matrix(1, nrow = nrow(counts), ncol = 2L, dimnames = list(rownames(counts), c("t0", "t1")))
   weights["1.2.2", ] <- 0
   attr(counts, "observation_weights") <- weights
-  dat <- prepare_alfak2_data(counts, dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(counts, dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 1, min_cn = 1, max_cn = 3, max_nodes = 200)
   fit <- fit_local_posterior(dat, graph, control = list(eval.max = 120, iter.max = 120))
   gp <- fit_graph_posterior(fit, graph, lambda_l_grid = 1, lambda_e_grid = 0.1, sigma_obs_grid = 0.05)
@@ -125,7 +125,7 @@ test_that("dirichlet-multinomial uses explicit weighted likelihood when observat
   weights <- matrix(1, nrow = nrow(counts), ncol = 2L, dimnames = list(rownames(counts), c("t0", "t1")))
   weights["1.2.2", ] <- 0.25
   attr(counts, "observation_weights") <- weights
-  dat <- prepare_alfak2_data(counts, dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(counts, dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 1, min_cn = 1, max_cn = 3, max_nodes = 200)
   fit <- fit_local_posterior(
     dat,
@@ -141,7 +141,7 @@ test_that("dirichlet-multinomial uses explicit weighted likelihood when observat
 
 test_that("dirichlet-multinomial concentration grids select an explicit finite fit", {
   counts <- stable_counts_input()
-  dat <- prepare_alfak2_data(counts, dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(counts, dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 1, min_cn = 1, max_cn = 3, max_nodes = 200)
   fit <- fit_local_posterior(
     dat,
@@ -157,7 +157,7 @@ test_that("dirichlet-multinomial concentration grids select an explicit finite f
 
 test_that("global tuning stops when CV is requested without enough anchors", {
   counts <- stable_counts_input()[1:2, , drop = FALSE]
-  dat <- prepare_alfak2_data(counts, dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(counts, dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 0, min_cn = 1, max_cn = 3, max_nodes = 20)
   local <- fit_local_posterior(dat, graph, control = list(eval.max = 120, iter.max = 120))
   expect_error(
@@ -168,7 +168,7 @@ test_that("global tuning stops when CV is requested without enough anchors", {
       lambda_e_grid = c(0.05, 0.25, 1),
       sigma_obs_grid = c(0.02, 0.05, 0.1)
     ),
-    class = "alfak2_error"
+    class = "karst_error"
   )
 
   gp <- fit_graph_posterior(local, graph, lambda_l_grid = 1, lambda_e_grid = 0.25, sigma_obs_grid = 0.05)
@@ -205,7 +205,7 @@ test_that("global tuning skips heldout anchors without component support", {
       diagnostics = list(covariance_status = "TMB_sdreport"),
       graph = graph
     ),
-    class = "alfak2_local_fit"
+    class = "karst_local_fit"
   )
   gp <- fit_graph_posterior(
     local,
@@ -222,10 +222,10 @@ test_that("global tuning skips heldout anchors without component support", {
 })
 
 test_that("untrusted local covariance falls back with a warning log", {
-  dat <- prepare_alfak2_data(stable_counts_input(), dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(stable_counts_input(), dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 1, min_cn = 1, max_cn = 3, max_nodes = 200)
-  log_dir <- tempfile("alfak2_warning_logs_")
-  old <- options(alfak2.warning_log_dir = log_dir)
+  log_dir <- tempfile("karst_warning_logs_")
+  old <- options(karst.warning_log_dir = log_dir)
   on.exit(options(old), add = TRUE)
 
   warnings <- character()
@@ -242,7 +242,7 @@ test_that("untrusted local covariance falls back with a warning log", {
     }
   )
   expect_match(paste(warnings, collapse = "\n"), "using prior-scale uncertainty fallback")
-  expect_true(inherits(fit, "alfak2_local_fit"))
+  expect_true(inherits(fit, "karst_local_fit"))
   expect_equal(fit$diagnostics$covariance_status, "untrusted_nonconverged")
   expect_true(fit$diagnostics$covariance_fallback)
   expect_equal(fit$diagnostics$fitness_sd_source, "fallback_prior_scale")
@@ -257,7 +257,7 @@ test_that("untrusted local covariance falls back with a warning log", {
 
 test_that("sparse stochastic stress input does not leak non-finite local intervals", {
   x <- sparse_stress_input()
-  dat <- prepare_alfak2_data(x$sim$counts, dt = 1, beta = 0.01)
+  dat <- prepare_karst_data(x$sim$counts, dt = 1, beta = 0.01)
   graph <- build_karyotype_graph(dat, shell_depth = 1, min_cn = 1, max_cn = 3, max_nodes = 200)
   fit <- fit_local_posterior(dat, graph, control = list(eval.max = 120, iter.max = 120))
   expect_true(all(is.finite(fit$summary$fitness_mean)))

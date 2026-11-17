@@ -3,7 +3,7 @@
 # Fig. 2d is sampling noise? For each row (trajectory, minobs, daughter
 # passage) of KEYS, the parent passage's cells are split at random into two
 # halves 20 times; the Wasserstein distance between the halves is pure
-# sampling noise. Computed on all cells and on the karyotypes of the alfakR
+# sampling noise. Computed on all cells and on the karyotypes of the alfak
 # landscape of the "all" design (as the Fig. 2d axis is), with the cell
 # counts of the parent and the daughter. Run from the paper benchmark's
 # folder (sources R/), with BENCH_RESULTS the round's results folder.
@@ -36,7 +36,7 @@ rows <- lapply(seq_len(nrow(keys)), function(j) {
   tru <- readRDS(file.path(paths$salehi_inputs, inputs[grepl(fj, inputs)][1]))$x
   p <- stats::setNames(tru[, ncol(tru) - 1L], rownames(tru)); p <- p[p > 0]
   d <- stats::setNames(tru[, ncol(tru)], rownames(tru)); d <- d[d > 0]
-  lscape <- readRDS(file.path(paths$results, "fits", "salehi", k$fi, Sys.getenv("NOISE_DESIGN", "all"), "alfakR", paste0("minobs_", k$min_obs), "landscape.Rds"))
+  lscape <- readRDS(file.path(paths$results, "fits", "salehi", k$fi, Sys.getenv("NOISE_DESIGN", "all"), "alfak", paste0("minobs_", k$min_obs), "landscape.Rds"))
   data.frame(k, cells_parent = sum(p), cells_daughter = sum(d), noise_all = halves(p), noise = halves(p, lscape$k),
              noise_daughter = halves(d, lscape$k), stringsAsFactors = FALSE)
 })

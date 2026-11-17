@@ -162,7 +162,7 @@ run_process_anchor_oracle <- function(data_dir, output_dir, frozen_source, repo,
 
 if (sys.nframe() == 0L) {
   args <- commandArgs(TRUE)
-  repo <- if (length(args) >= 4L) args[[4L]] else '/Users/4482173/Documents/GitHub/alfak2'
+  repo <- if (length(args) >= 4L) args[[4L]] else '/Users/4482173/Documents/GitHub/karst'
   data_dir <- if (length(args)) args[[1L]] else '/private/tmp/alfak2_iteration2_20261104_0518/process-data'
   output_dir <- if (length(args) >= 2L) args[[2L]] else '/private/tmp/alfak2_iteration2_20261104_0518/process-oracle'
   source <- if (length(args) >= 3L) args[[3L]] else '/private/tmp/alfak2_iteration2_20261104_0518/v1-source'

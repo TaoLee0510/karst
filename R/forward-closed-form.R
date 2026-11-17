@@ -31,9 +31,9 @@ sparse_division_kernel <- function(karyotypes, beta) {
   max_cn <- max(karyotypes) + 1L
   # chromosome-level probabilities: stay, gain one copy, lose one copy
   copies <- 0:max_cn
-  stay <- vapply(copies, function(cn) alfak2_pij_cpp(cn, cn, beta), numeric(1))
-  gain <- vapply(copies, function(cn) alfak2_pij_cpp(cn, cn + 1L, beta), numeric(1))
-  lose <- vapply(copies, function(cn) if (cn > 0L) alfak2_pij_cpp(cn, cn - 1L, beta) else 0, numeric(1))
+  stay <- vapply(copies, function(cn) karst_pij_cpp(cn, cn, beta), numeric(1))
+  gain <- vapply(copies, function(cn) karst_pij_cpp(cn, cn + 1L, beta), numeric(1))
+  lose <- vapply(copies, function(cn) if (cn > 0L) karst_pij_cpp(cn, cn - 1L, beta) else 0, numeric(1))
   log_stay <- matrix(log(stay)[karyotypes + 1L], nrow = n)
   log_self <- rowSums(log_stay)
   labels <- format_karyotypes(karyotypes)

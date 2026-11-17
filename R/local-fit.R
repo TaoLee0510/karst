@@ -63,7 +63,7 @@ local_conditional_warmstart <- function(data, parameters, parameter_map, control
   diagnostics <- list(attempted = TRUE, accepted = FALSE, status = "failed")
   answer <- tryCatch({
     objective <- TMB::MakeADFun(data, parameters, map = parameter_map,
-                                random = NULL, DLL = "alfak2", silent = TRUE)
+                                random = NULL, DLL = "karst", silent = TRUE)
     initial_objective <- objective$fn(objective$par)
     opt <- stats::nlminb(objective$par, objective$fn, objective$gr,
                          control = control)
@@ -381,8 +381,8 @@ local_gradient_diagnostics <- function(obj, opt, graph, y0, y1, effective_count_
 #' R function validates inputs, builds initial values, runs `nlminb`, and
 #' collects TMB-reported posterior marginals.
 #'
-#' @param data An `alfak2_data` object.
-#' @param graph Optional `alfak2_graph`; defaults to a local depth-2 graph.
+#' @param data An `karst_data` object.
+#' @param graph Optional `karst_graph`; defaults to a local depth-2 graph.
 #' @param observation_model `"multinomial"` or `"dirichlet_multinomial"`.
 #' @param dm_concentration Dirichlet-multinomial concentration value or grid when
 #'   requested. Multiple values are fit explicitly and the finite objective minimum
@@ -459,7 +459,7 @@ local_gradient_diagnostics <- function(obj, opt, graph, y0, y1, effective_count_
 #' @param structured_prior Internal joint-landscape prior specification. Ordinary
 #'   local fits leave this as `NULL`.
 #'
-#' @return An `alfak2_local_fit` object.
+#' @return An `karst_local_fit` object.
 #' @export
 fit_local_posterior <- function(data,
                                 graph = NULL,
@@ -498,8 +498,8 @@ fit_local_posterior <- function(data,
                                 initial_jitter_sd = 0,
                                 initial_seed = NULL,
                                 structured_prior = NULL) {
-  if (!inherits(data, "alfak2_data")) {
-    stop("`data` must be an alfak2_data object.", call. = FALSE)
+  if (!inherits(data, "karst_data")) {
+    stop("`data` must be an karst_data object.", call. = FALSE)
   }
   observation_model <- match_observation_model(observation_model)
   observation_weight_mode <- match_observation_weight_mode(observation_weight_mode)
@@ -580,8 +580,8 @@ fit_local_posterior <- function(data,
   validate_scalar(eta_borrowed_prior_sd, "eta_borrowed_prior_sd", lower = .Machine$double.eps)
   validate_scalar(eta_distance_penalty, "eta_distance_penalty", lower = 0)
   if (is.null(graph)) graph <- build_karyotype_graph(data, shell_depth = 2)
-  if (!inherits(graph, "alfak2_graph")) {
-    stop("`graph` must be an alfak2_graph object.", call. = FALSE)
+  if (!inherits(graph, "karst_graph")) {
+    stop("`graph` must be an karst_graph object.", call. = FALSE)
   }
 
   n <- length(graph$labels)
@@ -802,10 +802,10 @@ fit_local_posterior <- function(data,
       attempted = FALSE, accepted = FALSE, status = "disabled_or_ineligible", elapsed_seconds = 0))
     obj <- tryCatch(
       TMB::MakeADFun(candidate_data, warmstart$parameters, map = parameter_map,
-                     random = random_effects, DLL = "alfak2", silent = TRUE,
+                     random = random_effects, DLL = "karst", silent = TRUE,
                      inner.control = inner_control),
       error = function(e) {
-        alfak2_abort(
+        karst_abort(
           "Local TMB objective construction failed.",
           diagnostics = list(
             stage = "local_make_adfun",
@@ -819,7 +819,7 @@ fit_local_posterior <- function(data,
       run_local_tmb_attempt(obj, obj$par, control, n,
                             require_latent = identical(forward_model, "division_process")),
       error = function(e) {
-        alfak2_abort(
+        karst_abort(
           "Local TMB optimizer failed.",
           diagnostics = list(
             stage = "local_optimizer",
@@ -843,7 +843,7 @@ fit_local_posterior <- function(data,
         run_local_tmb_attempt(obj, attempt$opt$par, merged_retry_control, n,
                               require_latent = identical(forward_model, "division_process")),
         error = function(e) {
-          alfak2_abort(
+          karst_abort(
             "Local TMB retry optimizer failed.",
             diagnostics = list(
               stage = "local_optimizer_retry",
@@ -871,7 +871,7 @@ fit_local_posterior <- function(data,
         retry_reason = retry_reason,
         attempts = attempts
       )
-      warning_log_path <- alfak2_warn(
+      warning_log_path <- karst_warn(
         "Local TMB covariance is untrusted; using prior-scale uncertainty fallback.",
         diagnostics = warning_diagnostics
       )
@@ -881,7 +881,7 @@ fit_local_posterior <- function(data,
       obj$report()
     }, silent = TRUE)
     if (inherits(report, "try-error")) {
-      alfak2_abort(
+      karst_abort(
         "Local TMB report extraction failed.",
         diagnostics = list(
           stage = "local_report",
@@ -892,7 +892,7 @@ fit_local_posterior <- function(data,
       )
     }
     if (is.null(report$pi0) || is.null(report$pi1)) {
-      alfak2_abort(
+      karst_abort(
         "Local TMB report is missing posterior predictive probabilities.",
         diagnostics = list(
           stage = "local_report",
@@ -910,7 +910,7 @@ fit_local_posterior <- function(data,
     }
     bad_sd <- !is.finite(f_sd) | f_sd <= 0
     if (any(bad_sd)) {
-      alfak2_abort(
+      karst_abort(
         "Local TMB covariance returned non-finite fitness uncertainty.",
         diagnostics = list(
           stage = "local_fitness_sd",
@@ -940,7 +940,7 @@ fit_local_posterior <- function(data,
   })
   objectives <- vapply(concentration_results, `[[`, numeric(1), "objective")
   if (any(!is.finite(objectives))) {
-    alfak2_abort(
+    karst_abort(
       "Local TMB concentration grid produced non-finite objectives.",
       diagnostics = list(
         stage = "local_dm_concentration_grid",
@@ -999,7 +999,7 @@ fit_local_posterior <- function(data,
         fitness_covariance <- NULL
         fitness_sd_source <- "fallback_prior_scale"
         f_sd <- fallback_local_fitness_sd(report, graph$support_distance)
-        warning_log_path <- alfak2_warn("Lognormal posterior moments are non-finite; fitness intervals are withheld.",
+        warning_log_path <- karst_warn("Lognormal posterior moments are non-finite; fitness intervals are withheld.",
                                         diagnostics = list(stage = "local_lognormal_moments"))
       }
     }
@@ -1160,5 +1160,5 @@ fit_local_posterior <- function(data,
       gradient = try(obj$gr(opt$par), silent = TRUE)
     )
   }
-  new_alfak2_local_fit(out)
+  new_karst_local_fit(out)
 }

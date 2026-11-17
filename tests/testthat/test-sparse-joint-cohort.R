@@ -3,7 +3,7 @@ test_that("a cohort of one dataset with full sharing is the single-dataset fit",
   single <- fit_sparse_joint(sim$samples$A, dt = sim$dt[1L], beta = sim$beta, major_frequency = 0.05, max_cn = 4, initial_state = "free")
   cohort <- fit_sparse_joint_cohort(sim$samples["A"], dt = sim$dt[1L], beta = sim$beta, sharing = "full",
                                     major_frequency = 0.05, max_cn = 4, initial_state = "free")
-  expect_s3_class(cohort, "alfak2_sparse_joint_cohort_fit")
+  expect_s3_class(cohort, "karst_sparse_joint_cohort_fit")
   expect_equal(cohort$diagnostics$objective, single$diagnostics$objective, tolerance = 1e-8)
   expect_equal(cohort$samples$A$karyotype, single$summary$karyotype)
   columns <- c("fitness_mean", "fitness_sd", "relative_fitness", "relative_sd")
@@ -74,7 +74,7 @@ test_that("invalid cohort inputs are rejected", {
   expect_error(fit_sparse_joint_cohort(sim$samples, beta = sim$beta), "dt")
   expect_error(fit_sparse_joint_cohort(sim$samples, dt = c(1, 2, 3), beta = sim$beta), "dt")
   expect_error(fit_sparse_joint_cohort(stats::setNames(sim$samples, c("A", "A")), dt = sim$dt), "names")
-  expect_error(fit_sparse_joint_cohort(list(A = sim$samples$A, B = prepare_alfak2_data(sim$samples$B, dt = 60, beta = 0.01)),
+  expect_error(fit_sparse_joint_cohort(list(A = sim$samples$A, B = prepare_karst_data(sim$samples$B, dt = 60, beta = 0.01)),
                                        dt = 10, beta = sim$beta), "missegregation")
 })
 
@@ -135,14 +135,14 @@ test_that("a cohort dataset with a timepoint outside its domain stops with an er
   samples <- c(sim$samples, list(C = far))
   fit <- function(...) fit_sparse_joint_cohort(samples, dt = c(sim$dt, 10), beta = sim$beta, major_frequency = 0.05,
                                                max_cn = 4, ...)
-  err <- tryCatch(fit(initial_state = "free", trend = "shared"), alfak2_domain_coverage_error = function(e) e)
-  expect_s3_class(err, "alfak2_domain_coverage_error")
+  err <- tryCatch(fit(initial_state = "free", trend = "shared"), karst_domain_coverage_error = function(e) e)
+  expect_s3_class(err, "karst_domain_coverage_error")
   expect_match(conditionMessage(err), "^A timepoint has no cell inside its dataset's model domain\\. Dataset C, timepoint t0: ")
   expect_equal(err$coverage$sample, rep(c("A", "B", "C"), each = 2L))
   expect_equal(err$coverage$cells_in_domain[5:6], c(0, 20))
   # Chosen trend, and the balance prior, whose histories are chosen first.
-  expect_error(fit(initial_state = "free"), class = "alfak2_domain_coverage_error")
-  expect_error(fit(initial_state = "balance"), "Dataset C, timepoint t0", class = "alfak2_domain_coverage_error")
+  expect_error(fit(initial_state = "free"), class = "karst_domain_coverage_error")
+  expect_error(fit(initial_state = "balance"), "Dataset C, timepoint t0", class = "karst_domain_coverage_error")
 })
 
 test_that("a cohort fit reports the domain coverage of each dataset", {

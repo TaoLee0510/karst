@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
-src<-Sys.getenv("ALFAK2_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
+src<-Sys.getenv("KARST_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
 source(file.path(src,"model.R"));source(file.path(src,"data.R"))
 source(file.path(repo,"validation/posterior_reference_4to8/reference.R"))
 source(file.path(repo,"validation/accuracy_round2/oracle_posterior_reference.R"))
@@ -18,7 +18,7 @@ with_reporter(reporter,{
       case<-list(id=paste0("equivalence",n,beta),y=old_case$counts,
         times=c(0,1.5),trajectory=c(0L,0L),reference_weight=old_case$weight)
       original<-runtime$pkg$fit_local_posterior(
-        runtime$pkg$prepare_alfak2_data(old_case$counts,dt=1.5,beta=beta),
+        runtime$pkg$prepare_karst_data(old_case$counts,dt=1.5,beta=beta),
         graph=old_case$graph,structured_prior=old_case$prior,forward_model="division_process",
         forward_step=.025,eta_prior_sd=2,eta_borrowed_prior_mean=0,eta_borrowed_prior_sd=2,
         eta_distance_penalty=0,sdreport_mode="fitness_only",conditional_warmstart="none")

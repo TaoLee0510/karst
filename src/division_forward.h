@@ -1,5 +1,5 @@
-#ifndef ALFAK2_DIVISION_FORWARD_H
-#define ALFAK2_DIVISION_FORWARD_H
+#ifndef KARST_DIVISION_FORWARD_H
+#define KARST_DIVISION_FORWARD_H
 
 // Sparse, positive Strang splitting for the mean of a multitype pure-birth
 // process: dn/dt = (2 P' diag(b) - diag(b)) n. Diagonal growth is exact;

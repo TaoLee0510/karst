@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
-src<-Sys.getenv("ALFAK2_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
+src<-Sys.getenv("KARST_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
 source(file.path(src,"data.R"));source(file.path(repo,"validation/accuracy_round2/common.R"))
 out<-file.path(repo,"validation/observation_design/results")
 context<-readRDS(file.path(out,"context.rds"));nominal<-design_nominal_initial(context)

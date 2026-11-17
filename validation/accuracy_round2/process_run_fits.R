@@ -6,16 +6,16 @@ argument <- function(name, default = NULL) {
   index <- match(paste0('--', name), args)
   if (is.na(index)) default else args[[index + 1L]]
 }
-repo <- argument('source', '/Users/4482173/Documents/GitHub/alfak2')
+repo <- argument('source', '/Users/4482173/Documents/GitHub/karst')
 frozen <- argument('v1-source', '/private/tmp/alfak2_iteration2_20261104_0518/v1-source')
-dll_path <- argument('dll', file.path(repo, 'src/alfak2.so'))
+dll_path <- argument('dll', file.path(repo, 'src/karst.so'))
 data_dir <- argument('data', '/private/tmp/alfak2_iteration2_20261104_0518/process-data')
 output_dir <- argument('output', '/private/tmp/alfak2_iteration2_20261104_0518/process-results')
 policy <- argument('prior', 'matched')
 stopifnot(policy %in% c('matched', 'deployment'))
 limit <- as.integer(argument('limit', '2147483647'))
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-options(alfak2.warning_log_dir = file.path(output_dir, 'condition-logs'))
+options(karst.warning_log_dir = file.path(output_dir, 'condition-logs'))
 requireNamespace('Rcpp'); requireNamespace('TMB')
 dll <- dyn.load(normalizePath(dll_path))
 runtime <- new.env(parent = globalenv())
@@ -67,7 +67,7 @@ for (i in seq_len(nrow(manifest))) {
     }
     warnings <- character()
     started <- proc.time()[['elapsed']]
-    fit <- tryCatch(withCallingHandlers(do.call(runtime$fit_alfak2, fit_args), warning = function(w) {
+    fit <- tryCatch(withCallingHandlers(do.call(runtime$fit_karst, fit_args), warning = function(w) {
       warnings <<- c(warnings, conditionMessage(w)); invokeRestart('muffleWarning')
     }), error = function(e) e)
     elapsed <- proc.time()[['elapsed']] - started

@@ -1,6 +1,6 @@
 # `times` (sampling times since the first) is stored for more than two
 # timepoints only, so that two-timepoint objects are as they always were.
-new_alfak2_data <- function(counts, dt, beta, metadata = list(), times = NULL) {
+new_karst_data <- function(counts, dt, beta, metadata = list(), times = NULL) {
   out <- list(
     counts = counts,
     labels = rownames(counts),
@@ -9,32 +9,32 @@ new_alfak2_data <- function(counts, dt, beta, metadata = list(), times = NULL) {
     metadata = metadata
   )
   if (!is.null(times)) out$times <- times
-  structure(out, class = "alfak2_data")
+  structure(out, class = "karst_data")
 }
 
-new_alfak2_graph <- function(x) {
-  class(x) <- "alfak2_graph"
+new_karst_graph <- function(x) {
+  class(x) <- "karst_graph"
   x
 }
 
-new_alfak2_local_fit <- function(x) {
-  class(x) <- "alfak2_local_fit"
+new_karst_local_fit <- function(x) {
+  class(x) <- "karst_local_fit"
   x
 }
 
-new_alfak2_global_fit <- function(x) {
-  class(x) <- c("alfak2_global_fit", setdiff(class(x), "alfak2_global_fit"))
+new_karst_global_fit <- function(x) {
+  class(x) <- c("karst_global_fit", setdiff(class(x), "karst_global_fit"))
   x
 }
 
-new_alfak2_fit <- function(x) {
-  class(x) <- "alfak2_fit"
+new_karst_fit <- function(x) {
+  class(x) <- "karst_fit"
   x
 }
 
 #' @export
-print.alfak2_data <- function(x, ...) {
-  cat("<alfak2_data>\n")
+print.karst_data <- function(x, ...) {
+  cat("<karst_data>\n")
   cat("  karyotypes:", nrow(x$counts), "\n")
   cat("  timepoints:", paste(colnames(x$counts), collapse = ", "), "\n")
   if (!is.null(x$times)) cat("  times:", paste(format(x$times), collapse = ", "), "\n")
@@ -43,8 +43,8 @@ print.alfak2_data <- function(x, ...) {
 }
 
 #' @export
-print.alfak2_graph <- function(x, ...) {
-  cat("<alfak2_graph>\n")
+print.karst_graph <- function(x, ...) {
+  cat("<karst_graph>\n")
   cat("  nodes:", length(x$labels), "\n")
   cat("  chromosomes:", x$n_chr, "\n")
   cat("  shell_depth:", x$shell_depth, "\n")
@@ -52,8 +52,8 @@ print.alfak2_graph <- function(x, ...) {
 }
 
 #' @export
-print.alfak2_fit <- function(x, ...) {
-  cat("<alfak2_fit>\n")
+print.karst_fit <- function(x, ...) {
+  cat("<karst_fit>\n")
   cat("  local nodes:", nrow(x$local$summary), "\n")
   cat("  global nodes:", nrow(x$global$summary), "\n")
   cat("  convergence:", x$local$diagnostics$convergence, "\n")

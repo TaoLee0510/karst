@@ -65,7 +65,7 @@ test_that("compiled forward model equals the R closed form", {
   )
   parameters <- list(zeta = zeta, g = g, coef = rep(0, ncol(design$design)), theta1 = theta1,
                      log_scale = rep(log(0.05), 4), balance_level = 0)
-  objective <- TMB::MakeADFun(tmb_data, parameters, map = list(balance_level = factor(NA)), DLL = "alfak2",
+  objective <- TMB::MakeADFun(tmb_data, parameters, map = list(balance_level = factor(NA)), DLL = "karst",
                               silent = TRUE)
   report <- objective$report()
   net <- (2 * exp(kernel$log_self) - 1) * exp(g)
@@ -79,7 +79,7 @@ test_that("compiled forward model equals the R closed form", {
 test_that("fit recovers the order of clones and the deficit of their neighbours", {
   sim <- simulate_sparse_joint_counts()
   fit <- fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, birth_rate = 1, major_frequency = 0.05, max_cn = 4)
-  expect_s3_class(fit, "alfak2_sparse_joint_fit")
+  expect_s3_class(fit, "karst_sparse_joint_fit")
   expect_true(fit$diagnostics$finite_uncertainty)
   expect_equal(fit$diagnostics$n_major, 3L)
   expect_equal(fit$diagnostics$dropped_karyotypes, 0L)
@@ -165,7 +165,7 @@ test_that("the balance prior is the closed-form influx from the majors", {
       shell_sd = 0.5, log_scale_prior_mean = rep(log(0.05), 4), log_scale_prior_sd = rep(1.5, 4),
       n_major = domain$n_major, balance = balance, history = history, balance_sd = balance_sd,
       balance_offset = rep(0, n), weight = rep(1, n), level_free = 0L, level_sd = 1
-    ), parameters, map = list(balance_level = factor(NA)), DLL = "alfak2", silent = TRUE)$fn()
+    ), parameters, map = list(balance_level = factor(NA)), DLL = "karst", silent = TRUE)$fn()
   }
   net <- (2 * exp(kernel$log_self) - 1) * exp(parameters$g)
   minor <- seq_len(n) > domain$n_major
@@ -228,7 +228,7 @@ test_that("reported uncertainty of relative fitness adds model error to the mode
                sqrt(prediction$relative_sd_model[2:3]^2 +
                       (calibration[["deficit_unobserved"]] * prediction$relative_fitness[2:3])^2 +
                       (calibration[["floor"]] * 2 * 3)^2))
-  # Two constants, as up to alfak2 33a045c: one deficit for every karyotype;
+  # Two constants, as up to karst 33a045c: one deficit for every karyotype;
   # the fit itself is unchanged.
   two <- fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, birth_rate = 2, major_frequency = 0.05, max_cn = 4,
                           calibration = c(floor = 0.009, deficit = 0.6))
@@ -264,21 +264,21 @@ test_that("uncertainty is finite and no wider than the prior where the counts fi
   expect_true(all(sqrt(diag(fit$trend$covariance)) <= 0.5 + 1e-8))
 })
 
-test_that("fit_alfak2 reaches the sparse joint model as a pipeline", {
+test_that("fit_karst reaches the sparse joint model as a pipeline", {
   sim <- simulate_sparse_joint_counts()
   direct <- fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05, max_cn = 4)
-  through <- fit_alfak2(sim$counts, dt = sim$dt, beta = sim$beta, pipeline = "sparse_joint",
+  through <- fit_karst(sim$counts, dt = sim$dt, beta = sim$beta, pipeline = "sparse_joint",
                         sparse_joint_control = list(major_frequency = 0.05, max_cn = 4))
-  expect_s3_class(through, "alfak2_sparse_joint_fit")
+  expect_s3_class(through, "karst_sparse_joint_fit")
   expect_equal(through$summary, direct$summary)
-  expect_equal(summarize_alfak2(through), direct$summary)
-  expect_error(fit_alfak2(sim$counts, dt = sim$dt, pipeline = "sparse_joint", sparse_joint_control = list(4)),
+  expect_equal(summarize_karst(through), direct$summary)
+  expect_error(fit_karst(sim$counts, dt = sim$dt, pipeline = "sparse_joint", sparse_joint_control = list(4)),
                "sparse_joint_control")
   # It is the default, and arguments of the other pipelines are refused there.
-  by_default <- fit_alfak2(sim$counts, dt = sim$dt, beta = sim$beta,
+  by_default <- fit_karst(sim$counts, dt = sim$dt, beta = sim$beta,
                            sparse_joint_control = list(major_frequency = 0.05, max_cn = 4))
   expect_equal(by_default$summary, direct$summary)
-  expect_error(fit_alfak2(sim$counts, dt = sim$dt, beta = sim$beta, local_shell_depth = 1),
+  expect_error(fit_karst(sim$counts, dt = sim$dt, beta = sim$beta, local_shell_depth = 1),
                "local_shell_depth.*pipeline")
 })
 
@@ -304,7 +304,7 @@ test_that("by default the history is chosen among the interval and longer divisi
   expect_equal(chosen$settings$history, profile$history[[best]])
   expect_equal(chosen$diagnostics$objective, profile$objective[[best]])
   expect_equal(chosen$summary, fit(history = chosen$settings$history)$summary)
-  # The behaviour of alfak2 8327282 and earlier: the interval itself.
+  # The behaviour of karst 8327282 and earlier: the interval itself.
   interval <- fit(history = sim$dt)
   expect_null(interval$diagnostics$history_profile)
   expect_equal(interval$settings$history, sim$dt)
@@ -312,8 +312,8 @@ test_that("by default the history is chosen among the interval and longer divisi
   expect_error(fit(history = c(sim$dt, 0)), "history")
   # Without the balance prior there is nothing to choose.
   expect_null(fit(initial_state = "free")$diagnostics$history_profile)
-  # The alfakR outputs are built from the chosen fit.
-  expect_true(is.finite(as_alfakR(chosen, minobs = 20, nboot = 4)$xval$R2R))
+  # The alfak outputs are built from the chosen fit.
+  expect_true(is.finite(as_alfak(chosen, minobs = 20, nboot = 4)$xval$R2R))
 })
 
 test_that("a timepoint with no cell next to a major karyotype stops with a typed error", {
@@ -321,8 +321,8 @@ test_that("a timepoint with no cell next to a major karyotype stops with a typed
   # three steps from it, none of which can anchor the domain.
   counts <- labelled_counts("2.2.2" = c(0, 20), "3.3.2" = c(1, 0), "1.1.2" = c(1, 0), "2.4.2" = c(1, 0),
                             "4.2.3" = c(1, 0))
-  err <- tryCatch(fit_sparse_joint(counts, dt = 10, beta = 0.001), alfak2_domain_coverage_error = function(e) e)
-  expect_s3_class(err, "alfak2_domain_coverage_error")
+  err <- tryCatch(fit_sparse_joint(counts, dt = 10, beta = 0.001), karst_domain_coverage_error = function(e) e)
+  expect_s3_class(err, "karst_domain_coverage_error")
   expect_s3_class(err, "error")
   expect_match(conditionMessage(err), "^A timepoint has no cell inside the model domain\\. ")
   expect_match(conditionMessage(err), "Timepoint t0: none of its 4 cells lies within one step of a major karyotype; ",
@@ -340,9 +340,9 @@ test_that("a timepoint with no cell next to a major karyotype stops with a typed
   expect_equal(coverage$shared, c(0, 0))
   expect_equal(coverage$median_distance_outside, c(2, NA))
   # The same with one history, and without the balance prior.
-  expect_error(fit_sparse_joint(counts, dt = 10, beta = 0.001, history = 10), class = "alfak2_domain_coverage_error")
+  expect_error(fit_sparse_joint(counts, dt = 10, beta = 0.001, history = 10), class = "karst_domain_coverage_error")
   expect_error(fit_sparse_joint(counts, dt = 10, beta = 0.001, initial_state = "free"),
-               class = "alfak2_domain_coverage_error")
+               class = "karst_domain_coverage_error")
 })
 
 test_that("a fit reports how many cells of each timepoint lie inside the domain", {
@@ -379,7 +379,7 @@ test_that("counts are checked per time point before fitting", {
   expect_equal(check$shared, c(3, 1, 3))
   one <- check_sparse_joint_counts(counts[, "c", drop = FALSE])
   expect_true(is.na(one$shared))
-  expect_equal(check_sparse_joint_counts(prepare_alfak2_data(counts[, c("a", "b")]))$cells, c(5, 7))
+  expect_equal(check_sparse_joint_counts(prepare_karst_data(counts[, c("a", "b")]))$cells, c(5, 7))
   expect_error(check_sparse_joint_counts(counts - 2), "non-negative")
 })
 

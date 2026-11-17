@@ -21,9 +21,9 @@ worker_index <- as.integer(get_arg("worker-index", "1"))
 stopifnot(workers >= 1L, worker_index >= 1L, worker_index <= workers)
 file_prefix <- if (workers > 1L) sprintf("%s_worker%02d", model, worker_index) else model
 if (!is.null(library_dir)) {
-  library(alfak2, lib.loc = normalizePath(library_dir), character.only = FALSE)
-  fit_function <- alfak2::fit_alfak2
-  implementation <- normalizePath(find.package("alfak2"))
+  library(karst, lib.loc = normalizePath(library_dir), character.only = FALSE)
+  fit_function <- karst::fit_karst
+  implementation <- normalizePath(find.package("karst"))
   implementation_files <- list.files(implementation, recursive = TRUE, full.names = TRUE)
   implementation_files <- implementation_files[grepl("\\.(so|dll|rdb|rdx)$|/DESCRIPTION$", implementation_files)]
 } else if (!is.null(source_dir) && !is.null(dll)) {
@@ -33,20 +33,20 @@ if (!is.null(library_dir)) {
   routines <- getDLLRegisteredRoutines(dll_info)$`.Call`
   for (name in names(routines)) assign(name, routines[[name]], envir = env)
   for (file in sort(list.files(file.path(source_dir, "R"), "\\.R$", full.names = TRUE))) sys.source(file, env)
-  fit_function <- env$fit_alfak2
+  fit_function <- env$fit_karst
   implementation <- normalizePath(source_dir)
   implementation_files <- c(list.files(file.path(source_dir, "R"), "\\.R$", full.names = TRUE),
                             list.files(file.path(source_dir, "src"), "\\.(cpp|h)$", full.names = TRUE), normalizePath(dll))
 } else stop("Supply --library DIR or --source DIR --dll FILE")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-options(alfak2.warning_log_dir = file.path(output_dir, "warnings"))
+options(karst.warning_log_dir = file.path(output_dir, "warnings"))
 manifest <- utils::read.csv(file.path(data_dir, "dataset_manifest.csv"), stringsAsFactors = FALSE)
 if (!is.null(ids)) manifest <- manifest[manifest$dataset_id %in% strsplit(ids, ",", fixed = TRUE)[[1L]], , drop = FALSE]
 manifest <- head(manifest, limit)
 if (workers > 1L) manifest <- manifest[(seq_len(nrow(manifest)) - 1L) %% workers == worker_index - 1L, , drop = FALSE]
 user_args <- if (is.null(extra_args)) list() else readRDS(extra_args)
 fingerprint <- function(x) {
-  temporary <- tempfile("alfak2_benchmark_fingerprint_")
+  temporary <- tempfile("karst_benchmark_fingerprint_")
   on.exit(unlink(temporary))
   saveRDS(x, temporary, version = 2)
   unname(tools::md5sum(temporary))

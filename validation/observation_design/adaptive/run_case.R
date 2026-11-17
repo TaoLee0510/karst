@@ -1,14 +1,14 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_ADAPTIVE_SOURCE"));out<-normalizePath(Sys.getenv("ALFAK2_ADAPTIVE_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_ADAPTIVE_SOURCE"));out<-normalizePath(Sys.getenv("KARST_ADAPTIVE_OUTPUT"))
 cpp<-file.path(root,"results/direct_forward_source_v2")
-Sys.setenv(ALFAK2_DESIGN_SOURCE=cpp)
+Sys.setenv(KARST_DESIGN_SOURCE=cpp)
 source(file.path(cpp,"model.R"));source(file.path(root,"results/direct_source_v7/direct_joint.R"))
 source(file.path(src,"quadrature.R"));source(file.path(src,"model.R"))
 source(file.path(repo,"validation/baseline_quadrature/quadrature.R"))
 source(file.path(repo,"validation/accuracy_round2/common.R"));source(file.path(root,"results/computation_source_v4/score.R"))
 runtime<-design_load(repo);invisible(TMB::openmp(1,DLL="observation_model"))
-mode<-Sys.getenv("ALFAK2_ADAPTIVE_MODE");id<-Sys.getenv("ALFAK2_ADAPTIVE_CASE")
+mode<-Sys.getenv("KARST_ADAPTIVE_MODE");id<-Sys.getenv("KARST_ADAPTIVE_CASE")
 reference_dir<-file.path(repo,"validation/posterior_reference_4to8/results")
 extra<-character()
 if(mode=="primary") {

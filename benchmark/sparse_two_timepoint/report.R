@@ -90,7 +90,7 @@ stt_markdown_table <- function(x, digits = 3L) {
 #
 # Predicting no fitness differences is the bar for error, because the original
 # ALFA-K is far above it (a few unconstrained fits dominate its RMSE) and the
-# current alfak2 pipeline sits on it. Rank agreement is compared with both
+# current karst pipeline sits on it. Rank agreement is compared with both
 # existing methods, since it is what they do carry and it does not depend on
 # the reference.
 stt_acceptance <- function(cells, candidate, acceptance) {
@@ -110,8 +110,8 @@ stt_acceptance <- function(cells, candidate, acceptance) {
   }
   rows <- list(
     criterion("RMSE below the no-information answer", acceptance$zero, "rmse", TRUE),
-    criterion("RMSE below current alfak2", acceptance$current, "rmse", TRUE),
-    criterion("Spearman above current alfak2", acceptance$current, "spearman", FALSE)
+    criterion("RMSE below current karst", acceptance$current, "rmse", TRUE),
+    criterion("Spearman above current karst", acceptance$current, "spearman", FALSE)
   )
   for (original in acceptance$original) {
     rows[[length(rows) + 1L]] <- criterion(paste("Spearman above", original), original, "spearman", FALSE)
@@ -120,7 +120,7 @@ stt_acceptance <- function(cells, candidate, acceptance) {
     safety <- stt_safety_cells(cells, candidate, acceptance$current)
     worst <- stats::aggregate(ratio ~ stratum, safety, max)
     rows[[length(rows) + 1L]] <- data.frame(
-      candidate = candidate, criterion = "Worst scenario RMSE ratio to current alfak2 at most 1.10",
+      candidate = candidate, criterion = "Worst scenario RMSE ratio to current karst at most 1.10",
       stratum = worst$stratum, n_landscapes = NA_integer_, baseline_mean = 1, candidate_mean = worst$ratio,
       difference = worst$ratio - 1, ci_low = NA_real_, ci_high = NA_real_, passed = worst$ratio <= 1.10,
       stringsAsFactors = FALSE
@@ -149,7 +149,7 @@ stt_stage_report <- function(config, split) {
   # Methods that are neither baselines nor named candidates (sensitivity
   # variants, for instance) are tabulated but not judged.
   candidates <- intersect(acceptance$candidates, methods)
-  # Every method against the no-information answer, and the current alfak2 and
+  # Every method against the no-information answer, and the current karst and
   # every candidate against the original ALFA-K settings.
   pairs <- list()
   for (method in setdiff(methods, acceptance$zero)) {

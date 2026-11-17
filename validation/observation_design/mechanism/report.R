@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-out<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+out<-normalizePath(Sys.getenv("KARST_MECHANISM_OUTPUT"))
 source(file.path(repo,"validation/accuracy_round2/common.R"))
 gate<-read.csv(file.path(out,"reference_gate.csv"));mom<-read.csv(file.path(out,"moment_comparison.csv"))
 stopifnot(nrow(gate)==2L,all(gate$reference_certified),!all(gate$gate_pass))

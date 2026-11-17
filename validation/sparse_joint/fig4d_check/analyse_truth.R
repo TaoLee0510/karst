@@ -34,24 +34,24 @@ group <- function(d, by) {
   out[do.call(order, unname(as.list(out[by]))), ]
 }
 
-# The alfak2 source of each neighbour, for the alfakR rows too (same fit design).
-src <- unique(x[x$method == "alfak2", c("source_set", "sim_id", "design", "k_id", "nn", "source")])
-names(src)[names(src) == "source"] <- "alfak2_source"
+# The karst source of each neighbour, for the alfak rows too (same fit design).
+src <- unique(x[x$method == "karst", c("source_set", "sim_id", "design", "k_id", "nn", "source")])
+names(src)[names(src) == "source"] <- "karst_source"
 x <- merge(x, src, by = c("source_set", "sim_id", "design", "k_id", "nn"), all.x = TRUE)
-both <- x[!is.na(x$alfak2_source), ]
+both <- x[!is.na(x$karst_source), ]
 
 t1 <- group(both, c("source_set", "kind", "method"))
-t2 <- group(both[both$kind == "2 time points", ], c("source_set", "alfak2_source", "method"))
-t3 <- group(both[both$kind == "2 time points" & both$source_set == "abm", ], c("window", "alfak2_source", "method"))
-fits <- unique(x[x$method == "alfak2", c("source_set", "design", "sim_id", "history", "dt_total", "cells_mean")])
+t2 <- group(both[both$kind == "2 time points", ], c("source_set", "karst_source", "method"))
+t3 <- group(both[both$kind == "2 time points" & both$source_set == "abm", ], c("window", "karst_source", "method"))
+fits <- unique(x[x$method == "karst", c("source_set", "design", "sim_id", "history", "dt_total", "cells_mean")])
 t4 <- aggregate(cbind(history, dt_total, cells_mean) ~ source_set + design, fits, stats::median)
 
 writeLines(c("# Fig. 4d check, step 2: estimated against true delta f (minobs 10)", "",
              "delta f = f(frequent) - f(neighbour). est and true are medians; bias the median of est - true;",
              "slope and r from est ~ true over all pairs of a group.", "",
              "## By method and design", "", md(t1), "",
-             "## Two time points, by where alfak2's value of the neighbour comes from", "", md(t2), "",
+             "## Two time points, by where karst's value of the neighbour comes from", "", md(t2), "",
              "## ABM, two time points, by window", "", md(t3), "",
-             "## The alfak2 fits", "", md(t4)),
+             "## The karst fits", "", md(t4)),
            file.path(base, "truth.md"))
 cat(readLines(file.path(base, "truth.md")), sep = "\n")

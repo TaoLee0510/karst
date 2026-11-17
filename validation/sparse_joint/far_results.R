@@ -1,5 +1,5 @@
 # Figures and tables for distances 0 to 4 (Section 5.4 and Supplement S5 of
-# doc/alfak2_method.tex).
+# doc/karst_method.tex).
 #
 #   Rscript validation/sparse_joint/far_results.R [OUT_DIR]
 #
@@ -18,17 +18,17 @@ results <- "benchmark/results/sparse_two_timepoint"
 
 labels <- c(
   "zero" = "Null predictor",
-  "alfak2_two_layer_fixed" = "Graph Gaussian",
-  "alfak2_two_layer_nearfield_gmrf" = "Truncated GMRF",
-  "alfak2_two_layer_edge_effect" = "Edge effect",
-  "alfak2_two_layer_path_ensemble" = "Path ensemble",
-  "alfak2_two_layer_polynomial" = "Local polynomial",
-  "alfak2_two_layer_nngp" = "Nearest-neighbour GP",
-  "alfak2_two_layer_delta_tree" = "Delta tree",
-  "alfak2_two_layer_trend_filtering" = "Trend filtering",
-  "alfakR_minobs20" = "alfakR (minobs = 20)",
-  "alfak2_sparse_joint" = "Sparse joint, independent",
-  "alfak2_sparse_joint_balance" = "Sparse joint, balance (default)"
+  "karst_two_layer_fixed" = "Graph Gaussian",
+  "karst_two_layer_nearfield_gmrf" = "Truncated GMRF",
+  "karst_two_layer_edge_effect" = "Edge effect",
+  "karst_two_layer_path_ensemble" = "Path ensemble",
+  "karst_two_layer_polynomial" = "Local polynomial",
+  "karst_two_layer_nngp" = "Nearest-neighbour GP",
+  "karst_two_layer_delta_tree" = "Delta tree",
+  "karst_two_layer_trend_filtering" = "Trend filtering",
+  "alfak_minobs20" = "alfak (minobs = 20)",
+  "karst_sparse_joint" = "Sparse joint, independent",
+  "karst_sparse_joint_balance" = "Sparse joint, balance (default)"
 )
 waves <- c("w0.4", "w0.8", "w1.2", "w1.6")
 mean_na <- function(v) if (all(is.na(v))) NA_real_ else mean(v, na.rm = TRUE)
@@ -60,9 +60,9 @@ dev <- load("dev")
 
 ## Figures: distance 0 to 4, four main methods ---------------------------------
 palette <- c("Sparse joint, balance (default)" = "#2a78d6", "Sparse joint, independent" = "#eb6834",
-             "Graph Gaussian" = "#1baf7a", "alfakR (minobs = 20)" = "#eda100")
+             "Graph Gaussian" = "#1baf7a", "alfak (minobs = 20)" = "#eda100")
 shapes <- c("Sparse joint, balance (default)" = 16, "Sparse joint, independent" = 17,
-            "Graph Gaussian" = 15, "alfakR (minobs = 20)" = 18)
+            "Graph Gaussian" = 15, "alfak (minobs = 20)" = 18)
 cap <- 8
 plotted <- held[held$label %in% names(palette), ]
 plotted$label <- factor(plotted$label, levels = names(palette))
@@ -116,7 +116,7 @@ table_tex <- function(wl, column, digits, title, methods = names(labels)) {
       v <- wl[wl$method == m & wl$wavelength_class == w & wl$distance == d, column]
       if (length(v)) fmt(v, digits) else "--"
     }, "")))
-    label <- sub("alfakR", "\\\\texttt{alfakR}", labels[[m]])
+    label <- sub("alfak", "\\\\texttt{alfak}", labels[[m]])
     paste0(label, " & ", paste(vals, collapse = " & "), " \\\\")
   }, "")
   # The minipage keeps each title on the page of its table.
@@ -129,7 +129,7 @@ table_tex <- function(wl, column, digits, title, methods = names(labels)) {
     paste0("Method", paste(rep(" & $d=3$ & $d=4$", 4), collapse = ""), " \\\\"), "\\midrule",
     rows, "\\bottomrule", "\\end{tabular}", "\\end{center}", "\\end{minipage}")
 }
-main_methods <- c("zero", "alfak2_two_layer_fixed", "alfakR_minobs20", "alfak2_sparse_joint", "alfak2_sparse_joint_balance")
+main_methods <- c("zero", "karst_two_layer_fixed", "alfak_minobs20", "karst_sparse_joint", "karst_sparse_joint_balance")
 writeLines(c(table_tex(held, "ratio", 2, "Error relative to the null predictor, held-out landscapes.", main_methods[-1]), "",
              table_tex(held, "direction", 2, "Direction accuracy, held-out landscapes.", main_methods[-1]), "",
              table_tex(held, "spearman", 2, "Spearman correlation, held-out landscapes.", main_methods[-1])),
@@ -161,7 +161,7 @@ for (split in c("heldout", "dev")) {
   cat("==", split, "spearman\n"); show(wl, main_methods[-1], "spearman")
   cat("==", split, "direction\n"); show(wl, main_methods[-1], "direction")
   cat("==", split, "bias (null bias = minus mean truth)\n"); show(wl, main_methods, "bias", 3)
-  cat("==", split, "coverage\n"); show(wl, c("alfak2_sparse_joint_balance", "alfakR_minobs20", "alfak2_two_layer_fixed"), "coverage95")
+  cat("==", split, "coverage\n"); show(wl, c("karst_sparse_joint_balance", "alfak_minobs20", "karst_two_layer_fixed"), "coverage95")
   cat("==", split, "near-field prediction fraction at d3/d4\n")
   print(stats::aggregate(prediction_fraction ~ label, wl[wl$distance >= 3 & grepl("two_layer", wl$method), ], max))
 }

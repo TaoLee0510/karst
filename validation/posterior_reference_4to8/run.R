@@ -5,8 +5,8 @@ directory <- file.path(repo, "validation/posterior_reference_4to8")
 source(file.path(directory, "reference.R"))
 source(file.path(repo, "validation/accuracy_round2/common.R"))
 runtime <- reference_load(repo)
-output <- Sys.getenv("ALFAK2_REFERENCE_OUTPUT", file.path(directory, "results"))
-raw <- Sys.getenv("ALFAK2_REFERENCE_RAW", "/private/tmp/alfak2_reference_4to8_20261104")
+output <- Sys.getenv("KARST_REFERENCE_OUTPUT", file.path(directory, "results"))
+raw <- Sys.getenv("KARST_REFERENCE_RAW", "/private/tmp/alfak2_reference_4to8_20261104")
 dir.create(output, recursive = TRUE, showWarnings = FALSE)
 dir.create(raw, recursive = TRUE, showWarnings = FALSE)
 if (!file.exists(file.path(output, "validation/validation_tests.csv"))) stop("Run validate.R first")
@@ -36,7 +36,7 @@ for (i in seq_along(cases)) {
   cache_key <- list(computation_sha256 = computation_key, case_sha256 = round2_hash_object(case))
   if (file.exists(target_file)) {
     result <- readRDS(target_file)
-    if (!identical(result$cache_key, cache_key)) stop("Raw-chain cache fingerprint mismatch; use a new ALFAK2_REFERENCE_RAW directory")
+    if (!identical(result$cache_key, cache_key)) stop("Raw-chain cache fingerprint mismatch; use a new KARST_REFERENCE_RAW directory")
   } else {
     started <- proc.time()[["elapsed"]]
     fit <- reference_fit(case, runtime)

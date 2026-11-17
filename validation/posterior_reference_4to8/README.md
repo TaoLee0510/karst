@@ -7,15 +7,15 @@ It consumes no reserved accuracy calibration/test seed.
 
 From the repository root, a fresh reproduction uses installed R packages
 `Rcpp`, `TMB`, `Matrix`, `posterior`, and `testthat`, and an oracle-capable
-alfak2 DLL built from this repository. Point `ALFAK2_REFERENCE_DLL` to that
+KARST DLL built from this repository. Point `KARST_REFERENCE_DLL` to that
 installed DLL. Choose fresh output and chain directories to preserve the
 recorded results:
 
 ```sh
-export ALFAK2_REFERENCE_DLL="/path/to/library/alfak2/libs/alfak2.so"
-export ALFAK2_REFERENCE_OUTPUT="/private/tmp/alfak2-reference-reproduction/results"
-export ALFAK2_REFERENCE_RAW="/private/tmp/alfak2-reference-reproduction/chains"
-export ALFAK2_REFERENCE_REPORT="/private/tmp/alfak2-reference-reproduction/REVIEW.md"
+export KARST_REFERENCE_DLL="/path/to/library/karst/libs/karst.so"
+export KARST_REFERENCE_OUTPUT="/private/tmp/alfak2-reference-reproduction/results"
+export KARST_REFERENCE_RAW="/private/tmp/alfak2-reference-reproduction/chains"
+export KARST_REFERENCE_REPORT="/private/tmp/alfak2-reference-reproduction/REVIEW.md"
 Rscript validation/posterior_reference_4to8/validate.R
 Rscript validation/posterior_reference_4to8/run.R
 Rscript validation/posterior_reference_4to8/analyze.R
@@ -23,7 +23,7 @@ Rscript validation/posterior_reference_4to8/report.R
 ```
 
 The previous two-node quadrature input is archived in
-`inputs/two_node_reference.rds`; an optional `ALFAK2_REFERENCE_TWONODE` override
+`inputs/two_node_reference.rds`; an optional `KARST_REFERENCE_TWONODE` override
 is available. No input download or old temporary reference file is required.
 The code refuses changed case/source fingerprints or mixed raw-chain caches.
 

@@ -2,13 +2,13 @@
 # below one; no survival or omitted-state mass is redistributed to other nodes.
 division_transition_data <- function(graph, beta = graph$beta,
                                      probability_cutoff = 1e-14) {
-  op <- alfak2_transition_operator_cpp(graph$karyotypes, beta, "exact",
+  op <- karst_transition_operator_cpp(graph$karyotypes, beta, "exact",
                                       division_process = TRUE,
                                       probability_cutoff = probability_cutoff)
   cn <- sort(unique(as.integer(graph$karyotypes)))
   viability <- vapply(cn, function(parent) {
     sum(vapply(seq.int(graph$min_cn, graph$max_cn), function(child)
-      alfak2_pij_cpp(parent, child, beta), numeric(1)))
+      karst_pij_cpp(parent, child, beta), numeric(1)))
   }, numeric(1))
   names(viability) <- as.character(cn)
   viable <- apply(graph$karyotypes, 1L, function(x) prod(viability[as.character(x)]))

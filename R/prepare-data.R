@@ -46,11 +46,11 @@ subset_observation_weights <- function(weights, labels) {
 #' @param times Optional sampling times, one per column, strictly increasing,
 #'   instead of `dt`. Only differences matter.
 #'
-#' @return An `alfak2_data` object. `dt` is the time from the first to the last
+#' @return An `karst_data` object. `dt` is the time from the first to the last
 #'   timepoint. With more than two timepoints, `times` holds the time of each
-#'   since the first; [alfak2_data_times()] returns it for any number.
+#'   since the first; [karst_data_times()] returns it for any number.
 #' @export
-prepare_alfak2_data <- function(counts, dt = 1, beta = 0.00005, metadata = list(), times = NULL) {
+prepare_karst_data <- function(counts, dt = 1, beta = 0.00005, metadata = list(), times = NULL) {
   observation_weights <- attr(counts, "observation_weights", exact = TRUE)
   soft_minobs <- attr(counts, "soft_minobs", exact = TRUE)
   holdout_mode <- attr(counts, "holdout_mode", exact = TRUE)
@@ -72,7 +72,7 @@ prepare_alfak2_data <- function(counts, dt = 1, beta = 0.00005, metadata = list(
   if (!is.null(soft_minobs)) metadata$soft_minobs <- soft_minobs
   if (!is.null(holdout_mode)) metadata$holdout_mode <- holdout_mode
   parse_karyotypes(rownames(counts))
-  new_alfak2_data(counts = counts, dt = times[[n_time]], beta = beta, metadata = metadata,
+  new_karst_data(counts = counts, dt = times[[n_time]], beta = beta, metadata = metadata,
                   times = if (n_time > 2L) times else NULL)
 }
 
@@ -101,11 +101,11 @@ resolve_sample_times <- function(n_time, dt, times, dt_given) {
 
 #' Sampling times of count data
 #'
-#' @param data An `alfak2_data` object.
+#' @param data An `karst_data` object.
 #' @return The time of each timepoint since the first: `c(0, dt)` for two
 #'   timepoints.
 #' @export
-alfak2_data_times <- function(data) {
-  if (!inherits(data, "alfak2_data")) stop("`data` must be an `alfak2_data` object.", call. = FALSE)
+karst_data_times <- function(data) {
+  if (!inherits(data, "karst_data")) stop("`data` must be an `karst_data` object.", call. = FALSE)
   if (is.null(data$times)) c(0, data$dt) else data$times
 }

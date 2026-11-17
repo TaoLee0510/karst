@@ -1,20 +1,20 @@
 // [[Rcpp::depends(RcppEigen)]]
-#include "alfak2_core.h"
+#include "karst_core.h"
 
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-Rcpp::IntegerMatrix alfak2_parse_karyotypes_cpp(Rcpp::CharacterVector labels) {
-  return alfak2::labels_to_matrix(labels);
+Rcpp::IntegerMatrix karst_parse_karyotypes_cpp(Rcpp::CharacterVector labels) {
+  return karst::labels_to_matrix(labels);
 }
 
 // [[Rcpp::export]]
-Rcpp::CharacterVector alfak2_stringify_karyotypes_cpp(Rcpp::IntegerMatrix karyotypes) {
-  return alfak2::matrix_to_labels(karyotypes);
+Rcpp::CharacterVector karst_stringify_karyotypes_cpp(Rcpp::IntegerMatrix karyotypes) {
+  return karst::matrix_to_labels(karyotypes);
 }
 
 // [[Rcpp::export]]
-Rcpp::List alfak2_build_graph_cpp(Rcpp::CharacterVector labels,
+Rcpp::List karst_build_graph_cpp(Rcpp::CharacterVector labels,
                                   Rcpp::IntegerVector y0,
                                   Rcpp::IntegerVector y1,
                                   double beta = 0.00005,
@@ -25,8 +25,8 @@ Rcpp::List alfak2_build_graph_cpp(Rcpp::CharacterVector labels,
                                   int max_nodes = 5000) {
   if (shell_depth < 0) Rcpp::stop("`shell_depth` must be non-negative.");
   if (min_cn > max_cn) Rcpp::stop("`min_cn` must be <= `max_cn`.");
-  transition_kernel = alfak2::normalize_transition_kernel(transition_kernel);
-  Rcpp::IntegerMatrix observed_mat = alfak2::labels_to_matrix(labels);
+  transition_kernel = karst::normalize_transition_kernel(transition_kernel);
+  Rcpp::IntegerMatrix observed_mat = karst::labels_to_matrix(labels);
   int n_obs = observed_mat.nrow();
   int p = observed_mat.ncol();
   if (y0.size() != n_obs || y1.size() != n_obs) {
@@ -47,7 +47,7 @@ Rcpp::List alfak2_build_graph_cpp(Rcpp::CharacterVector labels,
         Rcpp::stop("Observed karyotype copy numbers must be within [min_cn, max_cn].");
       }
     }
-    std::string key = alfak2::make_key(x);
+    std::string key = karst::make_key(x);
     int new_id = nodes.size();
     id[key] = new_id;
     nodes.push_back(x);
@@ -67,7 +67,7 @@ Rcpp::List alfak2_build_graph_cpp(Rcpp::CharacterVector labels,
         std::vector<int> nb = nodes[cur];
         nb[c] += dir;
         if (nb[c] < min_cn || nb[c] > max_cn) continue;
-        std::string key = alfak2::make_key(nb);
+        std::string key = karst::make_key(nb);
         auto it = id.find(key);
         if (it == id.end()) {
           if (static_cast<int>(nodes.size()) >= max_nodes) {
@@ -91,13 +91,13 @@ Rcpp::List alfak2_build_graph_cpp(Rcpp::CharacterVector labels,
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < p; ++j) node_mat(i, j) = nodes[i][j];
   }
-  Rcpp::CharacterVector node_labels = alfak2::matrix_to_labels(node_mat);
+  Rcpp::CharacterVector node_labels = karst::matrix_to_labels(node_mat);
 
-  std::vector<alfak2::Edge> raw_edges = alfak2::one_step_edges(nodes, id, beta, transition_kernel);
-  std::vector<double> self_weight = alfak2::state_self_weights(nodes, beta, transition_kernel);
+  std::vector<karst::Edge> raw_edges = karst::one_step_edges(nodes, id, beta, transition_kernel);
+  std::vector<double> self_weight = karst::state_self_weights(nodes, beta, transition_kernel);
   std::vector<int> tr_from, tr_to;
   std::vector<double> tr_weight;
-  alfak2::add_row_stochastic_transition(raw_edges, n, tr_from, tr_to, tr_weight, self_weight);
+  karst::add_row_stochastic_transition(raw_edges, n, tr_from, tr_to, tr_weight, self_weight);
 
   Rcpp::IntegerVector edge_from(raw_edges.size()), edge_to(raw_edges.size()), edge_chr(raw_edges.size());
   Rcpp::IntegerVector edge_direction(raw_edges.size());
@@ -118,7 +118,7 @@ Rcpp::List alfak2_build_graph_cpp(Rcpp::CharacterVector labels,
   for (const auto& e : raw_edges) {
     if (support_distance[e.to] <= 0) continue;
     if (support_distance[e.from] >= support_distance[e.to]) continue;
-    int band = alfak2::ploidy_band(nodes[e.from]);
+    int band = karst::ploidy_band(nodes[e.from]);
     std::string ctx_key = std::string(e.direction > 0 ? "gain" : "loss") +
       "_chr" + std::to_string(e.chr + 1) + "_band" + std::to_string(band);
     auto it = ctx_id.find(ctx_key);
@@ -156,7 +156,7 @@ Rcpp::List alfak2_build_graph_cpp(Rcpp::CharacterVector labels,
   for (int i = 0; i < n_obs; ++i) {
     std::vector<int> x(p);
     for (int j = 0; j < p; ++j) x[j] = observed_mat(i, j);
-    obs_index[i] = id[alfak2::make_key(x)] + 1;
+    obs_index[i] = id[karst::make_key(x)] + 1;
   }
 
   return Rcpp::List::create(

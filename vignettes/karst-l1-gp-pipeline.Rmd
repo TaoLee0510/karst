@@ -1,8 +1,8 @@
 ---
-title: "alfak2 Lazy GRF Pipeline"
+title: "KARST Lazy GRF Pipeline"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{alfak2 Lazy GRF Pipeline}
+  %\VignetteIndexEntry{KARST Lazy GRF Pipeline}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,7 +12,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
 ```{r setup}
-library(alfak2)
+library(karst)
 ```
 
 Generate a lightweight paper-style GRF truth landscape. The object stores GRF
@@ -48,7 +48,7 @@ sim$sparsity
 Fit the two-layer compiled pipeline.
 
 ```{r fit}
-fit <- fit_alfak2(
+fit <- fit_karst(
   sim$counts,
   dt = 1,
   beta = 0.00005,
@@ -57,12 +57,12 @@ fit <- fit_alfak2(
   local_shell_depth = 2,
   global_extra_shell = 1
 )
-head(summarize_alfak2(fit))
+head(summarize_karst(fit))
 ```
 
 Inspect local and global support tiers.
 
 ```{r tiers}
-table(summarize_alfak2(fit, layer = "local")$support_tier)
-table(summarize_alfak2(fit, layer = "global")$support_tier)
+table(summarize_karst(fit, layer = "local")$support_tier)
+table(summarize_karst(fit, layer = "global")$support_tier)
 ```

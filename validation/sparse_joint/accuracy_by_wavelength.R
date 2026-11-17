@@ -1,5 +1,5 @@
 # The three accuracy measures by wavelength and distance (Section 5.2 of
-# doc/alfak2_method.tex).
+# doc/karst_method.tex).
 #
 #   Rscript validation/sparse_joint/accuracy_by_wavelength.R [OUT_DIR]
 #
@@ -22,10 +22,10 @@ out_dir <- if (length(args)) args[[1L]] else "doc/generated"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 results <- "benchmark/results/sparse_two_timepoint"
 
-methods <- c("Sparse joint, balance (default)" = "alfak2_sparse_joint_balance",
-             "Sparse joint, independent" = "alfak2_sparse_joint",
-             "Two-layer pipeline" = "alfak2_two_layer_fixed",
-             "alfakR (minobs = 20)" = "alfakR_minobs20")
+methods <- c("Sparse joint, balance (default)" = "karst_sparse_joint_balance",
+             "Sparse joint, independent" = "karst_sparse_joint",
+             "Two-layer pipeline" = "karst_two_layer_fixed",
+             "alfak (minobs = 20)" = "alfak_minobs20")
 waves <- c("w0.4", "w0.8", "w1.2", "w1.6")
 mean_na <- function(v) if (all(is.na(v))) NA_real_ else mean(v, na.rm = TRUE)
 
@@ -51,9 +51,9 @@ dev <- load_split("dev")
 
 ## Figure ----------------------------------------------------------------------
 palette <- c("Sparse joint, balance (default)" = "#2a78d6", "Sparse joint, independent" = "#eb6834",
-             "Two-layer pipeline" = "#1baf7a", "alfakR (minobs = 20)" = "#eda100")
+             "Two-layer pipeline" = "#1baf7a", "alfak (minobs = 20)" = "#eda100")
 shapes <- c("Sparse joint, balance (default)" = 16, "Sparse joint, independent" = 17,
-            "Two-layer pipeline" = 15, "alfakR (minobs = 20)" = 18)
+            "Two-layer pipeline" = 15, "alfak (minobs = 20)" = 18)
 theme_doc <- theme_minimal(base_size = 8) +
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "#e6e5e0", linewidth = 0.3),
         axis.text = element_text(colour = "#52514e"), strip.text = element_text(colour = "#1f1f1e"),
@@ -85,7 +85,7 @@ ggsave(file.path(out_dir, "accuracy_by_wavelength.pdf"), figure, width = 6.5, he
 
 ## Table -----------------------------------------------------------------------
 display <- c("Two-layer pipeline" = "Two-layer pipeline",
-             "alfakR (minobs = 20)" = "\\texttt{alfakR} (\\texttt{minobs = 20})",
+             "alfak (minobs = 20)" = "\\texttt{alfak} (\\texttt{minobs = 20})",
              "Sparse joint, independent" = "Sparse joint, independent",
              "Sparse joint, balance (default)" = "Sparse joint, balance")
 rows <- vapply(names(display), function(label) {

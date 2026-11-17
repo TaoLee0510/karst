@@ -1,5 +1,5 @@
 # Direction accuracy of the main methods, from the saved benchmark fits
-# (Section 5.1 of doc/alfak2_method.tex).
+# (Section 5.1 of doc/karst_method.tex).
 #
 #   Rscript validation/sparse_joint/direction_accuracy.R [--workers=3]
 #
@@ -31,7 +31,7 @@ config <- stt_config()
 res <- config$output_dir
 out <- file.path(res, "sweeps", "direction")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
-methods <- c("alfak2_sparse_joint_balance", "alfak2_sparse_joint", "alfak2_two_layer_fixed", "alfakR_minobs20")
+methods <- c("karst_sparse_joint_balance", "karst_sparse_joint", "karst_two_layer_fixed", "alfak_minobs20")
 
 direction <- function(nodes, truth, prediction, distances) {
   table <- stt_score_predictions(nodes, truth, prediction, config$scoring$reference_min_count)$nodes

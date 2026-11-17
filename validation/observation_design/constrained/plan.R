@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_CONSTRAINED_SOURCE",file.path(root,"constrained")))
-out<-Sys.getenv("ALFAK2_CONSTRAINED_OUTPUT",file.path(root,"results/constrained_v1"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_CONSTRAINED_SOURCE",file.path(root,"constrained")))
+out<-Sys.getenv("KARST_CONSTRAINED_OUTPUT",file.path(root,"results/constrained_v1"))
 dir.create(out,recursive=TRUE,showWarnings=FALSE)
 stopifnot(!file.exists(file.path(out,"selected_designs.rds")))
 source(file.path(root,"results/computation_source_v4/data.R"))

@@ -57,7 +57,7 @@ baseline_integrate <- function(case, original_fit, runtime, orders = c(9L, 17L, 
         if (!identical(cached$key, node_key)) stop("Conditional-node cache fingerprint mismatch")
         fit <- cached$fit
       } else {
-        data <- runtime$pkg$prepare_alfak2_data(case$counts, dt = case$specification$dt, beta = case$beta)
+        data <- runtime$pkg$prepare_karst_data(case$counts, dt = case$specification$dt, beta = case$beta)
         fit <- runtime$pkg$fit_local_posterior(data, graph = case$graph,
           structured_prior = baseline_component_prior(case$prior, value),
           forward_model = "division_process", forward_step = .1,

@@ -136,7 +136,7 @@ prepare_counts_for_input_depth <- function(counts,
   input_depth <- modes$input_depth
   effective_depth_mode <- modes$effective_depth_mode
   effective_depth_rounding <- match.arg(effective_depth_rounding)
-  if (inherits(counts, "alfak2_data")) {
+  if (inherits(counts, "karst_data")) {
     data <- counts
     if (input_depth == "raw") return(data)
     if (!is.null(data$metadata$observation_weights)) {
@@ -158,10 +158,10 @@ prepare_counts_for_input_depth <- function(counts,
     info <- attr(eff_counts, "effective_depth_info")
     metadata <- data$metadata
     metadata$input_depth <- info
-    return(prepare_alfak2_data(eff_counts, dt = data$dt, beta = data$beta, metadata = metadata))
+    return(prepare_karst_data(eff_counts, dt = data$dt, beta = data$beta, metadata = metadata))
   }
   if (input_depth == "raw") {
-    return(prepare_alfak2_data(counts, dt = dt, beta = beta))
+    return(prepare_karst_data(counts, dt = dt, beta = beta))
   }
   eff_counts <- apply_effective_depth_counts(
     counts,
@@ -171,7 +171,7 @@ prepare_counts_for_input_depth <- function(counts,
     effective_depth_seed = effective_depth_seed
   )
   info <- attr(eff_counts, "effective_depth_info")
-  prepare_alfak2_data(eff_counts, dt = dt, beta = beta, metadata = list(input_depth = info))
+  prepare_karst_data(eff_counts, dt = dt, beta = beta, metadata = list(input_depth = info))
 }
 
 resolve_fit_observation_controls <- function(input_depth, observation_model, dm_concentration) {

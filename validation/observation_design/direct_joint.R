@@ -112,7 +112,7 @@ direct_joint_integrate <- function(case,context,runtime,cache=NULL,key=NULL) {
       nearest<-pool[[which.min(vapply(pool,function(p)abs(p$shift-value),numeric(1)))]]
       initial<-nearest$fit$parameter_mode
       if(!isTRUE(nearest$full))initial$u<-initial$u+nearest$shift-value
-      if(Sys.getenv("ALFAK2_DIRECT_TRACE","")=="1")cat("Conditional order",order,"node",j,"shift",value,"\n")
+      if(Sys.getenv("KARST_DIRECT_TRACE","")=="1")cat("Conditional order",order,"node",j,"shift",value,"\n")
       filename<-if(is.null(cache))NULL else file.path(cache,sprintf("%s_order%d_node%d.rds",case$id,order,j))
       node_key<-list(key=key,shift=value)
       if(!is.null(filename)&&file.exists(filename)) {

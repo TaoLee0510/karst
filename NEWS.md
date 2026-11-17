@@ -1,4 +1,24 @@
-# alfak2 0.2.0 (2026-11-17)
+# karst 1.0.0 (2026-11-17)
+
+alfak2 is renamed KARST (Karyotype Abundance-based Reconstruction from Sparse
+Time points). The methods and their results are those of alfak2 0.2.0; only
+names change, and old names have no aliases.
+
+- The package is `karst`: `library(karst)`. Functions, classes, options and
+  condition classes that carried `alfak2` carry `karst`: `fit_karst()`,
+  `prepare_karst_data()`, `karst_data_times()`, `summarize_karst()`,
+  `plot_karst()`; classes such as `karst_sparse_joint_fit`; options such as
+  `karst.sparse_joint_template`; conditions such as
+  `karst_domain_coverage_error`.
+- alfak, the R package `alfakR` of the ALFA-K paper, is called alfak in the
+  documentation, labels and KARST's own function names: `as_alfak()` (was
+  `as_alfakR()`), `write_alfak_outputs()` (was `write_alfakR_outputs()`),
+  class `karst_alfak_output`; `alfak_compat()` keeps its name. Versions of alfak
+  are named by branch and commit, such as alfak dev2@f93b2d2.
+- Commit ids cited from before the rename map to the current history through
+  `doc/commit_map.tsv`.
+
+# karst 0.2.0 (2026-11-17, released as alfak2)
 
 The first release built around the sparse joint count model: fitness
 landscapes from sparse karyotype counts at two time points, the case the
@@ -6,7 +26,7 @@ package is meant for, with more time points as an extension.
 
 ## The default pipeline
 
-- `fit_alfak2()` now fits the sparse joint count model (`fit_sparse_joint()`)
+- `fit_karst()` now fits the sparse joint count model (`fit_sparse_joint()`)
   by default. Both time points enter one count likelihood over the
   well-sampled ("major") karyotypes and all their one-step neighbours,
   observed or not, so that an unobserved neighbour of an abundant clone is
@@ -23,7 +43,7 @@ package is meant for, with more time points as an extension.
   dosage, curvature and distance to the major karyotypes (`predict()`).
 - `diagnostics$domain_coverage` reports how much of each time point the domain
   holds; a time point with no cell in it stops the fit with an error of class
-  `alfak2_domain_coverage_error`. `check_sparse_joint_counts()` summarises a
+  `karst_domain_coverage_error`. `check_sparse_joint_counts()` summarises a
   count matrix before fitting.
 - The scale optimisation is checked and a fit that is not accepted warns
   (`diagnostics$optimisation`).
@@ -39,9 +59,9 @@ package is meant for, with more time points as an extension.
 - **Uncertain rates**: `fit_sparse_joint_rates()` fits over a range of
   baseline birth rates or missegregation rates (`beta_range`), with point
   predictions at the lowest rate of the range.
-- **alfakR outputs**: `as_alfakR()`, `write_alfakR_outputs()` and
+- **alfak outputs**: `as_alfak()`, `write_alfak_outputs()` and
   `alfak_compat()` produce the objects and files of `alfakR::alfak()` (branch
-  dev), with alfakR's karyotype sets, scale, bootstrap layout and
+  dev), with alfak's karyotype sets, scale, bootstrap layout and
   cross-validation folds.
 - `initial_state = "free"` estimates every initial abundance independently;
   `initial_state = "auto"` (two time points) chooses between the two by the
@@ -51,17 +71,17 @@ package is meant for, with more time points as an extension.
 ## Validation
 
 Scripts and reports are in `validation/sparse_joint/`; the method and its
-results are in `doc/alfak2_method.tex`.
+results are in `doc/karst_method.tex`.
 
 - On the development benchmark of simulated tumours (sparse two-time-point
   scenarios, 180–1080 days) and its held-out landscapes, the sparse joint
   model lowered the error of predicting no fitness differences to 0.47–0.74
-  of that value, where alfakR (minobs 20) exceeded it.
-- On the ALFA-K paper's own tests (benchmark round of alfak2 348addd, against
-  alfakR dev2 f93b2d2), alfak2's landscapes were more accurate on the paper's
+  of that value, where alfak (minobs 20) exceeded it.
+- On the ALFA-K paper's own tests (benchmark round of KARST 348addd, against
+  alfak dev2@f93b2d2), KARST's landscapes were more accurate on the paper's
   simulations, and its forecasts beat the baseline more often.
 - On the Salehi passages, forecasts scored against every later passage by a
-  proper score (log-likelihood relative to no change): alfak2 beat alfakR by
+  proper score (log-likelihood relative to no change): KARST beat alfak by
   1.01 per cell with two time points and by 1.12 with every passage
   (`validation/sparse_joint/salehi_horizon`). The paper's Fig. 2d ranking on
   these data is dominated by sampling noise and does not separate the two.

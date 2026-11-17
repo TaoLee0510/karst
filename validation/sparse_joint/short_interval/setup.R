@@ -17,9 +17,9 @@ for (part in c("landscape.R", "config.R", "generate.R", "profile.R", "score.R"))
 
 si_default_output <- file.path(si_repo, "validation", "sparse_joint", "short_interval", "results")
 
-# Library holding a given alfak2 build, installed outside the source tree.
+# Library holding a given karst build, installed outside the source tree.
 si_library <- function(build, output_dir = si_default_output) {
-  file.path(output_dir, "lib", paste0("alfak2_", build))
+  file.path(output_dir, "lib", paste0("karst_", build))
 }
 
 # `set = "heldout"`: the same design on landscapes no one has looked at
@@ -63,10 +63,10 @@ si_config <- function(output_dir = NULL, set = c("diagnosis", "heldout")) {
     depth_t0 = 1000, depth_t1 = 1000, interval = design$interval, t0 = design$t0,
     bottleneck = 0, shift = 0, role = "diagnosis", stringsAsFactors = FALSE
   )
-  # Cross-validation as in as_alfakR(): frequent karyotypes have at least
+  # Cross-validation as in as_alfak(): frequent karyotypes have at least
   # `minobs` cells over both time points.
   config$cv <- list(minobs = 10)
-  # Arms. `build` names the alfak2 library (si_library()); `history = "age"`
+  # Arms. `build` names the karst library (si_library()); `history = "age"`
   # sets the history to the true age of the population at the first time point,
   # which only a simulation knows; `history = "grid"` gives the candidates of
   # si_history_grid(). Build "si1" is 8327282 with the opt-in trend and
@@ -157,7 +157,7 @@ si_centred_stats <- function(target, x) {
     R2R = 1 - sum((xc - tc)^2) / sum(tc^2), slope = sum(xc * tc) / sum(xc^2))
 }
 
-# Cross-validation of as_alfakR() against the truth, as
+# Cross-validation of as_alfak() against the truth, as
 # alfak2-paper-benchmark/scripts/cv_score_analysis.R computes it.
 si_cv_metrics <- function(cv, fq, truth) {
   o <- unname(cv$observations)
@@ -174,7 +174,7 @@ si_cv_metrics <- function(cv, fq, truth) {
   pt <- si_centred_stats(f, p)
   ot <- si_centred_stats(f, o)
   fold <- unlist(lapply(seq_along(fq), function(i) {
-    members <- c(fq[i], alfak2:::alfakR_neighbours(fq[i]))
+    members <- c(fq[i], karst:::alfak_neighbours(fq[i]))
     stats::setNames(rep(i, length(members)), members)
   }))
   fold <- fold[!duplicated(names(fold))]
@@ -188,7 +188,7 @@ si_cv_metrics <- function(cv, fq, truth) {
     bias_fq = mean(e[k %in% fq]) / stats::sd(o), n_folds = length(unique(fid[keep])), between = between)
 }
 
-# Landscape of as_alfakR() (frequent karyotypes, their neighbours and the
+# Landscape of as_alfak() (frequent karyotypes, their neighbours and the
 # neighbours' neighbours) against the truth: r and centred R-squared, as in
 # the paper's Supplementary Note 3.
 si_landscape_metrics <- function(landscape, truth) {
@@ -215,7 +215,7 @@ si_fit_sparse_joint <- function(config, dataset, nodes, method) {
   if (identical(arguments$history, "grid")) arguments$history <- si_history_grid(dataset$interval)
   if (identical(arguments$history, "profile")) arguments$history <- si_history_profile(dataset$interval)
   started <- proc.time()[["elapsed"]]
-  fit <- do.call(alfak2::fit_sparse_joint, c(
+  fit <- do.call(karst::fit_sparse_joint, c(
     list(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = method$birth_rate,
          min_cn = method$min_cn, max_cn = method$max_cn),
     arguments
@@ -224,7 +224,7 @@ si_fit_sparse_joint <- function(config, dataset, nodes, method) {
   prediction <- stats::predict(fit, nodes$karyotype)
   started <- proc.time()[["elapsed"]]
   compat <- tryCatch(
-    alfak2::as_alfakR(fit, minobs = config$cv$minobs, nboot = 2, n0 = NULL, nb = NULL, correct_efflux = FALSE),
+    karst::as_alfak(fit, minobs = config$cv$minobs, nboot = 2, n0 = NULL, nb = NULL, correct_efflux = FALSE),
     error = function(e) conditionMessage(e)
   )
   cv_seconds <- proc.time()[["elapsed"]] - started

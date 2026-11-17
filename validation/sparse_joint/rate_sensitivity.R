@@ -7,7 +7,7 @@
 #
 # `--grid=typical` runs the full grid; `--grid=ends` only the extremes, for
 # use on every scenario. Each fit is cached under results/sweeps/rate.
-# Set STT_R_LIB to the library holding the alfak2 build under test.
+# Set STT_R_LIB to the library holding the karst build under test.
 
 library_dir <- Sys.getenv("STT_R_LIB", unset = "")
 if (nzchar(library_dir)) .libPaths(c(library_dir, .libPaths()))
@@ -50,7 +50,7 @@ run_task <- function(i) {
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
   started <- proc.time()[["elapsed"]]
-  fit <- tryCatch(suppressWarnings(do.call(alfak2::fit_sparse_joint, c(
+  fit <- tryCatch(suppressWarnings(do.call(karst::fit_sparse_joint, c(
     list(counts, dt = dataset$interval, beta = dataset$beta * task$beta, birth_rate = task$birth,
          min_cn = 1L, max_cn = 8L), extra))), error = function(e) conditionMessage(e))
   result <- list(dataset_id = task$dataset_id, birth = task$birth, beta = task$beta,

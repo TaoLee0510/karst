@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_SOURCE",file.path(root,"mechanism")))
-out<-Sys.getenv("ALFAK2_MECHANISM_OUTPUT",file.path(root,"results/mechanism_v1"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_MECHANISM_SOURCE",file.path(root,"mechanism")))
+out<-Sys.getenv("KARST_MECHANISM_OUTPUT",file.path(root,"results/mechanism_v1"))
 dir.create(out,recursive=TRUE,showWarnings=FALSE)
 stopifnot(!file.exists(file.path(out,"frozen_cases.rds")))
 source(file.path(src,"common.R"));runtime<-mechanism_load(repo,src,FALSE)

@@ -1,4 +1,4 @@
-% alfak2 sparse joint model, more than two time points: the anchored method
+% KARST sparse joint model, more than two time points: the anchored method
 % (series = "anchored", the current default). Mirrors fit_sparse_joint(),
 % sparse_joint_uncounted_samples(), sparse_joint_intermediate_dispersion()
 % and sparse_joint_used_counts() in R/sparse-joint.R.
@@ -18,7 +18,7 @@
   time point and every time point counts for every state.};
 \node[dec, below=0.45cm of major] (cover) {Do $t_0$ and $t_K$ each have a cell in $\mathcal D$?};
 \node[err, w=3.9cm, right=0.6cm of cover] (stop) {%
-  \textbf{Stop}: {\ttfamily\scriptsize alfak2\_domain\_coverage\_error}};
+  \textbf{Stop}: {\ttfamily\scriptsize KARST\_domain\_coverage\_error}};
 \draw[arr] (in) -- (major);
 \draw[arr] (major) -- (cover);
 \draw[arr, draw=cErrB] (cover) -- node[lab, above] {no} (stop);

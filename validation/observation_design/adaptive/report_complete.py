@@ -88,7 +88,7 @@ def main():
                 for r in recovery]
     flags = [[r["design"]] + [r[k] for k in ["point_nonworse", "shape_5percent_all_distances", "edge_nonworse", "interval_scores_nonworse", "family_safety"]]
              for r in triage]
-    text = f'''# ALFAK2 固定预算观测设计：自适应积分完成检查点
+    text = f'''# KARST 固定预算观测设计：自适应积分完成检查点
 
 原定60个开发案例现已全部数值可用，完整比较已完成；两种预先指定的600细胞候选均未达到“所有距离的fitness与不确定性同时改善”的开发条件。共同锚点布局改善了远场均值，但牺牲了观测层，不能据此升级默认方法。
 

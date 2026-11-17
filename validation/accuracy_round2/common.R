@@ -19,7 +19,7 @@ round2_sha256 <- function(files) {
   stats::setNames(hashes, files)
 }
 round2_hash_object <- function(x) {
-  file <- tempfile("alfak2_round2_hash_")
+  file <- tempfile("karst_round2_hash_")
   on.exit(unlink(file))
   saveRDS(x, file, version = 2)
   unname(round2_sha256(file))
@@ -40,6 +40,6 @@ round2_source_fingerprint <- function(source, dll = NULL) {
              file.path(source, "DESCRIPTION"))
   files <- sort(files[file.exists(files)])
   manifest <- data.frame(file = substring(files, nchar(source) + 2L), sha256 = unname(round2_sha256(files)))
-  if (!is.null(dll)) manifest <- rbind(manifest, data.frame(file = "binary/alfak2.so", sha256 = unname(round2_sha256(dll))))
+  if (!is.null(dll)) manifest <- rbind(manifest, data.frame(file = "binary/karst.so", sha256 = unname(round2_sha256(dll))))
   list(manifest = manifest, sha256 = round2_hash_object(manifest))
 }

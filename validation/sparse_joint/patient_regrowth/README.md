@@ -4,7 +4,7 @@ Patient data such as the GBM pairs are not passages. The cells of the first
 time point are taken at surgery and those of the second at recurrence, which
 can be regarded as grown from a small subset of the primary's cells; and the
 time at which that subset started to grow does not correspond to the sampling times. This study asks how
-much either costs the two-timepoint model as shipped (alfak2 ff13cf4), and
+much either costs the two-timepoint model as shipped (KARST ff13cf4), and
 whether the remedies at hand help.
 
 ## Design
@@ -74,7 +74,7 @@ Rscript validation/sparse_joint/patient_regrowth/report.R
 ```
 
 The libraries are the ones built for the multi-timepoint work
-(`../multi_timepoint/results/lib/alfak2_<build>`). The study was first run on
+(`../multi_timepoint/results/lib/karst_<build>`). The study was first run on
 ff13cf4 (`zero` and `base`, in `results/`). The user then moved it to the
 build with the convergence check, cv3, whose fits are those of ff13cf4 but
 say whether the scale optimisation was accepted. `--build=cv3` writes to

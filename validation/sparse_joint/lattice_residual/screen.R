@@ -38,7 +38,7 @@ source(file.path(lr_script_dir, "setup.R"))
 # Labels of the one-step neighbours of each karyotype, one row per karyotype
 # and one column per chromosome and direction (NA where out of bounds).
 lr_neighbour_labels <- function(labels, min_cn = 1L, max_cn = 8L) {
-  ns <- asNamespace("alfak2")
+  ns <- asNamespace("karst")
   cn <- ns$parse_karyotypes(labels)
   out <- matrix(NA_character_, nrow(cn), 2L * ncol(cn))
   for (chr in seq_len(ncol(cn))) for (direction in c(-1L, 1L)) {
@@ -67,11 +67,11 @@ lr_screen_dataset <- function(config, dataset_id, rhos) {
   if (!identical(base$status, "ok")) return(NULL)
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
-  fit <- alfak2::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = 1,
+  fit <- karst::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = 1,
                                   min_cn = 1L, max_cn = 8L, history = base$diagnostics$history)
   s <- fit$summary
   trend <- fit$trend
-  ns <- asNamespace("alfak2")
+  ns <- asNamespace("karst")
   # Trend, as relative fitness, for any karyotypes.
   trend_relative <- function(labels) {
     if (anyDuplicated(labels)) {
@@ -157,7 +157,7 @@ if (sys.nframe() == 0L) {
   Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
   config <- lr_config(set = value("set", "rugged"))
   .libPaths(c(si_library("af362af", config$library_root), .libPaths()))
-  loadNamespace("alfak2")
+  loadNamespace("karst")
   index <- utils::read.csv(si_index_path(config), stringsAsFactors = FALSE)
   index <- index[file.exists(si_fit_path(config, index$dataset_id, "base")), ]
   out <- si_parallel(index$dataset_id, function(id) lr_screen_dataset(config, id, c(0, 0.25, 0.5, 0.75, 1)),

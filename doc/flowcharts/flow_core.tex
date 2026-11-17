@@ -1,7 +1,7 @@
-% alfak2 sparse joint model: the two-time-point fit, whose steps every path shares.
+% KARST sparse joint model: the two-time-point fit, whose steps every path shares.
 % Mirrors fit_sparse_joint(), sparse_joint_problem(), sparse_joint_domain(),
 % sparse_joint_optimise_scales(), sparse_joint_posterior() and
-% predict.alfak2_sparse_joint_fit() in R/. Build: pdflatex flow_core.tex
+% predict.KARST_sparse_joint_fit() in R/. Build: pdflatex flow_core.tex
 \documentclass[tikz,border=4pt]{standalone}
 \input{flowstyle}
 \begin{document}
@@ -22,7 +22,7 @@
   set aside with their cells; \code{predict()} places them later.};
 \node[dec, below=0.45cm of domain] (cover) {Does each time point have a cell in $\mathcal D$?};
 \node[err, w=4.5cm, right=0.6cm of cover] (stop) {%
-  \textbf{Stop} with an error of class\\ {\ttfamily\scriptsize alfak2\_domain\_coverage\_error};\\ the time points may differ too much.};
+  \textbf{Stop} with an error of class\\ {\ttfamily\scriptsize KARST\_domain\_coverage\_error};\\ the time points may differ too much.};
 \draw[arr] (major) -- (domain);
 \draw[arr] (domain) -- (cover);
 \draw[arr, draw=cErrB] (cover) -- node[lab, above] {no} (stop);
@@ -84,7 +84,7 @@
   counts, fitness, $\rho_i$, $\tilde s_i$), \code{trend}, \code{settings} and posterior mode,
   \code{diagnostics}. \code{predict()}: a state of $\mathcal D$ takes its posterior; an observed
   karyotype outside $\mathcal D$ the level of the observed non-majors; any other the trend plus its
-  residual sd. \code{as\_alfakR()} writes the \code{alfakR} files.};
+  residual sd. \code{as\_alfak()} writes the \code{alfak} files.};
 \draw[arr] (rel) -- (out);
 
 \end{tikzpicture}

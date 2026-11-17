@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_IS_SOURCE"));out<-normalizePath(Sys.getenv("ALFAK2_IS_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_IS_SOURCE"));out<-normalizePath(Sys.getenv("KARST_IS_OUTPUT"))
 source(file.path(src,"model.R"));source(file.path(src,"integrate.R"));runtime<-is_load(repo,src)
 oldsrc<-file.path(root,"results/mechanism_reference_source_v2")
 source(file.path(oldsrc,"common.R"));oldruntime<-mechanism_load(repo,oldsrc)

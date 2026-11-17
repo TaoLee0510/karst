@@ -1,6 +1,6 @@
 test_that("legacy exports are absent", {
-  ns <- getNamespaceExports("alfak2")
-  expect_false(paste0("run_", "alfak2_", "bench", "mark") %in% ns)
+  ns <- getNamespaceExports("karst")
+  expect_false(paste0("run_", "karst_", "bench", "mark") %in% ns)
   retired_exports <- c(
     paste0("al", "fak"),
     paste0("predict", "_", "evo"),

@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-out<-normalizePath(Sys.getenv("ALFAK2_IS_OUTPUT"));cases<-readRDS(file.path(root,"results/mechanism_v2/frozen_cases.rds"))
-folder<-Sys.getenv("ALFAK2_IS_SMALL_FOLDER","small_cases")
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+out<-normalizePath(Sys.getenv("KARST_IS_OUTPUT"));cases<-readRDS(file.path(root,"results/mechanism_v2/frozen_cases.rds"))
+folder<-Sys.getenv("KARST_IS_SMALL_FOLDER","small_cases")
 source(file.path(root,"results/mechanism_reference_source_v2/diagnostics.R"))
 reportdir<-file.path(out,paste0(folder,"_analysis"));dir.create(reportdir,showWarnings=FALSE)
 rows<-gates<-covs<-intervals<-identities<-list()

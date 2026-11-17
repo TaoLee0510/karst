@@ -5,7 +5,7 @@
 # Inputs are the paper's ABM and missegregation simulations, built as the
 # paper benchmark builds them (its R/abm.R, read only): the first and last
 # time point of the window of `window` passages before day 120. The fit is
-# alfak2::fit_sparse_joint(x, dt, beta = beta_multiple * 5e-5) with the
+# karst::fit_sparse_joint(x, dt, beta = beta_multiple * 5e-5) with the
 # benchmark's other settings (defaults). Records the objective (negative log
 # marginal likelihood, comparable across rates for the same counts), the
 # chosen history and convergence, and the landscape's accuracy against the
@@ -16,7 +16,7 @@
 #
 #   Rscript sim_fit.R TASKS.tsv OUT_DIR    (SLURM_ARRAY_TASK_ID = row)
 
-suppressPackageStartupMessages(library(alfak2))
+suppressPackageStartupMessages(library(karst))
 args <- commandArgs(TRUE)
 tasks <- utils::read.delim(args[1], stringsAsFactors = FALSE)
 out_dir <- args[2]
@@ -60,8 +60,8 @@ if (inherits(fit, "error")) {
 }
 
 fq <- rownames(x)[rowSums(x) >= 10]
-nn <- alfak2:::alfakR_neighbours(fq)
-k <- unique(c(fq, nn, alfak2:::alfakR_neighbours(nn)))
+nn <- karst:::alfak_neighbours(fq)
+k <- unique(c(fq, nn, karst:::alfak_neighbours(nn)))
 p <- predict(fit, k)
 m <- p$fitness_mean
 f <- grf_fitness(k, info$w, sim$true_landscape)

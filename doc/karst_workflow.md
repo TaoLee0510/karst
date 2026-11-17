@@ -1,8 +1,8 @@
-# alfak2 workflow, step by step
+# KARST workflow, step by step
 
-This is how the default pipeline of alfak2 runs, from a two-time-point count matrix
-to a fitted landscape and, optionally, to the output files of alfakR. It is
-Section 4 of [`alfak2_method.tex`](alfak2_method.tex) in plain text; the model
+This is how the default pipeline of KARST runs, from a two-time-point count matrix
+to a fitted landscape and, optionally, to the output files of alfak. It is
+Section 4 of [`karst_method.tex`](karst_method.tex) in plain text; the model
 and its equations are Section 2 there, and the design decisions and benchmark
 results are in
 [`validation/sparse_joint/README.md`](../validation/sparse_joint/README.md).
@@ -13,11 +13,11 @@ All three run the same model, the sparse joint count model.
 
 | Entry point | Use | Returns |
 | --- | --- | --- |
-| `fit_alfak2(counts, dt, beta)` | Main entry point; `pipeline = "sparse_joint"` is the default | An `alfak2_sparse_joint_fit` |
+| `fit_karst(counts, dt, beta)` | Main entry point; `pipeline = "sparse_joint"` is the default | An `karst_sparse_joint_fit` |
 | `fit_sparse_joint(counts, dt, beta, ...)` | The same model with its arguments given directly | The same |
-| `alfak_compat(yi, outdir, ...)` | The arguments of `alfakR::alfak()`; writes alfakR's files | The cross-validation R-squared, invisibly, and the files in `outdir` |
+| `alfak_compat(yi, outdir, ...)` | The arguments of `alfakR::alfak()`; writes alfak's files | The cross-validation R-squared, invisibly, and the files in `outdir` |
 
-`fit_alfak2()` passes `counts`, `dt`, `beta` and the list
+`fit_karst()` passes `counts`, `dt`, `beta` and the list
 `sparse_joint_control` on to `fit_sparse_joint()`. Any argument that belongs
 to the earlier pipelines is an error unless `pipeline = "two_layer"` or
 `"joint_count"` is set.
@@ -50,7 +50,7 @@ to the earlier pipelines is an error unless `pipeline = "two_layer"` or
 3. **Build the division kernel.** For every pair of neighbouring domain
    states, the probability that a daughter of one has the other's karyotype,
    from the exact single-chromosome missegregation kernel (the same as
-   alfakR's `pij`), and for every state the probability `P_ii` that a
+   alfak's `pij`), and for every state the probability `P_ii` that a
    daughter keeps the parent's karyotype.
 
 4. **Build the trend design.** The centre is the count-weighted mean
@@ -124,20 +124,20 @@ to the earlier pipelines is an error unless `pipeline = "two_layer"` or
 
 Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
 
-## Part 3. alfakR outputs (`alfak_compat` = fit + `as_alfakR` + `write_alfakR_outputs`)
+## Part 3. alfak outputs (`alfak_compat` = fit + `as_alfak` + `write_alfak_outputs`)
 
-11. **Read alfakR's input.** `yi$x` must have two columns. The interval is
+11. **Read alfak's input.** `yi$x` must have two columns. The interval is
     `diff(passage_times)` or `diff(as.numeric(colnames(yi$x))) * yi$dt`, as
-    in alfakR. The model of Part 1 is fitted with `beta = pm`; further
+    in alfak. The model of Part 1 is fitted with `beta = pm`; further
     arguments, such as `birth_rate`, go to `fit_sparse_joint()`.
 
-12. **Choose karyotypes as alfakR does.** `fq`: at least `minobs` cells over
+12. **Choose karyotypes as alfak does.** `fq`: at least `minobs` cells over
     both time points. `nn`: their one-step neighbours without nullisomy. The
-    landscape covers `fq`, `nn` and the neighbours of `nn`, in alfakR's
+    landscape covers `fq`, `nn` and the neighbours of `nn`, in alfak's
     order. `minobs` changes only this choice, not the fit.
 
-13. **Put fitness on alfakR's scale.** `mean` is relative fitness plus
-    `log(nb / n0) / dt`, the growth rate alfakR assigns to the population.
+13. **Put fitness on alfak's scale.** `mean` is relative fitness plus
+    `log(nb / n0) / dt`, the growth rate alfak assigns to the population.
     With `correct_efflux = TRUE` it is divided by `2 P_ii - 1`, giving birth
     rates.
 
@@ -159,9 +159,9 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
       summaries of the draws.
     - `bootstrap_res.Rds`: `final_fitness` (draws for `fq`), `nn_fitness`
       (draws for `nn`), initial frequencies from the drawn initial
-      abundances; `initial_*` equal `final_*`; alfakR's retry attributes.
+      abundances; `initial_*` equal `final_*`; alfak's retry attributes.
 
-16. **Cross-validate.** alfakR's folds: each `fq` karyotype with those of its
+16. **Cross-validate.** alfak's folds: each `fq` karyotype with those of its
     one-step neighbours not in an earlier fold. For each fold, the counts of
     its domain states leave the likelihood, they get the prior of a
     never-seen karyotype, the trend's centre and majors are recomputed
@@ -170,11 +170,11 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
     the fold, are compared with the full fit:
     `R2R = 1 - sum((p - o)^2) / sum(o^2)` with both series centred. This
     measures how well a karyotype the model has not seen is predicted, not
-    how accurate the full fit is, and is not comparable with alfakR's R2R.
+    how accurate the full fit is, and is not comparable with alfak's R2R.
     `xval.Rds` holds `R2R`, `predictions`, `observations`, `xval_data` and
     `tmp`.
 
-17. **Write and return.** The four alfakR files, `alfak2_fit.Rds`, and
+17. **Write and return.** The four alfak files, `karst_fit.Rds`, and
     `landscape_data.Rds` when `landscape_data_output = TRUE`; R2R is
     returned invisibly.
 
@@ -194,7 +194,7 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
   the majors and the domain come from the first and the last time point, and the
   time points in between inform the majors only, with a weight
   `1 / max(1, dispersion)` from a first fit (`diagnostics$intermediate_weight`).
-  `as_alfakR()` and `alfak_compat()` take such fits.
+  `as_alfak()` and `alfak_compat()` take such fits.
 - Every fit checks its scale optimisation (`diagnostics$optimisation`) and
   warns when the optimum is not accepted, naming the karyotype along which the
   Laplace approximation is flat. The check does not change the fit.

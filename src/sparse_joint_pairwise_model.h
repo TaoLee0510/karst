@@ -1,5 +1,5 @@
-#ifndef ALFAK2_SPARSE_JOINT_PAIRWISE_MODEL_H
-#define ALFAK2_SPARSE_JOINT_PAIRWISE_MODEL_H
+#ifndef KARST_SPARSE_JOINT_PAIRWISE_MODEL_H
+#define KARST_SPARSE_JOINT_PAIRWISE_MODEL_H
 
 // Sparse joint count model for one population sampled three or more times,
 // fitted pair by pair (`series = "pairwise"`).

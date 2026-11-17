@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
 # Run only after a certified primary reference finds material approximation error.
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_SOURCE"));out<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_MECHANISM_SOURCE"));out<-normalizePath(Sys.getenv("KARST_MECHANISM_OUTPUT"))
 source(file.path(src,"common.R"));runtime<-mechanism_load(repo,src)
-i<-as.integer(Sys.getenv("ALFAK2_MECHANISM_INDEX"));cases<-readRDS(file.path(out,"frozen_cases.rds"));case<-cases[[i]]
+i<-as.integer(Sys.getenv("KARST_MECHANISM_INDEX"));cases<-readRDS(file.path(out,"frozen_cases.rds"));case<-cases[[i]]
 gate<-read.csv(file.path(out,"reference_gate.csv"));stopifnot(all(gate$reference_certified),any(gate$material_contrast_error))
 context<-readRDS(file.path(out,"context.rds"));infer<-case[c("id","y","times","trajectory","reference_weight")]
 dest<-file.path(out,"localization",case$id);dir.create(dest,recursive=TRUE,showWarnings=FALSE)

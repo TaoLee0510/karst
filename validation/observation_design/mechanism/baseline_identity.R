@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # Post-hoc numerical localization, not a replacement promotion/accuracy gate.
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_SOURCE"));out<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_MECHANISM_SOURCE"));out<-normalizePath(Sys.getenv("KARST_MECHANISM_OUTPUT"))
 source(file.path(src,"common.R"));runtime<-mechanism_load(repo,src)
 cases<-readRDS(file.path(out,"frozen_cases.rds"));context<-readRDS(file.path(out,"context.rds"))
 gate<-read.csv(file.path(out,"reference_gate.csv"));stopifnot(all(gate$reference_certified))

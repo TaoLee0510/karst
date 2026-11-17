@@ -50,7 +50,7 @@ test_that("separately controlled prior components are a genuine joint mixture", 
   control <- list(interaction_support = "observed_nullspace", unidentified_interaction_sd = .2,
     prior_components = list(weak = list(residual_sd = .03, edge_sd = .06),
                             rough = list(residual_sd = .3, edge_sd = .6)), model_prior = c(.75, .25))
-  fit <- fit_alfak2(y, pipeline = "joint_count", forward_model = "selection_transport",
+  fit <- fit_karst(y, pipeline = "joint_count", forward_model = "selection_transport",
     min_cn = 1, max_cn = 3, max_nodes = 20, local_shell_depth = 1, global_extra_shell = 1,
     joint_control = control)
   expect_equal(fit$global$diagnostics$component_labels, c("weak", "rough"))

@@ -18,8 +18,8 @@ source(file.path(si_script_dir, "stages.R"))
 pr_default_output <- file.path(si_repo, "validation", "sparse_joint", "patient_regrowth", "results")
 pr_benchmark_output <- file.path(si_repo, "benchmark", "results", "sparse_two_timepoint")
 
-# `build`: the alfak2 build of the multi-timepoint work the fits use
-# (validation/sparse_joint/multi_timepoint/results/lib/alfak2_<build>). The
+# `build`: the karst build of the multi-timepoint work the fits use
+# (validation/sparse_joint/multi_timepoint/results/lib/karst_<build>). The
 # study was first run on ff13cf4, in results/; the user moved it to the build
 # with the convergence check (2026-11-13), whose fits go to results/<build>/,
 # beside the shared datasets (pr_stage_link()).
@@ -218,7 +218,7 @@ pr_counts <- function(dataset) {
 
 pr_fit_sparse_joint <- function(config, dataset, nodes, method) {
   rate <- if (identical(method$rate, "growing")) method$birth_rate * dataset$growing else method$birth_rate
-  fit <- do.call(alfak2::fit_sparse_joint, c(
+  fit <- do.call(karst::fit_sparse_joint, c(
     list(pr_counts(dataset), dt = dataset$interval, beta = dataset$beta, birth_rate = rate,
          min_cn = method$min_cn, max_cn = method$max_cn),
     method$arguments
@@ -234,7 +234,7 @@ pr_fit_sparse_joint <- function(config, dataset, nodes, method) {
 }
 
 pr_fit_rates <- function(config, dataset, nodes, method) {
-  fit <- do.call(alfak2::fit_sparse_joint_rates, c(
+  fit <- do.call(karst::fit_sparse_joint_rates, c(
     list(pr_counts(dataset), dt = dataset$interval, beta = dataset$beta, min_cn = method$min_cn,
          max_cn = method$max_cn, birth_rate_range = method$birth_rate_range),
     method$arguments
@@ -254,7 +254,7 @@ pr_fit_cohort <- function(config, dataset, nodes, method) {
   members <- c(list(dataset), lapply(others, function(id) readRDS(stt_dataset_path(config, id))))
   samples <- lapply(members, pr_counts)
   names(samples) <- vapply(members, function(m) m$dataset_id, character(1))
-  fit <- do.call(alfak2::fit_sparse_joint_cohort, c(
+  fit <- do.call(karst::fit_sparse_joint_cohort, c(
     list(samples, dt = vapply(members, function(m) m$interval, numeric(1)), beta = dataset$beta,
          birth_rate = method$birth_rate, min_cn = method$min_cn, max_cn = method$max_cn),
     method$arguments
@@ -349,7 +349,7 @@ pr_stage_symmetry <- function(config, dataset_id) {
   dataset <- readRDS(stt_dataset_path(config, dataset_id))
   nodes <- stt_dataset_nodes_si(config, dataset)
   fit_at <- function(dt, rate) {
-    fit <- alfak2::fit_sparse_joint(pr_counts(dataset), dt = dt, beta = dataset$beta, birth_rate = rate,
+    fit <- karst::fit_sparse_joint(pr_counts(dataset), dt = dt, beta = dataset$beta, birth_rate = rate,
                                     min_cn = 1L, max_cn = 8L)
     stats::predict(fit, nodes$karyotype)
   }

@@ -11,14 +11,14 @@ rows <- list()
 for (src in c("abm", "misseg")) {
   # One fit per input: the fit does not depend on minobs (missegregation
   # inputs have minobs 10 only).
-  dirs <- Sys.glob(file.path(bench, "results_05a8855", "fits", src, "*", "w*_ends", "alfak2", "minobs_*"))
+  dirs <- Sys.glob(file.path(bench, "results_05a8855", "fits", src, "*", "w*_ends", "karst", "minobs_*"))
   dirs <- dirs[!duplicated(dirname(dirs))]
   for (dir in dirs) {
     parts <- strsplit(dir, "/", fixed = TRUE)[[1L]]
     n <- length(parts)
     id <- parts[n - 3L]; design <- parts[n - 2L]
-    fit_path <- file.path(dir, "alfak2_fit.Rds")
-    new_run <- file.path(bench, "results_827c4b5", "fits", src, id, design, "alfak2", basename(dir), "run.Rds")
+    fit_path <- file.path(dir, "karst_fit.Rds")
+    new_run <- file.path(bench, "results_827c4b5", "fits", src, id, design, "karst", basename(dir), "run.Rds")
     if (!file.exists(fit_path)) next
     fit <- readRDS(fit_path)
     d <- fit$diagnostics

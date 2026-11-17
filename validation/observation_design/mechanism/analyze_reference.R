@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_SOURCE"));out<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_MECHANISM_SOURCE"));out<-normalizePath(Sys.getenv("KARST_MECHANISM_OUTPUT"))
 source(file.path(src,"common.R"));runtime<-mechanism_load(repo,src,FALSE)
 cases<-readRDS(file.path(out,"frozen_cases.rds"));rows<-covariances<-intervals<-statuses<-list()
 source_files<-character()

@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # Salehi forecasts against later passages: who forecasts better on real data?
 # (README.md). Reads the rows of forecast_score.R (results/*.Rds, copied from
-# HPC) and compares alfak2 (default, balance prior), alfakR and alfak2 with
+# HPC) and compares karst (default, balance prior), alfak and karst with
 # initial_state = "free" on the rows that the compared methods share (same
 # trajectory, minobs and later passage).
 #
@@ -29,7 +29,7 @@ status <- as.data.frame(table(method = vapply(parts, function(p) p$task$method, 
                               status = vapply(parts, `[[`, character(1), "status")))
 cat("Tasks:\n"); print(status[status$Freq > 0, ], row.names = FALSE)
 x <- do.call(rbind, lapply(parts, `[[`, "rows"))
-x$method <- c(alfak2 = "alfak2", alfakR = "alfakR", alfak2_free = "alfak2 free")[x$method]
+x$method <- c(karst = "karst", alfak = "alfak", karst_free = "karst free")[x$method]
 # Lineage types as the paper benchmark assigns them (salehi_assign_lineage()).
 lineage_map <- c(SA1035T = "SA1035", SA1035U = "SA1035", SA532 = "SA532", SA609 = "SA609", SA609UnBU = "SA609",
                  SA906a = "p53 k.o", SA906b = "p53 k.o", SA039U = "p53 w.t", SA535_CISPLATIN_CombinedT = "SA535",
@@ -110,39 +110,39 @@ show <- function(t, title) {
   print(t, row.names = FALSE)
 }
 
-# 1. alfak2 (default) against alfakR.
-two <- c("alfak2", "alfakR")
+# 1. karst (default) against alfak.
+two <- c("karst", "alfak")
 w2 <- wide(two)
 s_h <- summarise(w2, two, "horizon")
-p_h <- paired(w2, "alfak2", "alfakR", "horizon")
+p_h <- paired(w2, "karst", "alfak", "horizon")
 show(s_h, "Log-score gain over persistence per cell, by horizon (passages ahead)")
-show(p_h, "alfak2 minus alfakR, log score per cell")
+show(p_h, "karst minus alfak, log score per cell")
 utils::write.csv(s_h, file.path(out_dir, "gain_by_horizon.csv"), row.names = FALSE)
 utils::write.csv(p_h, file.path(out_dir, "paired_by_horizon.csv"), row.names = FALSE)
-p_m <- paired(w2, "alfak2", "alfakR", "minobs")
-show(p_m, "alfak2 minus alfakR, by minobs")
+p_m <- paired(w2, "karst", "alfak", "minobs")
+show(p_m, "karst minus alfak, by minobs")
 utils::write.csv(p_m, file.path(out_dir, "paired_by_minobs.csv"), row.names = FALSE)
-p_t <- paired(w2, "alfak2", "alfakR", "treatment")
-show(p_t, "alfak2 minus alfakR, by treatment between parent and later passage")
+p_t <- paired(w2, "karst", "alfak", "treatment")
+show(p_t, "karst minus alfak, by treatment between parent and later passage")
 utils::write.csv(p_t, file.path(out_dir, "paired_by_treatment.csv"), row.names = FALSE)
 w2$input_passages <- ifelse(w2$passages == 2L, "one interval", "more intervals")
-p_p <- paired(w2, "alfak2", "alfakR", "input_passages")
-show(p_p, "alfak2 minus alfakR, by the input's intervals")
+p_p <- paired(w2, "karst", "alfak", "input_passages")
+show(p_p, "karst minus alfak, by the input's intervals")
 utils::write.csv(p_p, file.path(out_dir, "paired_by_input.csv"), row.names = FALSE)
 
 # 2. The three arms on the rows all three share.
-three <- c("alfak2", "alfakR", "alfak2 free")
+three <- c("karst", "alfak", "karst free")
 w3 <- wide(three)
 s3 <- summarise(w3, three, "horizon")
 show(s3, "Three arms, common rows")
-p3 <- rbind(paired(w3, "alfak2 free", "alfak2", "horizon"), paired(w3, "alfak2 free", "alfakR", "horizon"))
-show(p3, "alfak2 free against the others")
+p3 <- rbind(paired(w3, "karst free", "karst", "horizon"), paired(w3, "karst free", "alfak", "horizon"))
+show(p3, "karst free against the others")
 utils::write.csv(s3, file.path(out_dir, "gain_three_arms.csv"), row.names = FALSE)
 utils::write.csv(p3, file.path(out_dir, "paired_free.csv"), row.names = FALSE)
 saveRDS(list(two = w2, three = w3), file.path(out_dir, "rows.Rds"))
 
 # 3. Figure: gain over persistence by horizon, all methods in one panel; and
-# the paired difference alfak2 - alfakR.
+# the paired difference karst - alfak.
 if (requireNamespace("ggplot2", quietly = TRUE)) {
   library(ggplot2)
   theme_set(theme_bw(base_size = 11))
@@ -157,7 +157,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
   d$horizon <- factor(d$subset, levels = c("1", "2", "3-4"))
   b <- ggplot(d, aes(horizon, difference)) + geom_hline(yintercept = 0, colour = "grey50") +
     geom_pointrange(aes(ymin = low, ymax = high)) +
-    labs(x = "passages ahead of the parent", y = "alfak2 minus alfakR (per cell)", title = "b  Paired difference")
+    labs(x = "passages ahead of the parent", y = "karst minus alfak (per cell)", title = "b  Paired difference")
   for (ext in c("png", "pdf")) {
     f <- file.path(out_dir, "figures", paste0("horizon.", ext))
     if (ext == "png") grDevices::png(f, width = 10, height = 4, units = "in", res = 150) else grDevices::pdf(f, width = 10, height = 4)

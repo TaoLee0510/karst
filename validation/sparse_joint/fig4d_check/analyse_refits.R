@@ -47,7 +47,7 @@ models <- do.call(rbind, lapply(unique(x$variant), function(v) {
 fits <- aggregate(fi ~ variant + context, unique(x[c("variant", "context", "fi")]), length)
 errors <- unique(x$error[!is.na(x$error)])
 
-writeLines(c("# Fig. 4d check, step 3: refits under variants (alfak2, two time points)", "",
+writeLines(c("# Fig. 4d check, step 3: refits under variants (karst, two time points)", "",
              "## Median delta f and |delta f|", "", md(wide), "",
              "## Median delta f by the source of the neighbour's value", "", md(by_src), "",
              "## Fig. 4d context model (PDX_v > 0 is the paper's direction)", "", md(models), "",

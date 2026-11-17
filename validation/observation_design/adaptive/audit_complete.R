@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design");r<-file.path(root,"results")
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design");r<-file.path(root,"results")
 out<-file.path(r,"adaptive_complete_v1")
 source(file.path(repo,"validation/accuracy_round2/common.R"));source(file.path(r,"adaptive_source_v1/quadrature.R"))
 index<-read.csv(file.path(out,"result_index.csv"));manifest<-read.csv(file.path(out,"dataset_manifest.csv"));rows<-list()

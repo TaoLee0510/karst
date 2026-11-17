@@ -62,7 +62,7 @@ test_that("sparse splitting converges to an independent matrix exponential", {
 test_that("joint landscape updates every node with a proper single prior", {
   counts <- matrix(c(80, 72, 24, 18, 18, 24), ncol = 2, byrow = TRUE,
     dimnames = list(c("2.2", "1.2", "3.2"), c("t0", "t1")))
-  fit <- fit_alfak2(counts, dt = 1, beta = 0.01, pipeline = "joint_count",
+  fit <- fit_karst(counts, dt = 1, beta = 0.01, pipeline = "joint_count",
     local_shell_depth = 1, global_extra_shell = 1,
     min_cn = 1, max_cn = 3, max_nodes = 20)
   expect_equal(nrow(fit$global$summary), 9L)
@@ -82,8 +82,8 @@ test_that("analytic Gaussian marginalization preserves posterior and evidence", 
     dimnames = list(c("2.2", "1.2"), c("t0", "t1")))
   args <- list(counts = counts, pipeline = "joint_count", forward_model = "division_process",
     min_cn = 1, max_cn = 3, max_nodes = 20, local_shell_depth = 1, global_extra_shell = 1)
-  collapsed <- do.call(fit_alfak2, c(args, list(joint_control = list(collapse_gaussian = TRUE))))
-  expanded <- do.call(fit_alfak2, c(args, list(joint_control = list(collapse_gaussian = FALSE))))
+  collapsed <- do.call(fit_karst, c(args, list(joint_control = list(collapse_gaussian = TRUE))))
+  expanded <- do.call(fit_karst, c(args, list(joint_control = list(collapse_gaussian = FALSE))))
   expect_equal(collapsed$global$summary$fitness_mean, expanded$global$summary$fitness_mean, tolerance = 1e-7)
   expect_equal(collapsed$global$fitness_covariance, expanded$global$fitness_covariance, tolerance = 1e-7)
   expect_equal(collapsed$local$diagnostics$objective, expanded$local$diagnostics$objective, tolerance = 1e-7)
@@ -95,7 +95,7 @@ test_that("explicit high-dimensional targets preserve true support distances", {
   for (i in 2:6) targets[i, seq_len(i - 1L)] <- 3L
   counts <- matrix(c(150L, 150L), nrow = 1L,
     dimnames = list(paste(founder, collapse = "."), c("t0", "t1")))
-  fit <- fit_alfak2(counts, dt = 1, beta = 5e-5, pipeline = "joint_count",
+  fit <- fit_karst(counts, dt = 1, beta = 5e-5, pipeline = "joint_count",
     forward_model = "selection_transport", target_karyotypes = targets,
     min_cn = 1, max_cn = 3, max_nodes = 10)
   expect_equal(fit$global$graph$domain_mode, "explicit_targets")
@@ -108,7 +108,7 @@ test_that("explicit high-dimensional targets preserve true support distances", {
 test_that("joint evidence mixtures propagate between-model variance", {
   counts <- matrix(c(40, 35, 20, 25), 2L, byrow = TRUE,
     dimnames = list(c("1", "2"), c("t0", "t1")))
-  fit <- fit_alfak2(counts, pipeline = "joint_count", forward_model = "selection_transport",
+  fit <- fit_karst(counts, pipeline = "joint_count", forward_model = "selection_transport",
     target_karyotypes = as.character(1:3), min_cn = 1, max_cn = 3, max_nodes = 5,
     joint_control = list(model_scales = c(0.05, 0.2, 0.5)))
   components <- fit$global$posterior_components
@@ -121,6 +121,6 @@ test_that("joint evidence mixtures propagate between-model variance", {
   expect_equal(diag(fit$global$fitness_covariance), expected_variance, ignore_attr = TRUE)
   expect_equal(fit$global$anchors$fitness_mean,
     fit$global$summary$fitness_mean[fit$global$summary$effective_count_total > 0])
-  expect_error(fit_alfak2(counts, pipeline = "joint_count", inference_method = "joint_map",
+  expect_error(fit_karst(counts, pipeline = "joint_count", inference_method = "joint_map",
     joint_control = list(model_scales = c(.2, .5))), "laplace")
 })

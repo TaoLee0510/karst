@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));src<-normalizePath(Sys.getenv("ALFAK2_IS_SOURCE"))
-out<-normalizePath(Sys.getenv("ALFAK2_IS_OUTPUT"));dest<-tempfile("alfak2_importance_cold_compile_",tmpdir="/private/tmp")
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));src<-normalizePath(Sys.getenv("KARST_IS_SOURCE"))
+out<-normalizePath(Sys.getenv("KARST_IS_OUTPUT"));dest<-tempfile("karst_importance_cold_compile_",tmpdir="/private/tmp")
 dir.create(dest);files<-file.path(src,c("importance_model.cpp","positive_taylor_forward.h","importance.cpp"))
 stopifnot(all(file.copy(files,dest)));start<-proc.time()[["elapsed"]]
 TMB::compile(file.path(dest,"importance_model.cpp"),flags="-O2 -g0")

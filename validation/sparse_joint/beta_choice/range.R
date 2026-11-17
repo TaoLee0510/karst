@@ -9,7 +9,7 @@
 #   point     the fit at the lowest rate of the range (or at its centre);
 #   interval  the union of the 95% intervals of the three fits, written as
 #             the standard deviation whose symmetric interval about the point
-#             contains it (as predict.alfak2_sparse_joint_rate_fit()).
+#             contains it (as predict.karst_sparse_joint_rate_fit()).
 # Each is scored against the truth exactly as a fit (stt_score_predictions),
 # and compared with the fit at the default rate alone.
 #

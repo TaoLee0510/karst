@@ -1,7 +1,7 @@
 oracle_probability_problem <- function() {
   counts <- matrix(c(100, 90, 0, 10), 2L, byrow = TRUE,
     dimnames = list(c("1", "2"), c("t0", "t1")))
-  data <- prepare_alfak2_data(counts, dt = 1, beta = 0.05)
+  data <- prepare_karst_data(counts, dt = 1, beta = 0.05)
   graph <- build_karyotype_graph(data, shell_depth = 0, min_cn = 1, max_cn = 2)
   list(data = data, graph = graph)
 }

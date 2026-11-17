@@ -105,7 +105,7 @@ oracle_profile_fisher_main <- function(args = commandArgs(TRUE)) {
   root <- oracle_read_argument(args, "run-root", "/private/tmp/alfak2_iteration2_20261104_0518")
   output <- oracle_read_argument(args, "output", file.path(root, "oracle-fisher"))
   frozen <- oracle_read_argument(args, "v1-source", file.path(root, "v1-source"))
-  dll <- oracle_read_argument(args, "dll", file.path(root, "current-lib/alfak2/libs/alfak2.so"))
+  dll <- oracle_read_argument(args, "dll", file.path(root, "current-lib/karst/libs/karst.so"))
   dir.create(output, recursive = TRUE, showWarnings = FALSE)
   requireNamespace("Rcpp"); requireNamespace("TMB")
   binary <- dyn.load(normalizePath(dll)); package <- new.env(parent = globalenv())
@@ -123,7 +123,7 @@ oracle_profile_fisher_main <- function(args = commandArgs(TRUE)) {
   summaries <- spectra <- stability <- directions <- list()
   for (case in seq_len(nrow(manifest))) {
     dataset <- readRDS(manifest$dataset_file[case])
-    fit <- package$fit_alfak2(dataset$counts, dt = dataset$config$dt, beta = dataset$config$beta,
+    fit <- package$fit_karst(dataset$counts, dt = dataset$config$dt, beta = dataset$config$beta,
       min_cn = 1, max_cn = 3, max_nodes = 27, target_karyotypes = dataset$target_karyotypes,
       pipeline = "joint_count", forward_model = "division_process", sdreport_mode = "fitness_only",
       joint_control = list(baseline_sd = 0.5, main_sd = 0.07, curvature_sd = 0.04,

@@ -27,11 +27,11 @@ cl_nodes_path <- function(set, dataset_id) file.path(cl_input_dir(set), "nodes",
 cl_fit_path <- function(set, method, dataset_id) file.path(cl_output, "fits", set, method, paste0(dataset_id, ".rds"))
 cl_tasks_path <- function(name = "tasks.tsv") file.path(cl_output, name)
 
-# The alfak2 build: bf86c85 with cl1.patch, which adds `balance_level` to
+# The karst build: bf86c85 with cl1.patch, which adds `balance_level` to
 # fit_sparse_joint() for two time points. At its defaults it gives the fits
 # of bf86c85 (results/same_default.R). Installed outside the source tree.
 cl_build <- "cl1"
-cl_library <- function(build = cl_build) file.path(cl_output, "lib", paste0("alfak2_", build))
+cl_library <- function(build = cl_build) file.path(cl_output, "lib", paste0("karst_", build))
 
 # The missegregation rate every fit assumes, as the paper benchmark does for
 # the Salehi lines. The diverse set's "rate" levels simulate a higher one.
@@ -129,8 +129,8 @@ cl_call_errors <- function(counts, rate, seed, min_cn = 1L, max_cn = 8L) {
 # share of its largest karyotype, and share of its cells in the model's domain.
 cl_diversity <- function(counts) {
   counts <- as.matrix(counts)
-  domain <- alfak2:::sparse_joint_domain(counts, 0.01, 3, 5000, 1L, 8L)
-  coverage <- alfak2:::sparse_joint_domain_coverage(counts, domain, 0.01, 3)
+  domain <- karst:::sparse_joint_domain(counts, 0.01, 3, 5000, 1L, 8L)
+  coverage <- karst:::sparse_joint_domain_coverage(counts, domain, 0.01, 3)
   c(singleton_t0 = sum(counts[counts[, 1L] == 1, 1L]) / sum(counts[, 1L]),
     singleton_t1 = sum(counts[counts[, 2L] == 1, 2L]) / sum(counts[, 2L]),
     top_t0 = max(counts[, 1L]) / sum(counts[, 1L]), top_t1 = max(counts[, 2L]) / sum(counts[, 2L]),
@@ -148,7 +148,7 @@ cl_fit <- function(dataset, nodes, arguments) {
   warned <- character()
   started <- proc.time()[["elapsed"]]
   fit <- withCallingHandlers(
-    do.call(alfak2::fit_sparse_joint, c(
+    do.call(karst::fit_sparse_joint, c(
       list(counts, dt = dataset$interval, beta = beta, birth_rate = 1, min_cn = 1L, max_cn = 8L), arguments)),
     warning = function(w) {
       warned <<- c(warned, conditionMessage(w))
@@ -157,7 +157,7 @@ cl_fit <- function(dataset, nodes, arguments) {
   seconds <- proc.time()[["elapsed"]] - started
   prediction <- stats::predict(fit, nodes$karyotype)
   compat <- tryCatch(
-    alfak2::as_alfakR(fit, minobs = 10, nboot = 2, n0 = NULL, nb = NULL, correct_efflux = FALSE, xval = FALSE),
+    karst::as_alfak(fit, minobs = 10, nboot = 2, n0 = NULL, nb = NULL, correct_efflux = FALSE, xval = FALSE),
     error = function(e) NULL)
   d <- fit$diagnostics
   list(
@@ -238,7 +238,7 @@ cl_forecast <- function(table, interval) {
     error_pred = cl_wasserstein(k0, pred, k1, m1), error_true = cl_wasserstein(k0, true, k1, m1))
 }
 
-# Landscape of as_alfakR() (frequent karyotypes with at least 10 cells, their
+# Landscape of as_alfak() (frequent karyotypes with at least 10 cells, their
 # neighbours and the neighbours' neighbours) against the truth, as the paper
 # benchmark scores a landscape.
 cl_landscape <- function(landscape, truth) {

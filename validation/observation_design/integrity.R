@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Input/source integrity is checked even if statistical availability fails.
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
 root<-file.path(repo,"validation/observation_design");out<-file.path(root,"results")
 source(file.path(repo,"validation/accuracy_round2/common.R"))
 manifest<-read.csv(file.path(out,"dataset_manifest.csv"))
@@ -34,7 +34,7 @@ checks<-do.call(rbind,checks)
 write.csv(checks,file.path(out,"final_frozen_source_integrity.csv"),row.names=FALSE)
 stopifnot(all(checks$unchanged))
 original<-jsonlite::read_json(file.path(repo,"validation/accuracy_upgrade/results/initial_source_manifest.json"),simplifyVector=TRUE)
-names<-c("R/benchmark-second-layer.R","doc/alfak2_method.tex")
+names<-c("R/benchmark-second-layer.R","doc/karst_method.tex")
 user<-data.frame(file=names,original_sha256=as.character(original[names]),
   current_sha256=unname(round2_sha256(file.path(repo,names))))
 user$unchanged<-user$original_sha256==user$current_sha256

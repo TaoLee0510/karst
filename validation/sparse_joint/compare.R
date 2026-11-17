@@ -1,7 +1,7 @@
 # Compare methods on the datasets where the candidate has a fit.
 for (f in c("landscape.R", "config.R", "generate.R", "profile.R", "score.R", "methods.R", "report.R")) source(file.path("benchmark/sparse_two_timepoint", f))
 # Usage: Rscript compare.R <candidate> [further methods to compare with ...]
-args <- commandArgs(TRUE); candidate <- args[1]; others <- c("zero", "alfak2_two_layer_fixed", "alfakR_minobs20", args[-1])
+args <- commandArgs(TRUE); candidate <- args[1]; others <- c("zero", "karst_two_layer_fixed", "alfak_minobs20", args[-1])
 config <- stt_config(); index <- read.csv(file.path(config$output_dir, "dataset_index_dev.csv"), stringsAsFactors = FALSE)
 fit_path <- function(id, m) file.path(config$output_dir, "fits", sprintf("%s__%s.rds", id, m))
 ids <- index$dataset_id[index$scoreboard & file.exists(fit_path(index$dataset_id, candidate))]
@@ -25,7 +25,7 @@ cat("\n== candidate RMSE / zero RMSE by wavelength class ==\n")
 cc <- main[main$method == candidate, ]; cc$ratio <- cc$rmse / cc$rmse_zero
 print(round(tapply(cc$ratio, list(cc$wavelength_class, cc$stratum), mean), 3))
 cat("\n== candidate Spearman by wavelength class (current two-layer in brackets) ==\n")
-tl <- main[main$method == "alfak2_two_layer_fixed", ]
+tl <- main[main$method == "karst_two_layer_fixed", ]
 a <- tapply(cc$spearman, list(cc$wavelength_class, cc$stratum), mean, na.rm = TRUE); b <- tapply(tl$spearman, list(tl$wavelength_class, tl$stratum), mean, na.rm = TRUE)
 print(noquote(matrix(sprintf("%.2f (%.2f)", a, b), nrow = nrow(a), dimnames = dimnames(a))))
 cat("\n== paired RMSE difference, candidate minus other, landscape bootstrap ==\n")

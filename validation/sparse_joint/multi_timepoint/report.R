@@ -113,27 +113,27 @@ for (method in c(arms, "ends")) for (s in c("d0", "d1", "d2")) {
 add("## 95% coverage", "", table_md(coverage, 3L), "")
 
 skill <- cells
-for (method in c(arms, "ends", "alfakR")) for (s in c("d0", "d1", "d2")) {
+for (method in c(arms, "ends", "alfak")) for (s in c("d0", "d1", "d2")) {
   skill[[paste(method, s)]] <- vapply(seq_len(nrow(cells)), function(i) median_of(cells[i, ], s, method, "skill"),
                                       numeric(1))
 }
 add("## Skill (1 - MSE / MSE of no difference)", "", table_md(skill, 2L), "")
 
 spearman <- cells
-for (method in c(arms, "ends", "alfakR")) for (s in c("d0", "d1", "d2")) {
+for (method in c(arms, "ends", "alfak")) for (s in c("d0", "d1", "d2")) {
   spearman[[paste(method, s)]] <- vapply(seq_len(nrow(cells)), function(i) median_of(cells[i, ], s, method, "spearman"),
                                          numeric(1))
 }
 add("## Rank correlation", "", table_md(spearman, 2L), "")
 
-if (any(distance$method == "alfakR")) {
+if (any(distance$method == "alfak")) {
   versus <- cells[cells$bottleneck == max(cells$bottleneck), ]
   for (s in c("d0", "d1", "d2")) {
-    r <- t(vapply(seq_len(nrow(versus)), function(i) paired_ratio(versus[i, ], s, "all", "alfakR"), numeric(3)))
+    r <- t(vapply(seq_len(nrow(versus)), function(i) paired_ratio(versus[i, ], s, "all", "alfak"), numeric(3)))
     versus[[paste0(s, "_ratio")]] <- r[, "ratio"]
     versus[[paste0(s, "_better")]] <- sprintf("%d/%d", r[, "better"], r[, "n"])
   }
-  add("## alfak2 all time points against alfakR all time points: RMSE ratio", "", table_md(versus, 3L), "")
+  add("## karst all time points against alfak all time points: RMSE ratio", "", table_md(versus, 3L), "")
 }
 
 # Dispersion of the majors' later counts about the fit on all time points, against

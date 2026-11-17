@@ -1,5 +1,5 @@
 reference_load <- function(repo, compile = TRUE) {
-  native <- Sys.getenv("ALFAK2_REFERENCE_DLL",
+  native <- Sys.getenv("KARST_REFERENCE_DLL",
     "/private/tmp/alfak2_iteration2_20261104_0518/current-lib/alfak2/libs/alfak2.so")
   if (!file.exists(native)) stop("The recorded oracle-capable DLL is required")
   requireNamespace("Rcpp"); requireNamespace("TMB"); requireNamespace("posterior")
@@ -55,7 +55,7 @@ reference_fit <- function(case, runtime, collapsed = FALSE) {
     prior$precision <- methods::as(Matrix::Matrix(solve(case$covariance), sparse = TRUE), "generalMatrix")
     prior$logdet <- -as.numeric(determinant(case$covariance, logarithm = TRUE)$modulus)
   }
-  data <- runtime$pkg$prepare_alfak2_data(case$counts, dt = 1.5, beta = case$beta)
+  data <- runtime$pkg$prepare_karst_data(case$counts, dt = 1.5, beta = case$beta)
   runtime$pkg$fit_local_posterior(data, graph = case$graph, structured_prior = prior,
     forward_model = "division_process", forward_step = .1, eta_prior_sd = 2,
     eta_borrowed_prior_mean = 0, eta_borrowed_prior_sd = 2, eta_distance_penalty = 0,

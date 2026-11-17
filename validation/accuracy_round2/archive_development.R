@@ -12,7 +12,7 @@ manifest <- reference$implementation$manifest
 source_choices <- list()
 for (i in seq_len(nrow(manifest))) {
   relative <- manifest$file[i]
-  choices <- if (relative == "binary/alfak2.so") file.path(work, "current-lib", "alfak2", "libs", "alfak2.so") else
+  choices <- if (relative == "binary/karst.so") file.path(work, "current-lib", "karst", "libs", "karst.so") else
     c(file.path(root, relative), file.path(work, "v1-source", relative))
   choices <- choices[file.exists(choices)]
   matches <- choices[unname(round2_sha256(choices)) == manifest$sha256[i]]
@@ -24,7 +24,7 @@ for (i in seq_len(nrow(manifest))) {
   } else if (!file.copy(matches[1L], destination)) stop("Source archive copy failed")
   source_choices[[i]] <- data.frame(file = relative, sha256 = manifest$sha256[i], recovered_from = matches[1L])
 }
-fingerprint <- round2_source_fingerprint(source_snapshot, file.path(source_snapshot, "binary", "alfak2.so"))
+fingerprint <- round2_source_fingerprint(source_snapshot, file.path(source_snapshot, "binary", "karst.so"))
 stopifnot(identical(fingerprint$sha256, reference$implementation$sha256))
 round2_write_csv(do.call(rbind, source_choices), file.path(output, "fitted_source_manifest.csv"))
 
@@ -52,7 +52,7 @@ file.copy(file.path(work, "development81-data", "dataset_manifest.csv"), file.pa
 source_tar <- file.path(output, "fitted_R_CPP_source.tar.gz")
 if (!file.exists(source_tar)) {
   previous <- getwd(); setwd(source_snapshot)
-  utils::tar(source_tar, files = manifest$file[manifest$file != "binary/alfak2.so"], compression = "gzip", tar = "internal")
+  utils::tar(source_tar, files = manifest$file[manifest$file != "binary/karst.so"], compression = "gzip", tar = "internal")
   setwd(previous)
 }
 data_tar <- file.path(output, "development81_datasets.tar.gz")
@@ -69,10 +69,10 @@ record <- list(role = "development_only_no_new_calibration_or_test",
   source_sha256 = reference$implementation$sha256,
   fitted_scoring_sha256 = reference$scoring_sha256,
   exact_source_snapshot = source_snapshot,
-  exact_dll = file.path(source_snapshot, "binary", "alfak2.so"),
-  dll_sha256 = manifest$sha256[manifest$file == "binary/alfak2.so"],
+  exact_dll = file.path(source_snapshot, "binary", "karst.so"),
+  dll_sha256 = manifest$sha256[manifest$file == "binary/karst.so"],
   dll_archived_in_repository = FALSE,
-  source_note = "All source files match fitted SHA256; fit-alfak2.R recovered from frozen v1-source because current API docs changed after fits",
+  source_note = "All source files match fitted SHA256; fit-karst.R recovered from frozen v1-source because current API docs changed after fits",
   stage = "no_single_winner_frozen; nested calibration and joint power deferred",
   generated_at = format(Sys.time(), tz = "America/New_York", usetz = TRUE))
 saveRDS(record, file.path(output, "archive_record.rds"), version = 2)

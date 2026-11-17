@@ -9,7 +9,7 @@ roots <- c(round = "/share/lab_crd/taoli/Project/alfak2-paper-benchmark/results_
            variants = "/share/lab_crd/taoli/Project/alfak2-salehi-variants/results/fits/salehi")
 rows <- list()
 for (r in names(roots)) {
-  for (f in Sys.glob(file.path(roots[[r]], "*", "all", "alfak2*", "minobs_5", "run.Rds"))) {
+  for (f in Sys.glob(file.path(roots[[r]], "*", "all", "karst*", "minobs_5", "run.Rds"))) {
     x <- readRDS(f)
     parts <- strsplit(f, "/", fixed = TRUE)[[1L]]
     n <- length(parts)

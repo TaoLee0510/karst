@@ -241,7 +241,7 @@ mm_marginal_nll <- function(p, d, rule = list(type = "gh", nodes = 20L), parts =
 mm_capture <- function(fit_call, envir = parent.frame()) {
   grab <- new.env()
   grab$runs <- list()
-  ns <- asNamespace("alfak2")
+  ns <- asNamespace("karst")
   suppressMessages(trace("sparse_joint_problem", where = ns, print = FALSE,
                          exit = quote(assign("problem", returnValue(), envir = .mm_grab))))
   suppressMessages(trace("sparse_joint_optimise_scales", where = ns, print = FALSE,
@@ -276,6 +276,6 @@ mm_capture <- function(fit_call, envir = parent.frame()) {
 }
 
 mm_make_objective <- function(candidate, data = candidate$tmb_data) {
-  TMB::MakeADFun(data, candidate$parameters, map = candidate$map, random = candidate$random, DLL = "alfak2",
+  TMB::MakeADFun(data, candidate$parameters, map = candidate$map, random = candidate$random, DLL = "karst",
                  silent = TRUE)
 }

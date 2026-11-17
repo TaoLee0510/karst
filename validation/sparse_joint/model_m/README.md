@@ -82,9 +82,9 @@ changed had a median RMSE ratio to ff13cf4 of 1.000 at every distance.
 - The prototype is kept here as a patch and removed from the package.
 - The package keeps:
   - the convergence check and its labels;
-  - no search again (internal option `alfak2.convergence_restarts`, off);
+  - no search again (internal option `karst.convergence_restarts`, off);
   - the history chosen by the lowest objective, as in ff13cf4 (internal
-    option `alfak2.choose_accepted`, off).
+    option `karst.choose_accepted`, off).
 
   The fits are those of ff13cf4.
 - A fit that is not accepted now names its flat direction:
@@ -96,7 +96,7 @@ changed had a median RMSE ratio to ff13cf4 of 1.000 at every distance.
 ## Applying the patch
 
 On the package tree of build cv3
-(`validation/sparse_joint/multi_timepoint/results/src/alfak2_cv3.tar.gz`):
+(`validation/sparse_joint/multi_timepoint/results/src/karst_cv3.tar.gz`):
 
 ```sh
 git apply validation/sparse_joint/model_m/m1_quadrature.patch

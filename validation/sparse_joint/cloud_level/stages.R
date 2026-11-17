@@ -13,10 +13,10 @@ cl_parallel <- function(items, fun, workers) {
 
 cl_use_build <- function() {
   library_dir <- cl_library()
-  if (!dir.exists(file.path(library_dir, "alfak2"))) stop("No alfak2 build in ", library_dir, call. = FALSE)
+  if (!dir.exists(file.path(library_dir, "karst"))) stop("No karst build in ", library_dir, call. = FALSE)
   .libPaths(c(library_dir, .libPaths()))
-  loadNamespace("alfak2")
-  cat("alfak2 from", dirname(find.package("alfak2")), "\n")
+  loadNamespace("karst")
+  cat("karst from", dirname(find.package("karst")), "\n")
 }
 
 cl_save <- function(object, path) {

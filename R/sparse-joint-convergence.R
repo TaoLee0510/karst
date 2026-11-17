@@ -27,11 +27,11 @@
 #     1e8), the inner optimisation stops at gradients near 1e-7, and TMB's
 #     gradient, which takes the inner mode as exact, is then out by tens even
 #     where the objective is flat.
-# The fit is exactly what it was without the check (alfak2 ff13cf4): nlminb's
+# The fit is exactly what it was without the check (karst ff13cf4): nlminb's
 # point, or the prior-centred scales if nlminb fails; the check only labels
 # it, and a point that is not accepted is reported as not converged, with the
 # reasons and the flat direction of the inner Hessian. Searching again is
-# internal and off by default (option `alfak2.convergence_restarts`): the
+# internal and off by default (option `karst.convergence_restarts`): the
 # scales are searched again with the inner start fixed, so that the objective
 # is a function of the scales alone, and points with a near-singular inner
 # Hessian rejected, by a bounded compass search from the end of the first run
@@ -40,7 +40,7 @@
 # inner Hessian.
 #
 # Tolerances from the 420 candidate fits of the development benchmark of
-# benchmark/sparse_two_timepoint at alfak2 ff13cf4
+# benchmark/sparse_two_timepoint at karst ff13cf4
 # (validation/sparse_joint/convergence/diagnose.R): the smallest inner
 # eigenvalue was at least 4.4e-3 where nlminb converged and at most 6.9e-4
 # where the Laplace approximation had degenerated; the projected
@@ -64,8 +64,8 @@ sparse_joint_restore_tmb_state <- function(env, state) {
 # Every inner optimisation starts from `start`, by default the initial latent
 # values.
 sparse_joint_fix_inner_start <- function(env, start = env$par[env$random]) {
-  assign(".alfak2_inner_start", start, envir = env)
-  assign("random.start", expression(.alfak2_inner_start), envir = env)
+  assign(".karst_inner_start", start, envir = env)
+  assign("random.start", expression(.karst_inner_start), envir = env)
   invisible(NULL)
 }
 
@@ -361,11 +361,11 @@ sparse_joint_optimise_scales <- function(objective, control, lower = log(1e-4), 
     # Searching again is internal and off by default: on the development
     # benchmark it accepted few more points (77% of candidates against 73%)
     # at twice the time, and did not change accuracy.
-    if (!isTRUE(getOption("alfak2.convergence_restarts", FALSE))) {
+    if (!isTRUE(getOption("karst.convergence_restarts", FALSE))) {
       return(record(first, "first", check, 0L, first_evaluations))
     }
-  } else if (!isTRUE(getOption("alfak2.convergence_restarts", FALSE))) {
-    # nlminb failed: the prior-centred scales, as before this check (alfak2
+  } else if (!isTRUE(getOption("karst.convergence_restarts", FALSE))) {
+    # nlminb failed: the prior-centred scales, as before this check (karst
     # ff13cf4), checked for the record.
     value <- as.numeric(objective$fn(objective$par))
     fallback <- list(par = objective$par, objective = value, convergence = 99L,
@@ -395,7 +395,7 @@ sparse_joint_optimise_scales <- function(objective, control, lower = log(1e-4), 
     })
     if (!is.finite(run$objective)) next
     # The best point's own mode, from which the check and the fit start.
-    run$mode <- env$.alfak2_inner_start
+    run$mode <- env$.karst_inner_start
     run$check <- sparse_joint_check_scales(objective, run$par, run$objective, lower, upper, tolerance, labels)
     results[[stage]] <- run
     if (run$check$pass) {
@@ -431,14 +431,14 @@ sparse_joint_optimise_scales <- function(objective, control, lower = log(1e-4), 
 }
 
 # The candidate (history or trend) to keep: the lowest finite objective. With
-# the internal option `alfak2.choose_accepted`, the lowest among those whose
+# the internal option `karst.choose_accepted`, the lowest among those whose
 # optimisation was accepted (all, if none was): one that was not accepted may
 # owe its objective to a degenerate Laplace approximation. Off by default: it
 # can also pass over a much better model whose optimisation was not accepted.
 sparse_joint_choose_candidate <- function(objective, convergence) {
   usable <- is.finite(objective)
   pool <- which(usable)
-  if (isTRUE(getOption("alfak2.choose_accepted", FALSE)) && any(usable & convergence == 0)) {
+  if (isTRUE(getOption("karst.choose_accepted", FALSE)) && any(usable & convergence == 0)) {
     pool <- which(usable & convergence == 0)
   }
   if (!length(pool)) return(NA_integer_)
@@ -452,7 +452,7 @@ sparse_joint_convergence_warning <- function(check) {
   flat <- if ("near-singular inner Hessian" %in% check$reasons) {
     sparse_joint_describe_flat(check$flat_direction, check$flat_composition)
   }
-  warning(structure(class = c("alfak2_convergence_warning", "warning", "condition"), list(
+  warning(structure(class = c("karst_convergence_warning", "warning", "condition"), list(
     message = paste0("The scale optimisation did not converge (", paste(check$reasons, collapse = "; "),
                      "); the best point found is used.",
                      if (!is.null(flat)) paste0(" The inner Hessian is nearly flat ", flat,

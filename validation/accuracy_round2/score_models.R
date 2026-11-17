@@ -3,7 +3,7 @@ round2_extract_nodes <- function(fit, dataset, model, legacy_scoring) {
     recover_baseline = identical(model, "original_baseline"))
   components <- fit$global$posterior_components
   if (length(components)) {
-    draws <- tryCatch(draw_alfak2_posterior_components(components, dataset$target_labels,
+    draws <- tryCatch(draw_karst_posterior_components(components, dataset$target_labels,
       n_draws = 8000L, seed = dataset$sampling_seed + 60000000L,
       default_labels = as.character(fit$global$summary$karyotype)), error = function(e) e)
     if (inherits(draws, "error")) {

@@ -1,5 +1,5 @@
-#ifndef ALFAK2_SPARSE_JOINT_MODEL_H
-#define ALFAK2_SPARSE_JOINT_MODEL_H
+#ifndef KARST_SPARSE_JOINT_MODEL_H
+#define KARST_SPARSE_JOINT_MODEL_H
 
 // Joint count model on a sparse karyotype domain.
 //

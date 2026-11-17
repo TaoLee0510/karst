@@ -12,7 +12,7 @@ the sparse joint model at 8327282, both outside the range it was developed on
    standard deviations too low.
 
 Short intervals are in scope: cell-culture time courses are sampled days or
-weeks apart. This study reproduces the weaknesses on alfak2's own simulator,
+weeks apart. This study reproduces the weaknesses on KARST's own simulator,
 tests two candidate causes, and compares opt-in changes for each.
 
 ## Hypotheses
@@ -72,7 +72,7 @@ builds are installed under `results/lib/`, never into the source tree.
 
 ## Scores
 
-Per fit (`metrics_fit.csv`): the cross-validation of `as_alfakR()` (minobs 10)
+Per fit (`metrics_fit.csv`): the cross-validation of `as_alfak()` (minobs 10)
 against the truth, as `alfak2-paper-benchmark/scripts/cv_score_analysis.R`
 computes it (held-out slope and correlation, bias of held-out frequent
 karyotypes, share of the error that is a common offset per fold), the

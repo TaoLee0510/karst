@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-out<-file.path(normalizePath(Sys.getenv("ALFAK2_IS_OUTPUT")),"mechanism")
-src<-normalizePath(Sys.getenv("ALFAK2_IS_ANALYSIS_SOURCE"));source(file.path(src,"score.R"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+out<-file.path(normalizePath(Sys.getenv("KARST_IS_OUTPUT")),"mechanism")
+src<-normalizePath(Sys.getenv("KARST_IS_ANALYSIS_SOURCE"));source(file.path(src,"score.R"))
 manifest<-read.csv(file.path(out,"manifest.csv"));stopifnot(nrow(manifest)==48)
 statuses<-metrics<-nodes<-audits<-list()
 for(i in seq_len(nrow(manifest))) {

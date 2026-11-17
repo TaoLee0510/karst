@@ -1,17 +1,17 @@
-#' Plot alfak2 posterior summaries
+#' Plot karst posterior summaries
 #'
-#' @param x An `alfak2_fit` or `alfak2_local_fit`.
+#' @param x An `karst_fit` or `karst_local_fit`.
 #' @param layer `"global"` or `"local"` for full fits.
 #' @param ... Reserved.
 #'
 #' @return A `ggplot` object.
 #' @export
-plot_alfak2 <- function(x, layer = c("global", "local"), ...) {
+plot_karst <- function(x, layer = c("global", "local"), ...) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package `ggplot2` is required for plotting.", call. = FALSE)
   }
   layer <- match.arg(layer)
-  s <- summarize_alfak2(x, layer = layer)
+  s <- summarize_karst(x, layer = layer)
   s$node_order <- seq_len(nrow(s))
   ggplot2::ggplot(s, ggplot2::aes(.data$node_order, .data$fitness_mean, color = .data$support_tier)) +
     ggplot2::geom_hline(yintercept = 0, linewidth = 0.25, color = "grey60") +
@@ -23,11 +23,11 @@ plot_alfak2 <- function(x, layer = c("global", "local"), ...) {
 }
 
 #' @export
-plot.alfak2_fit <- function(x, ...) {
-  plot_alfak2(x, ...)
+plot.karst_fit <- function(x, ...) {
+  plot_karst(x, ...)
 }
 
 #' @export
-plot.alfak2_local_fit <- function(x, ...) {
-  plot_alfak2(x, layer = "local", ...)
+plot.karst_local_fit <- function(x, ...) {
+  plot_karst(x, layer = "local", ...)
 }

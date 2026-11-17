@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-out<-normalizePath(Sys.getenv("ALFAK2_IS_OUTPUT"));files<-list.files(out,"source_sha256[.]csv$",recursive=TRUE,full.names=TRUE)
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+out<-normalizePath(Sys.getenv("KARST_IS_OUTPUT"));files<-list.files(out,"source_sha256[.]csv$",recursive=TRUE,full.names=TRUE)
 rows<-do.call(rbind,lapply(files,function(f){z<-read.csv(f);z$manifest<-f;z}))
 paths<-unique(rows$file);hash<-vapply(paths,function(p)if(file.exists(p))digest::digest(file=p,algo="sha256")else NA_character_,character(1))
 rows$current_sha256<-unname(hash[rows$file]);rows$unchanged<-!is.na(rows$current_sha256)&rows$sha256==rows$current_sha256

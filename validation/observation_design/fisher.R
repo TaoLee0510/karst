@@ -1,10 +1,10 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
-src<-Sys.getenv("ALFAK2_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
+src<-Sys.getenv("KARST_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
 source(file.path(src,"model.R"));source(file.path(src,"data.R"))
 source(file.path(repo,"validation/accuracy_round2/oracle_profile_fisher.R"))
 runtime<-design_load(repo)
-output<-Sys.getenv("ALFAK2_DESIGN_OUTPUT",file.path(repo,"validation/observation_design/results"))
+output<-Sys.getenv("KARST_DESIGN_OUTPUT",file.path(repo,"validation/observation_design/results"))
 dir.create(output,recursive=TRUE,showWarnings=FALSE)
 context<-design_context(as.matrix(expand.grid(rep(list(1:3),3))),.005,runtime)
 nominal<-design_nominal_initial(context);n<-context$n

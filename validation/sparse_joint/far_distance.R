@@ -13,7 +13,7 @@
 # Results go to benchmark/results/sparse_two_timepoint/sweeps/far/; the
 # scoreboard's own nodes, fits and metrics are not touched. Sparse joint fits
 # are saved whole (objects/), so that further distances need no refit.
-# Set STT_R_LIB to the library holding the alfak2 build under test.
+# Set STT_R_LIB to the library holding the karst build under test.
 
 library_dir <- Sys.getenv("STT_R_LIB", unset = "")
 if (nzchar(library_dir)) .libPaths(c(library_dir, .libPaths()))
@@ -40,7 +40,7 @@ Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THR
 # arguments. Results are unchanged (checked against an uncached run).
 if (option("memo", "yes") == "yes") {
   memoise_last <- function(name) {
-    original <- get(name, envir = asNamespace("alfak2"))
+    original <- get(name, envir = asNamespace("karst"))
     last_args <- NULL
     last_value <- NULL
     utils::assignInNamespace(name, function(...) {
@@ -50,16 +50,16 @@ if (option("memo", "yes") == "yes") {
       last_args <<- arguments
       last_value <<- value
       value
-    }, ns = "alfak2")
+    }, ns = "karst")
   }
   memoise_last("fit_local_posterior")
   memoise_last("build_explicit_target_graph")
 }
 
-method_names <- c("zero", "alfak2_sparse_joint", "alfak2_sparse_joint_balance", "alfak2_two_layer_fixed",
-                  "alfak2_two_layer_nearfield_gmrf", "alfak2_two_layer_edge_effect", "alfak2_two_layer_path_ensemble",
-                  "alfak2_two_layer_polynomial", "alfak2_two_layer_nngp", "alfak2_two_layer_delta_tree",
-                  "alfak2_two_layer_trend_filtering", "alfakR_minobs20")
+method_names <- c("zero", "karst_sparse_joint", "karst_sparse_joint_balance", "karst_two_layer_fixed",
+                  "karst_two_layer_nearfield_gmrf", "karst_two_layer_edge_effect", "karst_two_layer_path_ensemble",
+                  "karst_two_layer_polynomial", "karst_two_layer_nngp", "karst_two_layer_delta_tree",
+                  "karst_two_layer_trend_filtering", "alfak_minobs20")
 
 far_nodes <- function(dataset) {
   path <- file.path(out, "nodes", paste0(dataset$dataset_id, ".rds"))
@@ -75,7 +75,7 @@ fit_sparse_joint_kept <- function(dataset, nodes, method, object_path) {
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
   started <- proc.time()[["elapsed"]]
-  fit <- do.call(alfak2::fit_sparse_joint, c(
+  fit <- do.call(karst::fit_sparse_joint, c(
     list(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = method$birth_rate,
          min_cn = method$min_cn, max_cn = method$max_cn),
     method$arguments
@@ -98,7 +98,7 @@ run_dataset <- function(id) {
     method <- config$methods[[name]]
     path <- file.path(out, "fits", sprintf("%s__%s.rds", id, name))
     result <- if (file.exists(path)) readRDS(path) else {
-      r <- if (identical(method$type, "alfak2_sparse_joint")) {
+      r <- if (identical(method$type, "karst_sparse_joint")) {
         tryCatch(fit_sparse_joint_kept(dataset, nodes, method, file.path(out, "objects", sprintf("%s__%s.rds", id, name))),
                  error = function(e) list(status = "failed", detail = conditionMessage(e), seconds = NA_real_, prediction = NULL))
       } else {

@@ -1,4 +1,4 @@
-# alfak2 accuracy development pilot
+# KARST accuracy development pilot
 
 These are development results on six landscapes and 24 paired datasets. Calibration and test landscape seeds are reserved and unopened. No truth-based affine rescaling, tuning, or interval calibration is applied.
 

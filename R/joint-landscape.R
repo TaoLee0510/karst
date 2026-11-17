@@ -181,7 +181,7 @@ fit_joint_landscape <- function(data, graph, joint_control = list(),
       uncertainty_includes = "latent_and_fixed_prior_scale_laplace_uncertainty",
       scales_selected_on = "user_or_independent_training_data",
       n_predictions = sum(is.finite(summary$fitness_mean)), n_nodes = nrow(summary))))
-  class(global) <- "alfak2_global_fit"
+  class(global) <- "karst_global_fit"
   list(local = posterior, global = global)
 }
 

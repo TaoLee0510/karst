@@ -117,7 +117,7 @@ raw_grf_values <- function(karyotypes, centroids, lambda) {
 #' @param cache Whether to attach an environment cache for repeated fitness
 #'   queries.
 #'
-#' @return An `alfak2_grf_landscape` object.
+#' @return An `karst_grf_landscape` object.
 #' @export
 simulate_grf_landscape <- function(
   n_chr = 22,
@@ -194,7 +194,7 @@ simulate_grf_landscape <- function(
     formula = "founder_fitness + scale * (sum_i sin(||k-r_i||_2/lambda)/(pi*sqrt(M)) - raw(founder))"
   )
   if (isTRUE(cache)) out$cache <- new.env(parent = emptyenv())
-  class(out) <- c("alfak2_grf_landscape", "alfak2_landscape")
+  class(out) <- c("karst_grf_landscape", "karst_landscape")
   out
 }
 
@@ -211,7 +211,7 @@ simulate_grf_landscape <- function(
 #' @param lower,upper,use_full_range,include_table Deprecated full-lattice
 #'   options that are ignored by the lazy GRF implementation.
 #'
-#' @return An `alfak2_grf_landscape` object.
+#' @return An `karst_grf_landscape` object.
 #' @export
 simulate_l1_gp_landscape <- function(
   n_chr = 22,
@@ -264,8 +264,8 @@ simulate_l1_gp_landscape <- function(
 #' @return Numeric vector of fitness values.
 #' @export
 predict_landscape_fitness <- function(landscape, karyotypes, use_cache = TRUE) {
-  if (!inherits(landscape, "alfak2_grf_landscape")) {
-    stop("`landscape` must be an `alfak2_grf_landscape` object.", call. = FALSE)
+  if (!inherits(landscape, "karst_grf_landscape")) {
+    stop("`landscape` must be an `karst_grf_landscape` object.", call. = FALSE)
   }
   if (!is.logical(use_cache) || length(use_cache) != 1L || is.na(use_cache)) {
     stop("`use_cache` must be TRUE or FALSE.", call. = FALSE)

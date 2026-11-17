@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 # Human-readable development report; never used to choose or tune the model.
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
 root<-file.path(repo,"validation/observation_design")
-out<-Sys.getenv("ALFAK2_DESIGN_OUTPUT",file.path(root,"results"))
+out<-Sys.getenv("KARST_DESIGN_OUTPUT",file.path(root,"results"))
 status<-read.csv(file.path(out,"all_fit_status.csv"))
 metrics<-read.csv(file.path(out,"all_case_metrics.csv"))
 availability<-read.csv(file.path(out,"availability_by_design.csv"))

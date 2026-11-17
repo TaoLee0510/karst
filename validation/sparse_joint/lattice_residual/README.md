@@ -2,7 +2,7 @@
 
 The ALFA-K paper benchmark (`alfak2-paper-benchmark`) found that on the most
 rugged landscapes (wavelength 0.2, three or four frequent karyotypes) a
-frequent karyotype held out by `as_alfakR()`'s cross-validation is predicted
+frequent karyotype held out by `as_alfak()`'s cross-validation is predicted
 three to four standard deviations too low, with a held-out correlation near
 zero. Change C would replace the independent residual of
 `fit_sparse_joint()` (log birth rate minus trend) by one correlated along the
@@ -33,7 +33,7 @@ confirmation and has not been generated.
 
 ## The weakness reproduces
 
-Cross-validation of `as_alfakR()` (minobs 10) against the truth, medians:
+Cross-validation of `as_alfak()` (minobs 10) against the truth, medians:
 
 | | this set, w 0.2 | paper ABM, w 0.2 |
 | --- | --- | --- |

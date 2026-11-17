@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_CONSTRAINED_SOURCE"));out<-normalizePath(Sys.getenv("ALFAK2_CONSTRAINED_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_CONSTRAINED_SOURCE"));out<-normalizePath(Sys.getenv("KARST_CONSTRAINED_OUTPUT"))
 source(file.path(root,"results/computation_source_v4/data.R"));source(file.path(repo,"validation/accuracy_round2/common.R"))
 selected<-readRDS(file.path(out,"selected_designs.rds"));planning<-readRDS(file.path(out,"planning_context.rds"))
 stopifnot(length(selected)>0L,!file.exists(file.path(out,"dataset_manifest.csv")))

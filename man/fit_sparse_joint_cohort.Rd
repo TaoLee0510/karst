@@ -30,7 +30,7 @@ fit_sparse_joint_cohort(
 }
 \arguments{
 \item{samples}{List of two-column count matrices with karyotype row names,
-or of \code{alfak2_data} objects. Names identify the datasets.}
+or of \code{karst_data} objects. Names identify the datasets.}
 
 \item{dt}{Time between the two time points: one value, or one per dataset.
 Used for count matrices only.}
@@ -94,7 +94,7 @@ the balance.}
 that turn the model's posterior standard deviation of relative fitness
 into the reported \code{relative_sd}; see Details. Without
 \code{deficit_unobserved}, unobserved karyotypes take \code{deficit}, as up to
-alfak2 33a045c (\code{c(floor = 0.009, deficit = 0.6)}). \code{NULL} reports the
+karst 33a045c (\code{c(floor = 0.009, deficit = 0.6)}). \code{NULL} reports the
 model's own.}
 
 \item{control}{List passed to \code{\link[stats:nlminb]{stats::nlminb()}} for the first search of
@@ -103,13 +103,13 @@ the scale parameters; see Details for what follows it.}
 \item{inner_control}{TMB inner Newton controls.}
 }
 \value{
-An \code{alfak2_sparse_joint_cohort_fit} object. \code{landscape} has one row
+An \code{karst_sparse_joint_cohort_fit} object. \code{landscape} has one row
 per karyotype in any dataset's domain, with the shared fitness; \code{samples}
 has one summary per dataset, as returned by \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}.
 \code{diagnostics$domain_coverage} is the table of \code{\link[=fit_sparse_joint]{fit_sparse_joint()}} with a
 \code{sample} column, one row per dataset and timepoint. If a timepoint of any
 dataset has no cell inside that dataset's domain, the function stops with
-an error of class \code{alfak2_domain_coverage_error} that names the dataset;
+an error of class \code{karst_domain_coverage_error} that names the dataset;
 this is checked for every dataset before any is fitted.
 }
 \description{

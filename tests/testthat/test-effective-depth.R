@@ -126,7 +126,7 @@ test_that("effective-depth fit defaults to dirichlet-multinomial controls", {
     byrow = TRUE,
     dimnames = list(c("2.2", "2.3"), c("t0", "t1"))
   )
-  fit <- fit_alfak2(pipeline = "two_layer", 
+  fit <- fit_karst(pipeline = "two_layer", 
     counts,
     dt = 1,
     beta = 0.01,
@@ -144,12 +144,12 @@ test_that("effective-depth fit defaults to dirichlet-multinomial controls", {
     control = list(eval.max = 120, iter.max = 120)
   )
 
-  expect_s3_class(fit, "alfak2_fit")
+  expect_s3_class(fit, "karst_fit")
   expect_equal(fit$local$diagnostics$observation_model, "dirichlet_multinomial")
   expect_equal(fit$diagnostics$dm_concentration, 50)
   expect_equal(colSums(fit$data$counts), c(t0 = 20L, t1 = 20L))
   expect_equal(fit$data$metadata$input_depth$effective_depth, c(20, 20))
-  expect_true(all(is.finite(summarize_alfak2(fit)$fitness_mean)))
+  expect_true(all(is.finite(summarize_karst(fit)$fitness_mean)))
 })
 
 test_that("raw input depth keeps the existing multinomial default", {
@@ -160,7 +160,7 @@ test_that("raw input depth keeps the existing multinomial default", {
     byrow = TRUE,
     dimnames = list(c("2.2", "2.3"), c("t0", "t1"))
   )
-  fit <- fit_alfak2(pipeline = "two_layer", 
+  fit <- fit_karst(pipeline = "two_layer", 
     counts,
     dt = 1,
     beta = 0.01,

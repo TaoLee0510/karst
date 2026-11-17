@@ -20,12 +20,12 @@ sm_script_dir <- local({
 source(file.path(sm_script_dir, "setup.R"))
 
 hc_joint <- function(fit) {
-  ns <- asNamespace("alfak2")
+  ns <- asNamespace("karst")
   rebuilt <- ns$sparse_joint_rebuild(fit)
   problem <- rebuilt$problem
   map <- problem$map
   map$log_scale <- factor(rep(NA, length(fit$posterior$log_scale)))
-  joint <- TMB::MakeADFun(rebuilt$tmb_data, fit$posterior[names(problem$parameters)], map = map, DLL = "alfak2",
+  joint <- TMB::MakeADFun(rebuilt$tmb_data, fit$posterior[names(problem$parameters)], map = map, DLL = "karst",
                           silent = TRUE)
   solver <- rebuilt$solver
   stopifnot(identical(unname(names(joint$par)), solver$names))
@@ -110,15 +110,15 @@ hc_main <- function() {
   iterations <- if (is.null(args$iterations)) 3000L else as.integer(args$iterations)
   warmup <- if (is.null(args$warmup)) 1000L else as.integer(args$warmup)
   .libPaths(c(si_library(build, mt_default_output), .libPaths()))
-  loadNamespace("alfak2")
-  cat("alfak2 from", dirname(find.package("alfak2")), "\n")
+  loadNamespace("karst")
+  cat("karst from", dirname(find.package("karst")), "\n")
   source(file.path(si_repo, "tests", "testthat", "helper-sparse-joint.R"), local = environment())
-  environment(simulate_series_counts) <- asNamespace("alfak2")
+  environment(simulate_series_counts) <- asNamespace("karst")
   sim <- simulate_series_counts()
   rows <- list()
   out <- list()
   for (method in c("anchored", "pairwise", "state_space")) {
-    fit <- alfak2::fit_sparse_joint(sim$counts, times = sim$times, beta = sim$beta, max_cn = 4, history = 60,
+    fit <- karst::fit_sparse_joint(sim$counts, times = sim$times, beta = sim$beta, max_cn = 4, history = 60,
                                     series = method)
     post <- hc_joint(fit)
     chain <- hc_hmc(post, iterations, warmup, steps = 16L, seed = 11L)

@@ -35,7 +35,7 @@ fit_sparse_joint(
 }
 \arguments{
 \item{counts}{Count matrix with karyotype row names and one column per
-timepoint, at least two, in time order; or an \code{alfak2_data} object.}
+timepoint, at least two, in time order; or an \code{karst_data} object.}
 
 \item{dt}{Time between the time points, if \code{counts} is a matrix: one interval
 for two timepoints, or one per pair of consecutive timepoints. See also
@@ -100,7 +100,7 @@ ALFA-K paper's simulations, windows of two passages) \code{"auto"} switched to
 landscapes were clearly less accurate (correlation with the truth 0.58
 against 0.75). Do not use it at such intervals
 (validation/sparse_joint/cloud_level). With more than two time points
-\code{"auto"} is \code{"balance"}. alfak2 827c4b5 had \code{"auto"} as its default.}
+\code{"auto"} is \code{"balance"}. karst 827c4b5 had \code{"auto"} as its default.}
 
 \item{auto_level}{With \code{initial_state = "auto"}, the log factor of the
 cloud over the balance above which the fit is \code{"free"}.}
@@ -112,7 +112,7 @@ divisions at \code{birth_rate} that are longer than that interval: the model is 
 each and the fit with the highest marginal likelihood is kept, so a fit
 takes up to six times as long; \code{diagnostics$history_profile} lists the
 candidates. A single value fixes the history; several values are the
-candidates. Up to alfak2 8327282 the history was the interval itself
+candidates. Up to karst 8327282 the history was the interval itself
 (\code{history = dt}). With time points a few weeks apart that is far shorter than
 the population has been evolving: the balance prior then holds the
 neighbours of the major karyotypes far below their observed abundance, and
@@ -135,7 +135,7 @@ accurate on the development landscapes.}
 that turn the model's posterior standard deviation of relative fitness
 into the reported \code{relative_sd}; see Details. Without
 \code{deficit_unobserved}, unobserved karyotypes take \code{deficit}, as up to
-alfak2 33a045c (\code{c(floor = 0.009, deficit = 0.6)}). \code{NULL} reports the
+karst 33a045c (\code{c(floor = 0.009, deficit = 0.6)}). \code{NULL} reports the
 model's own.}
 
 \item{control}{List passed to \code{\link[stats:nlminb]{stats::nlminb()}} for the first search of
@@ -173,7 +173,7 @@ shortest history), at most 1, so that a population that drifts between
 time points (small passaging bottlenecks) leans on the first and the last.}
 }
 \value{
-An \code{alfak2_sparse_joint_fit} object. \code{summary} has one row per
+An \code{karst_sparse_joint_fit} object. \code{summary} has one row per
 domain karyotype, with its counts (\code{count_t0}, \code{count_t1}, ..., one
 column per timepoint) and the counts the fit expects (\code{expected_t0}, ...);
 \code{fitness_mean} is the net growth rate per unit of \code{dt},
@@ -228,7 +228,7 @@ default, the domain with \code{"all"}) is left out with a warning
 (\code{diagnostics$dropped_samples}). Its depth is free, so such a time point says
 nothing under the model, and the fit is the fit to the other time points.
 Leaving it out is the limit of its own likelihood. The input as given is
-kept in \code{input}, for \code{\link[=as_alfakR]{as_alfakR()}}.
+kept in \code{input}, for \code{\link[=as_alfak]{as_alfak()}}.
 
 With \code{series} \code{"pairwise"} or \code{"state_space"}, each pair of consecutive
 time points has its own domain, and both time points of a pair need a cell in it.
@@ -249,7 +249,7 @@ observed neighbours inside the domain.
 cells lie inside the domain. If a timepoint has none, typically because
 every major karyotype comes from the other time point and the two time points share
 no karyotype, there is nothing to fit and the function stops with an error
-of class \code{alfak2_domain_coverage_error}. Its message begins "A timepoint
+of class \code{karst_domain_coverage_error}. Its message begins "A timepoint
 has no cell inside the model domain." and its \code{coverage} element holds the
 same table. \code{\link[=check_sparse_joint_counts]{check_sparse_joint_counts()}} summarises a count matrix before
 fitting.
@@ -262,12 +262,12 @@ convergence", or reports that at a true optimum. The fit checks the point
 itself (healthy inner Hessian, the same objective from its own mode, no
 better inner mode from the initial values, a small finite-difference
 gradient). \code{diagnostics$convergence} is 0 when the point was accepted and 1
-when not, with a warning of class \code{alfak2_convergence_warning};
+when not, with a warning of class \code{karst_convergence_warning};
 \code{diagnostics$optimisation} tells how (\code{status}, \code{stage}, \code{reasons},
 \code{restarts}, \code{evaluations}, \code{nlminb_convergence}, \code{nlminb_message},
 \code{min_eigen}, \code{projected_gradient}, \code{objective_difference},
 \code{joint_difference}, \code{flat_direction}, \code{flat_composition}). The fit itself
-is the same as before this check (alfak2 ff13cf4); so is the choice of
+is the same as before this check (karst ff13cf4); so is the choice of
 history, by the lowest objective.
 
 Most fits that are not accepted have a karyotype with very few cells, whose

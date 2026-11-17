@@ -132,7 +132,7 @@ test_that("the candidate kept is the lowest finite objective, or the best accept
   expect_equal(sparse_joint_choose_candidate(c(10, 5, 7), c(0, 1, 0)), 2L)
   expect_equal(sparse_joint_choose_candidate(c(Inf, 5, NA), c(0, 1, 0)), 2L)
   expect_identical(sparse_joint_choose_candidate(c(Inf, NA), c(0, 0)), NA_integer_)
-  old <- options(alfak2.choose_accepted = TRUE)
+  old <- options(karst.choose_accepted = TRUE)
   on.exit(options(old), add = TRUE)
   expect_equal(sparse_joint_choose_candidate(c(10, 5, 7), c(0, 1, 0)), 3L)
   expect_equal(sparse_joint_choose_candidate(c(10, 5, 7), c(1, 1, 1)), 2L)
@@ -141,7 +141,7 @@ test_that("the candidate kept is the lowest finite objective, or the best accept
 
 test_that("checking the scales leaves TMB where the fit left it", {
   sim <- simulate_sparse_joint_counts()
-  data <- prepare_alfak2_data(sim$counts, dt = sim$dt, beta = sim$beta)
+  data <- prepare_karst_data(sim$counts, dt = sim$dt, beta = sim$beta)
   settings <- list(birth_rate = 1, birth_rate_log_sd = 0.05, major_frequency = 0.05, major_count = 3,
                    max_states = 5000, min_cn = 1L, max_cn = 4L, shell_power = 0.85, shell_sd = 0.5,
                    initial_frequency = c(mean = log(1e-5), sd = 3), initial_state = "balance", history = sim$dt,
@@ -149,7 +149,7 @@ test_that("checking the scales leaves TMB where the fit left it", {
                    inner_control = list(maxit = 200, tol = 1e-10))
   problem <- sparse_joint_problem(data, settings)
   make <- function() TMB::MakeADFun(problem$tmb_data, problem$parameters, map = problem$map,
-                                    random = problem$random, DLL = "alfak2", silent = TRUE,
+                                    random = problem$random, DLL = "karst", silent = TRUE,
                                     inner.control = settings$inner_control)
   plain <- make()
   optimum <- suppressWarnings(stats::nlminb(plain$par, plain$fn, plain$gr, lower = log(1e-4), upper = log(0.5)))
@@ -192,7 +192,7 @@ test_that("a fit that is not accepted warns once, with its reasons", {
   expect_warning(
     fit <- fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05, max_cn = 4,
                             history = c(sim$dt, 300)),
-    class = "alfak2_convergence_warning"
+    class = "karst_convergence_warning"
   )
   expect_equal(fit$diagnostics$convergence, 1L)
   expect_equal(fit$diagnostics$optimisation$status, "not converged")
@@ -214,7 +214,7 @@ test_that("a fit with a near-singular inner Hessian names the flat direction", {
   fit <- withCallingHandlers(
     fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05, max_cn = 4,
                      history = sim$dt),
-    alfak2_convergence_warning = function(w) {
+    karst_convergence_warning = function(w) {
       warning <<- conditionMessage(w)
       invokeRestart("muffleWarning")
     }
@@ -242,7 +242,7 @@ test_that("a fit with a near-singular inner Hessian names the flat direction", {
 
 test_that("when nlminb fails, the prior-centred scales are kept, as before the check", {
   sim <- simulate_sparse_joint_counts()
-  data <- prepare_alfak2_data(sim$counts, dt = sim$dt, beta = sim$beta)
+  data <- prepare_karst_data(sim$counts, dt = sim$dt, beta = sim$beta)
   settings <- list(birth_rate = 1, birth_rate_log_sd = 0.05, major_frequency = 0.05, major_count = 3,
                    max_states = 5000, min_cn = 1L, max_cn = 4L, shell_power = 0.85, shell_sd = 0.5,
                    initial_frequency = c(mean = log(1e-5), sd = 3), initial_state = "balance", history = sim$dt,
@@ -250,7 +250,7 @@ test_that("when nlminb fails, the prior-centred scales are kept, as before the c
                    inner_control = list(maxit = 200, tol = 1e-10))
   problem <- sparse_joint_problem(data, settings)
   objective <- TMB::MakeADFun(problem$tmb_data, problem$parameters, map = problem$map, random = problem$random,
-                              DLL = "alfak2", silent = TRUE, inner.control = settings$inner_control)
+                              DLL = "karst", silent = TRUE, inner.control = settings$inner_control)
   # A gradient that fails makes nlminb fail.
   objective$gr <- function(...) stop("no gradient")
   optimum <- sparse_joint_optimise_scales(objective, list(eval.max = 200, iter.max = 100))
@@ -268,7 +268,7 @@ test_that("searching again is available on request", {
   strict <- sparse_joint_convergence_tolerance
   strict[["gradient"]] <- -1
   local_mocked_bindings(sparse_joint_convergence_tolerance = strict)
-  old <- options(alfak2.convergence_restarts = TRUE)
+  old <- options(karst.convergence_restarts = TRUE)
   on.exit(options(old), add = TRUE)
   fit <- suppressWarnings(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05,
                                            max_cn = 4, history = sim$dt))

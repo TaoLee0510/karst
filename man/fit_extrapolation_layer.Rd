@@ -32,7 +32,7 @@ fit_extrapolation_layer(
 )
 }
 \arguments{
-\item{local_fit}{An \code{alfak2_local_fit} object.}
+\item{local_fit}{An \code{karst_local_fit} object.}
 
 \item{graph}{Optional global graph. Defaults to \code{local_fit$graph}.}
 
@@ -85,7 +85,7 @@ with at most 500 nodes. Also computes standard deviations.}
 \item{...}{Method-specific controls.}
 }
 \value{
-An \code{alfak2_global_fit} compatible list with \code{graph}, \code{summary},
+An \code{karst_global_fit} compatible list with \code{graph}, \code{summary},
 \code{anchors}, \code{hyperparameters}, \code{tuning_grid}, and \code{diagnostics}.
 }
 \description{

@@ -18,12 +18,12 @@ The frozen statistical computation is `results/computation_source_v4/`, with
 internal R timeout proved insufficient because TMB can catch the interrupt.
 The first workers were stopped after 31 completed cases, then the remaining
 cases continued under `results/control_source_v1/bounded_run.py --part 0/1`,
-with `ALFAK2_REPO` set to the absolute repository path. Each controller owns
+with `KARST_REPO` set to the absolute repository path. Each controller owns
 only one fitting R child and imposes a cumulative external deadline. Do not
 launch extra workers or blindly restart completed controllers. Preserve the
 existing outputs when reproducing in a fresh workspace.
 
-The workers need the exact native alfak2 diagnostic DLL recorded in their
+The workers need the exact native KARST diagnostic DLL recorded in their
 `source_sha256.csv`, the original prior/reference helpers and the TMB toolchain.
 The standalone observation DLL is compiled into a source-hash-specific temporary
 directory. Complete and conditional-node caches are keyed by source and data
@@ -35,7 +35,7 @@ repository root (substitute the absolute path in the environment variable):
 
 ```sh
 Rscript validation/observation_design/prepare_analysis.R
-export ALFAK2_DESIGN_OUTPUT=/absolute/path/to/alfak2/validation/observation_design/results/analysis_input
+export KARST_DESIGN_OUTPUT=/absolute/path/to/karst/validation/observation_design/results/analysis_input
 Rscript validation/observation_design/analyze.R
 Rscript validation/observation_design/audit.R
 Rscript validation/observation_design/summarize.R

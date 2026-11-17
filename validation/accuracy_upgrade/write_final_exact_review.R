@@ -91,7 +91,7 @@ outcome <- if (all(gain) && complete_predictions) {
 } else {
   "The frozen candidate does not meet the criterion of lower average relative-fitness RMSE at every evaluated distance with complete prediction coverage. Distance/family regressions remain visible below; the candidate and calibration were not retuned after this test."
 }
-lines <- c("# alfak2: final independent exact-division validation", "", outcome, "",
+lines <- c("# karst: final independent exact-division validation", "", outcome, "",
            "The strict all-distance point-and-uncertainty promotion gate is not passed. The joint candidate remains an explicit opt-in; the default pipeline remains two_layer. No tuning or extra test repetitions were added after these results.", "",
            sprintf("The test contains %d independent landscapes and %d datasets: three truth families, four reserved landscapes per family, two biological trajectories and two independent count samples per landscape. The entire 81-node four-chromosome CN1–3 domain is scored. Beta=0.005, interval=1.5, initial population=1,200 and count depths=150/150 are fixed.", length(unique(manifest$landscape_id)), nrow(manifest)), "",
            "## Point estimation: raw candidate versus raw baseline", "",

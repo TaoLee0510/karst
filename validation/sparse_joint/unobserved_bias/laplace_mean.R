@@ -30,12 +30,12 @@ source(file.path(ub_script_dir, "setup.R"))
 # The joint negative log posterior of all latent variables at the fit's
 # scales, its mode, and the whitening transform.
 ub_joint_posterior <- function(fit) {
-  ns <- asNamespace("alfak2")
+  ns <- asNamespace("karst")
   rebuilt <- ns$sparse_joint_rebuild(fit)
   problem <- rebuilt$problem
   parameters <- fit$posterior[c("zeta", "g", "coef", "theta1", "log_scale")]
   map <- list(log_scale = factor(rep(NA, length(parameters$log_scale))))
-  joint <- TMB::MakeADFun(rebuilt$tmb_data, parameters, map = map, DLL = "alfak2", silent = TRUE)
+  joint <- TMB::MakeADFun(rebuilt$tmb_data, parameters, map = map, DLL = "karst", silent = TRUE)
   solver <- rebuilt$solver
   names_latent <- solver$names
   stopifnot(identical(unname(names(joint$par)), names_latent))
@@ -124,9 +124,9 @@ ub_laplace_mean <- function(config, dataset_id, iterations, warmup, steps, base_
   base <- readRDS(base_path(dataset_id))
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
-  fit <- alfak2::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = 1, min_cn = 1L,
+  fit <- karst::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = 1, min_cn = 1L,
                                   max_cn = 8L, history = base$diagnostics$history)
-  ns <- asNamespace("alfak2")
+  ns <- asNamespace("karst")
   post <- ub_joint_posterior(fit)
   started <- proc.time()[["elapsed"]]
   chain <- ub_hmc(post, iterations, warmup, steps, seed = dataset$seed)
@@ -187,7 +187,7 @@ if (sys.nframe() == 0L) {
   Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
   config <- ub_config(value("source", "rugged"))
   .libPaths(c(si_library("af362af", config$library_root), .libPaths()))
-  loadNamespace("alfak2")
+  loadNamespace("karst")
   out_dir <- file.path(config$output_dir, "laplace_mean")
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   # The source's datasets and default fits, in the source's own results.

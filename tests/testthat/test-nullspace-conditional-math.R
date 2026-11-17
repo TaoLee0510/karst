@@ -83,7 +83,7 @@ test_that("hidden log variance and offsets have the correct conditional covarian
 
 test_that("genuinely uninformative beta-zero counts preserve prior mixture evidence", {
   counts <- matrix(c(100, 100), 1L, dimnames = list("2.2", c("t0", "t1")))
-  data <- prepare_alfak2_data(counts, dt = 1, beta = 0)
+  data <- prepare_karst_data(counts, dt = 1, beta = 0)
   graph <- build_karyotype_graph(data, shell_depth = 2, min_cn = 1, max_cn = 3, max_nodes = 9)
   pi0 <- stats::setNames(as.numeric(graph$labels == "2.2"), graph$labels)
   base <- list(interaction_support = "observed_nullspace", unidentified_interaction_sd = 0.2)

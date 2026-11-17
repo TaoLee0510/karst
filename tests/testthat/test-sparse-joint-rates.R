@@ -5,7 +5,7 @@ test_that("a range of birth rates is fitted at log-spaced rates, with point pred
                            birth_rate_range = c(0.25, 4), point = point)
   }
   fit <- fit_at("centre")
-  expect_s3_class(fit, "alfak2_sparse_joint_rate_fit")
+  expect_s3_class(fit, "karst_sparse_joint_rate_fit")
   expect_equal(fit$rates, c(0.25, 1, 4))
   expect_equal(fit$central, 2L)
   expect_equal(fit$point, 2L)
@@ -66,7 +66,7 @@ test_that("a range of missegregation rates is fitted like a range of birth rates
   sim <- simulate_sparse_joint_counts()
   fit <- fit_sparse_joint_rates(sim$counts, dt = sim$dt, major_frequency = 0.05, max_cn = 4,
                                 beta_range = c(1.25e-5, 2e-4))
-  expect_s3_class(fit, "alfak2_sparse_joint_rate_fit")
+  expect_s3_class(fit, "karst_sparse_joint_rate_fit")
   expect_identical(fit$parameter, "beta")
   expect_equal(fit$rates, c(1.25e-5, 5e-5, 2e-4))
   expect_equal(vapply(fit$fits, function(f) f$data$beta, numeric(1)), fit$rates)
@@ -88,7 +88,7 @@ test_that("a range of missegregation rates is fitted like a range of birth rates
   deficit <- vapply(fit$fits, function(f) mean(f$summary$relative_fitness[minor]), numeric(1))
   expect_true(all(diff(deficit) < 0))
   expect_output(print(fit), "missegregation rates")
-  # the point fit is what as_alfakR() uses
+  # the point fit is what as_alfak() uses
   expect_equal(fit$fits[[fit$point]]$data$beta, 1.25e-5)
 })
 

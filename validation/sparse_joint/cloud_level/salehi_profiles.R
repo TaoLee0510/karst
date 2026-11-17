@@ -4,8 +4,8 @@
 # only: no fit is repeated; a two-time-point fit's posterior is rebuilt at its
 # stored mode to read the residuals of the balance prior.
 #
-# For every alfak2 fit (designs "ends" and "all"; methods alfak2,
-# alfak2_pairwise, alfak2_state_space) one row with the chosen history, the
+# For every karst fit (designs "ends" and "all"; methods karst,
+# karst_pairwise, karst_state_space) one row with the chosen history, the
 # fitted scales, the domain's coverage, and:
 #   cloud_cells_t0      cells at the first time point on domain karyotypes
 #                       that are not major
@@ -23,18 +23,18 @@
 #
 #   Rscript salehi_profiles.R OUT_DIR
 
-suppressPackageStartupMessages(library(alfak2))
+suppressPackageStartupMessages(library(karst))
 out_dir <- commandArgs(TRUE)[1]
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 root <- "/share/lab_crd/taoli/Project/alfak2-paper-benchmark/results_05a8855/fits/salehi"
 ids <- list.files(root)
 fits <- list()
 profiles <- list()
-for (id in ids) for (design in c("ends", "all")) for (method in c("alfak2", "alfak2_pairwise", "alfak2_state_space")) {
-  path <- file.path(root, id, design, method, "minobs_5", "alfak2_fit.Rds")
+for (id in ids) for (design in c("ends", "all")) for (method in c("karst", "karst_pairwise", "karst_state_space")) {
+  path <- file.path(root, id, design, method, "minobs_5", "karst_fit.Rds")
   if (!file.exists(path)) next
   fit <- tryCatch(readRDS(path), error = function(e) NULL)
-  if (is.null(fit) || !inherits(fit, "alfak2_sparse_joint_fit")) next
+  if (is.null(fit) || !inherits(fit, "karst_sparse_joint_fit")) next
   d <- fit$diagnostics
   s <- fit$summary
   counts <- fit$data$counts
@@ -65,7 +65,7 @@ for (id in ids) for (design in c("ends", "all")) for (method in c("alfak2", "alf
     row$major_cells_t0 <- sum(y0[major])
     row$cloud_states <- sum(!major)
     row$cloud_states_seen_t0 <- sum(!major & y0 > 0)
-    kernel <- alfak2:::sparse_division_kernel(alfak2:::parse_karyotypes(s$karyotype), fit$data$beta)
+    kernel <- karst:::sparse_division_kernel(karst:::parse_karyotypes(s$karyotype), fit$data$beta)
     feeds <- major[kernel$from] & !major[kernel$to]
     row$neutral_per_day <- sum(2 * exp(kernel$log_prob[feeds]) * d$birth_rate * y0[kernel$from[feeds]])
     w <- y0[major] / sum(y0[major])
@@ -75,13 +75,13 @@ for (id in ids) for (design in c("ends", "all")) for (method in c("alfak2", "alf
   }
   if (n_time == 2L && identical(d$initial_state, "balance")) {
     residual <- tryCatch({
-      rebuilt <- alfak2:::sparse_joint_rebuild(fit, posterior = FALSE)
-      problem <- alfak2:::sparse_joint_problem(fit$data, fit$settings)
+      rebuilt <- karst:::sparse_joint_rebuild(fit, posterior = FALSE)
+      problem <- karst:::sparse_joint_problem(fit$data, fit$settings)
       parameters <- fit$posterior[names(problem$parameters)]
       map <- problem$map
       map$log_scale <- factor(rep(NA, length(parameters$log_scale)))
       objective <- TMB::MakeADFun(problem$tmb_data, parameters, map = map, random = problem$random,
-                                  DLL = "alfak2", silent = TRUE, inner.control = fit$settings$inner_control)
+                                  DLL = "karst", silent = TRUE, inner.control = fit$settings$inner_control)
       objective$fn(numeric(0))
       report <- objective$report(objective$env$last.par)
       fed <- seq_along(report$balance_residual) > problem$domain$n_major & report$balance_residual != 0

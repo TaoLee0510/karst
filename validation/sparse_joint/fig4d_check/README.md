@@ -1,4 +1,4 @@
-# Why alfak2 reverses the ALFA-K paper's Fig. 4d
+# Why KARST reverses the ALFA-K paper's Fig. 4d
 
 The user asked for this check on 2026-11-15, and approved the plan the same
 evening.
@@ -10,8 +10,8 @@ In the paper benchmark (round 05a8855, `alfak2-paper-benchmark`,
 measures how much single-chromosome changes alter fitness (|Δf|) in PDX and
 in vitro.
 - The paper finds them larger in PDX (`PDX_v` +1.23).
-- Every alfak2 arm finds them larger in vitro (−0.38 to −1.40).
-- alfakR dev2 agrees with the paper.
+- Every KARST arm finds them larger in vitro (−0.38 to −1.40).
+- alfak dev2 agrees with the paper.
 
 Δf = f(frequent karyotype) − f(one-chromosome neighbour), as in the paper.
 "In vitro" means the lines SA039 and SA906; the other Salehi lines are PDX.
@@ -23,15 +23,15 @@ in vitro.
 > The PDX trajectories have shorter intervals than the in vitro ones, so part
 > of their preference for 4–16× the default may be that bias rather than
 > higher chromosomal instability. What stands is narrower:
-> - Fig. 4d's direction for alfak2 depends on the assumed rates.
-> - At any single common β, alfak2 reverses it.
+> - Fig. 4d's direction for KARST depends on the assumed rates.
+> - At any single common β, KARST reverses it.
 > - At the rates the data prefer, it agrees with the paper.
 
 ## Answer
 
 The reversal comes from using **one missegregation rate**, β = 5e-5 (the
 paper's `pm`), for both settings.
-- alfak2 infers a neighbour's fitness partly from how many cells
+- KARST infers a neighbour's fitness partly from how many cells
   missegregation should have put there. The cells actually seen fall short of
   that, and the shortfall is read as selection.
 - On their own marginal likelihood, the in vitro trajectories prefer
@@ -43,9 +43,9 @@ paper's `pm`), for both settings.
 The check found no coding error. The baseline refits reproduce the
 benchmark's landscapes (correlation 0.999998).
 
-On simulations where the truth is known and β is right, alfak2's Δf to the
+On simulations where the truth is known and β is right, KARST's Δf to the
 neighbours has the right sign and about the right size. It is somewhat too
-large for unseen neighbours over long intervals. alfakR's Δf is flattened
+large for unseen neighbours over long intervals. alfak's Δf is flattened
 towards zero, and its median even has the wrong sign. The paper's own
 direction is therefore not a ground truth either.
 
@@ -53,7 +53,7 @@ direction is therefore not a ground truth either.
 
 These are the benchmark's fits, selected as its Fig. 4 selects them
 (xv > 0, best minobs), with control fits only. Each neighbour is classed by
-where alfak2's value comes from:
+where KARST's value comes from:
 - `observed_D`: inside the model domain, and seen at some time point;
 - `unseen_D`: inside the domain, but never seen;
 - `observed_out`: seen, but outside the domain;
@@ -61,12 +61,12 @@ where alfak2's value comes from:
 
 | | in vitro Δf | PDX Δf | in vitro share of neighbours |
 | --- | --- | --- | --- |
-| alfak2, 2 time points, all neighbours | +0.026 | +0.006 | |
-| alfak2, `unseen_D` | +0.028 | +0.007 | 61% |
-| alfak2, `observed_D` | +0.016 | −0.004 | 20% |
-| alfakR, same pairs | −0.003 to −0.006 | −0.005 to −0.009 | |
+| KARST, 2 time points, all neighbours | +0.026 | +0.006 | |
+| KARST, `unseen_D` | +0.028 | +0.007 | 61% |
+| KARST, `observed_D` | +0.016 | −0.004 | 20% |
+| alfak, same pairs | −0.003 to −0.006 | −0.005 to −0.009 | |
 
-- In vitro, alfak2 puts nearly every neighbour below its frequent karyotype
+- In vitro, KARST puts nearly every neighbour below its frequent karyotype
   by a similar amount.
 - SA039 is extreme, at 0.15. Its fits choose the longest history (3000 days)
   and have about 900 cells per time point.
@@ -80,21 +80,21 @@ These are the paper's ABM and missegregation simulations, with minobs 10 and
 β equal to the simulated rate. The true Δf comes from the Gaussian-random-field
 landscape.
 
-| two time points | alfak2 est | true | alfakR est | r alfak2 / alfakR |
+| two time points | KARST est | true | alfak est | r KARST / alfak |
 | --- | --- | --- | --- | --- |
 | ABM, all neighbours | +0.040 | +0.025 | −0.013 | 0.76 / 0.15 |
 | ABM, unseen, 2 / 4 / 8 passages | 0.040 / 0.043 / 0.055 | 0.029 / 0.031 / 0.036 | −0.013 / −0.008 / −0.016 | |
 | missegregation, all neighbours | +0.029 | +0.026 | −0.010 | 0.57 / 0.20 |
 
-- alfak2 has the right sign. Its size is right on the missegregation
+- KARST has the right sign. Its size is right on the missegregation
   simulations.
 - On the ABM simulations it is too large for unseen neighbours, by about
   50% for windows of 8 passages.
-- alfakR flattens Δf.
+- alfak flattens Δf.
 
 ## Step 3: refits under variants (`refit_variants.R`, `analyse_refits.R`)
 
-All 205 trajectories of the benchmark's "alfak2 2 time points" Fig. 4
+All 205 trajectories of the benchmark's "KARST 2 time points" Fig. 4
 selection were refitted: 23 in vitro, 87 PDX controls and 95 PDX
 cisplatin-treated. The Fig. 4d context model was then refitted:
 `glmmTMB(|Δf| ~ context + (1 | pdx/fi/k_id), Gamma(log))`, on all fits
@@ -145,9 +145,9 @@ At each trajectory's preferred β:
 - **The ABM bias remains** at a correct β, for unseen neighbours over long
   intervals.
 
-## What it means for alfak2 (not changed here)
+## What it means for KARST (not changed here)
 
-For karyotypes never seen, alfak2's fitness rests on the assumed
+For karyotypes never seen, KARST's fitness rests on the assumed
 missegregation influx. A comparison between settings with different
 chromosomal instability would need β per dataset.
 
@@ -157,7 +157,7 @@ afterwards (`../beta_choice`) and not adopted:
   that are too high;
 - no gate, threshold or prior separated those cases from real differences.
 
-What alfak2 offers instead is `fit_sparse_joint_rates(beta_range = )`. It
+What KARST offers instead is `fit_sparse_joint_rates(beta_range = )`. It
 shows how far a comparison like Fig. 4d moves over a plausible range of
 rates.
 

@@ -10,7 +10,7 @@ data$sd_relative <- runif(nrow(data), .05, .2)
 data$truth_relative <- data$pred_relative + rnorm(nrow(data), -.03, .15)
 key <- list(model = "test", sha256 = "fixed")
 scenario <- list(domain = "synthetic")
-old <- fit_alfak2_interval_calibration(data, key, scenario)
+old <- fit_karst_interval_calibration(data, key, scenario)
 same <- fit_round2_pooled_calibration(data, key, scenario, gamma_far = 1, kappa = 0)
 stopifnot(max(abs(old$table$q_lower - same$table$q_lower)) < 1e-12,
           max(abs(old$table$q_upper - same$table$q_upper)) < 1e-12)

@@ -1,4 +1,4 @@
-# Benchmark results by wavelength class, as LaTeX tables (doc/alfak2_method.tex).
+# Benchmark results by wavelength class, as LaTeX tables (doc/karst_method.tex).
 #
 #   Rscript validation/sparse_joint/wavelength_tables.R METRICS_CSV OUT_TEX MODE
 #
@@ -14,25 +14,25 @@ mode <- args[[3]]
 tt <- function(x) paste0("\\texttt{", gsub("_", "\\\\_", x), "}")
 methods <- if (mode == "heldout") {
   c("Null predictor" = "zero",
-    "Two-layer pipeline" = "alfak2_two_layer_fixed",
-    "alfakR" = "alfakR_minobs20",
-    "Sparse joint, independent" = "alfak2_sparse_joint",
-    "Sparse joint, balance" = "alfak2_sparse_joint_balance")
+    "Two-layer pipeline" = "karst_two_layer_fixed",
+    "alfak" = "alfak_minobs20",
+    "Sparse joint, independent" = "karst_sparse_joint",
+    "Sparse joint, balance" = "karst_sparse_joint_balance")
 } else {
   # Short labels; the text of Supplement S2.3 maps them to the method names.
   c("Null predictor" = "zero",
-    "Graph Gaussian" = "alfak2_two_layer_fixed",
-    "Truncated GMRF" = "alfak2_two_layer_nearfield_gmrf",
-    "Edge effect" = "alfak2_two_layer_edge_effect",
-    "Path ensemble" = "alfak2_two_layer_path_ensemble",
-    "Local polynomial" = "alfak2_two_layer_polynomial",
-    "Nearest-neighbour GP" = "alfak2_two_layer_nngp",
-    "Delta tree" = "alfak2_two_layer_delta_tree",
-    "Trend filtering" = "alfak2_two_layer_trend_filtering",
-    "Sparse joint, balance" = "alfak2_sparse_joint_balance")
+    "Graph Gaussian" = "karst_two_layer_fixed",
+    "Truncated GMRF" = "karst_two_layer_nearfield_gmrf",
+    "Edge effect" = "karst_two_layer_edge_effect",
+    "Path ensemble" = "karst_two_layer_path_ensemble",
+    "Local polynomial" = "karst_two_layer_polynomial",
+    "Nearest-neighbour GP" = "karst_two_layer_nngp",
+    "Delta tree" = "karst_two_layer_delta_tree",
+    "Trend filtering" = "karst_two_layer_trend_filtering",
+    "Sparse joint, balance" = "karst_sparse_joint_balance")
 }
 display <- function(label) {
-  if (label == "alfakR") return("\\texttt{alfakR} (\\texttt{minobs = 20})")
+  if (label == "alfak") return("\\texttt{alfak} (\\texttt{minobs = 20})")
   if (grepl("_", label)) return(tt(label))
   label
 }

@@ -19,8 +19,8 @@ def table(headers, rows):
 
 
 def main():
-    root = Path(os.environ["ALFAK2_REPO"]) / "validation/observation_design"
-    out = Path(os.environ["ALFAK2_CONSTRAINED_OUTPUT"])
+    root = Path(os.environ["KARST_REPO"]) / "validation/observation_design"
+    out = Path(os.environ["KARST_CONSTRAINED_OUTPUT"])
     rows = [x for x in read(out / "all_case_metrics.csv") if x["view"] == "baseline_distance"]
     risks = ["rmse", "mse", "shape_rmse", "shape_mse", "offset_squared", "edge_rmse", "score50", "score80", "score95",
              "coverage50", "coverage80", "coverage95", "width50", "width80", "width95"]

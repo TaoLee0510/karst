@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # Explicit development candidates; no fitting or truth access.
 args <- commandArgs(TRUE)
-output <- if (length(args)) args[[1L]] else tempfile("alfak2_model_arguments_")
+output <- if (length(args)) args[[1L]] else tempfile("karst_model_arguments_")
 dir.create(output, recursive = TRUE, showWarnings = FALSE)
 models <- list(
   ablation_laplace = list(pipeline = "two_layer", forward_model = "selection_transport",

@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Reconcile all attempted cases without refitting or deleting failed outcomes.
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
 root<-file.path(repo,"validation/observation_design");raw<-file.path(root,"results")
 destination<-file.path(raw,"analysis_input");dir.create(destination,showWarnings=FALSE)
 source(file.path(raw,"computation_source_v4/score.R"))
@@ -35,14 +35,14 @@ for(part in 0:1) {
         descriptor<-list(case_id=s$case_id,key=key,fit=list(status=as.character(s$status),
           elapsed_seconds=s$elapsed_seconds,message=as.character(s$message)),synthetic_failure_descriptor=TRUE)
         input<-file.path(target,paste0(s$case_id,"_failure_descriptor.rds"));saveRDS(descriptor,input)
-        old_case<-Sys.getenv("ALFAK2_DESIGN_RECONSTRUCT_CASE",unset=NA_character_)
-        old_input<-Sys.getenv("ALFAK2_DESIGN_RECONSTRUCT_INPUT",unset=NA_character_)
-        Sys.setenv(ALFAK2_DESIGN_RECONSTRUCT_CASE=s$case_id,ALFAK2_DESIGN_RECONSTRUCT_INPUT=input)
+        old_case<-Sys.getenv("KARST_DESIGN_RECONSTRUCT_CASE",unset=NA_character_)
+        old_input<-Sys.getenv("KARST_DESIGN_RECONSTRUCT_INPUT",unset=NA_character_)
+        Sys.setenv(KARST_DESIGN_RECONSTRUCT_CASE=s$case_id,KARST_DESIGN_RECONSTRUCT_INPUT=input)
         log<-file.path(target,paste0(s$case_id,"_reconstruction.log"))
         rc<-suppressWarnings(system2(file.path(R.home("bin"),"Rscript"),
           shQuote(file.path(root,"evidence_reconstruct.R")),stdout=log,stderr=log))
-        if(is.na(old_case))Sys.unsetenv("ALFAK2_DESIGN_RECONSTRUCT_CASE")else Sys.setenv(ALFAK2_DESIGN_RECONSTRUCT_CASE=old_case)
-        if(is.na(old_input))Sys.unsetenv("ALFAK2_DESIGN_RECONSTRUCT_INPUT")else Sys.setenv(ALFAK2_DESIGN_RECONSTRUCT_INPUT=old_input)
+        if(is.na(old_case))Sys.unsetenv("KARST_DESIGN_RECONSTRUCT_CASE")else Sys.setenv(KARST_DESIGN_RECONSTRUCT_CASE=old_case)
+        if(is.na(old_input))Sys.unsetenv("KARST_DESIGN_RECONSTRUCT_INPUT")else Sys.setenv(KARST_DESIGN_RECONSTRUCT_INPUT=old_input)
         repaired<-file.path(raw,"evidence_reconstruction",paste0(s$case_id,"_result.rds"))
         if(rc==0L&&file.exists(repaired)) {
           result<-readRDS(repaired);recovery<-"joint_mode_hessian_evidence_reconstruction"

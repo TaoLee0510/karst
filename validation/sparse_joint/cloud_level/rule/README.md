@@ -1,6 +1,6 @@
 # A corrected rule for initial_state = "auto": step 0
 
-Approved by the user on 2026-11-16 after the paper benchmark of alfak2
+Approved by the user on 2026-11-16 after the paper benchmark of KARST
 827c4b5 showed that `"auto"` switched to free initial abundances at time
 points one passage apart even at the true missegregation rate, and lost
 accuracy there (`../README.md`, step 4). The aim: a rule that switches where

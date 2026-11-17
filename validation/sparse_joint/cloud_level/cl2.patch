@@ -91,7 +91,7 @@ diff --color -ruN -x *.o -x *.so -x .DS_Store -x symbols.rds base/R/sparse-joint
 +    check$history <- data$dt
 +    started <- proc.time()[["elapsed"]]
 +    first <- withCallingHandlers(do.call(fit_sparse_joint, check),
-+                                 alfak2_convergence_warning = function(w) invokeRestart("muffleWarning"))
++                                 karst_convergence_warning = function(w) invokeRestart("muffleWarning"))
 +    level <- if (is.null(first$diagnostics$balance_level)) NA_real_ else first$diagnostics$balance_level
 +    chosen <- if (is.finite(level) && level > auto_level) "free" else "balance"
 +    arguments$initial_state <- chosen
@@ -209,9 +209,9 @@ diff --color -ruN -x *.o -x *.so -x .DS_Store -x symbols.rds base/tests/testthat
    )
    parameters <- list(zeta = zeta, g = g, coef = rep(0, ncol(design$design)), theta1 = theta1,
 -                     log_scale = rep(log(0.05), 4))
--  objective <- TMB::MakeADFun(tmb_data, parameters, DLL = "alfak2", silent = TRUE)
+-  objective <- TMB::MakeADFun(tmb_data, parameters, DLL = "karst", silent = TRUE)
 +                     log_scale = rep(log(0.05), 4), balance_level = 0)
-+  objective <- TMB::MakeADFun(tmb_data, parameters, map = list(balance_level = factor(NA)), DLL = "alfak2",
++  objective <- TMB::MakeADFun(tmb_data, parameters, map = list(balance_level = factor(NA)), DLL = "karst",
 +                              silent = TRUE)
    report <- objective$report()
    net <- (2 * exp(kernel$log_self) - 1) * exp(g)
@@ -231,15 +231,15 @@ diff --color -ruN -x *.o -x *.so -x .DS_Store -x symbols.rds base/tests/testthat
        shell_sd = 0.5, log_scale_prior_mean = rep(log(0.05), 4), log_scale_prior_sd = rep(1.5, 4),
        n_major = domain$n_major, balance = balance, history = history, balance_sd = balance_sd,
 -      balance_offset = rep(0, n), weight = rep(1, n)
--    ), parameters, DLL = "alfak2", silent = TRUE)$fn()
+-    ), parameters, DLL = "karst", silent = TRUE)$fn()
 +      balance_offset = rep(0, n), weight = rep(1, n), level_free = 0L, level_sd = 1
-+    ), parameters, map = list(balance_level = factor(NA)), DLL = "alfak2", silent = TRUE)$fn()
++    ), parameters, map = list(balance_level = factor(NA)), DLL = "karst", silent = TRUE)$fn()
    }
    net <- (2 * exp(kernel$log_self) - 1) * exp(parameters$g)
    minor <- seq_len(n) > domain$n_major
 @@ -379,4 +381,32 @@
    expect_true(is.na(one$shared))
-   expect_equal(check_sparse_joint_counts(prepare_alfak2_data(counts[, c("a", "b")]))$cells, c(5, 7))
+   expect_equal(check_sparse_joint_counts(prepare_karst_data(counts[, c("a", "b")]))$cells, c(5, 7))
    expect_error(check_sparse_joint_counts(counts - 2), "non-negative")
 +})
 +

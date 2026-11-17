@@ -77,7 +77,7 @@ def main():
         return
     if args.part is None:
         parser.error("--part is required")
-    repo = Path(os.environ.get("ALFAK2_REPO", Path(__file__).resolve().parents[2])).resolve()
+    repo = Path(os.environ.get("KARST_REPO", Path(__file__).resolve().parents[2])).resolve()
     os.chdir(repo)
     root = repo / "validation/observation_design"
     out = root / "results"
@@ -115,8 +115,8 @@ def main():
         child_part = f"bounded_child_{args.part}_{case_id}"
         child_out = out / ("fits_" + child_part)
         environment = os.environ.copy()
-        environment.update(ALFAK2_DESIGN_SOURCE=str(source), ALFAK2_DESIGN_PART=child_part,
-                           ALFAK2_DESIGN_ONLY=case_id, ALFAK2_REPO=str(repo))
+        environment.update(KARST_DESIGN_SOURCE=str(source), KARST_DESIGN_PART=child_part,
+                           KARST_DESIGN_ONLY=case_id, KARST_REPO=str(repo))
         active = dict(case_id=case_id, prior_seconds=prior, remaining_budget_seconds=budget,
                       parent_pid=os.getpid(), started_unix=time.time())
         (destination / "active_case.json").write_text(json.dumps(active, indent=2) + "\n")

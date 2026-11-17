@@ -1,6 +1,6 @@
 #' Build a bounded karyotype graph
 #'
-#' @param x An `alfak2_data` object or character vector of observed karyotypes.
+#' @param x An `karst_data` object or character vector of observed karyotypes.
 #' @param beta Missegregation rate. Defaults to `x$beta` for data objects.
 #' @param transition_kernel Transition weighting used by graph edges and local
 #'   transport. `"exact"` uses chromosome-level missegregation probabilities;
@@ -9,7 +9,7 @@
 #' @param min_cn,max_cn Copy-number bounds.
 #' @param max_nodes Hard bound on graph expansion.
 #'
-#' @return An `alfak2_graph` object.
+#' @return An `karst_graph` object.
 #' @export
 build_karyotype_graph <- function(x,
                                   beta = NULL,
@@ -19,7 +19,7 @@ build_karyotype_graph <- function(x,
                                   max_cn = 5,
                                   max_nodes = 5000) {
   transition_kernel <- match.arg(transition_kernel)
-  if (inherits(x, "alfak2_data")) {
+  if (inherits(x, "karst_data")) {
     labels <- x$labels
     y0 <- x$counts[, 1]
     y1 <- x$counts[, 2]
@@ -58,7 +58,7 @@ build_karyotype_graph <- function(x,
   max_nodes <- validate_grf_integer(max_nodes, "max_nodes", lower = 1L)
   if (length(labels) > max_nodes)
     stop("Observed and explicit target nodes exceed `max_nodes` before graph expansion.", call. = FALSE)
-  graph <- alfak2_build_graph_cpp(
+  graph <- karst_build_graph_cpp(
     labels = labels,
     y0 = as.integer(y0),
     y1 = as.integer(y1),
@@ -69,7 +69,7 @@ build_karyotype_graph <- function(x,
     max_cn = as.integer(max_cn),
     max_nodes = as.integer(max_nodes)
   )
-  new_alfak2_graph(graph)
+  new_karst_graph(graph)
 }
 
 # A finite query domain can include distant states without enumerating every

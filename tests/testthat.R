@@ -1,4 +1,4 @@
 library(testthat)
-library(alfak2)
+library(karst)
 
-test_check("alfak2")
+test_check("karst")

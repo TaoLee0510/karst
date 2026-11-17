@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_CONSTRAINED_SOURCE"));out<-normalizePath(Sys.getenv("ALFAK2_CONSTRAINED_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_CONSTRAINED_SOURCE"));out<-normalizePath(Sys.getenv("KARST_CONSTRAINED_OUTPUT"))
 source(file.path(repo,"validation/accuracy_round2/process_prepare_data.R"))
 source(file.path(repo,"validation/accuracy_round2/common.R"))
 planning<-readRDS(file.path(out,"planning_context.rds"));context<-planning$context;n<-context$n

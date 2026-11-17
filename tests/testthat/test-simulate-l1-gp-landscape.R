@@ -3,7 +3,7 @@ test_that("paper-style GRF landscape is lightweight and reproducible", {
   y <- simulate_grf_landscape(n_chr = 22, n_centroids = 8, seed = 42)
   z <- simulate_grf_landscape(n_chr = 22, n_centroids = 8, seed = 43)
 
-  expect_s3_class(x, "alfak2_grf_landscape")
+  expect_s3_class(x, "karst_grf_landscape")
   expect_null(x$karyotypes)
   expect_null(x$fitness)
   expect_equal(x$centroids, y$centroids)
@@ -40,7 +40,7 @@ test_that("legacy landscape constructor now returns lazy GRF", {
     diploid_fitness = 1.1,
     seed = 1
   )
-  expect_s3_class(x, "alfak2_grf_landscape")
+  expect_s3_class(x, "karst_grf_landscape")
   expect_equal(
     predict_landscape_fitness(x, matrix(c(2, 2, 2), nrow = 1)),
     1.1,

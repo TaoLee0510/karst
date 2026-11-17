@@ -11,7 +11,7 @@ graph_edge_weights <- function(edge_weight,
   }
   scale <- stats::median(edge_weight[positive], na.rm = TRUE)
   if (!is.finite(scale) || scale <= 0) {
-    alfak2_abort(
+    karst_abort(
       "Cannot normalize graph edge weights because no positive finite scale is available.",
       diagnostics = list(stage = "graph_edge_weights", mode = mode, edge_weight_summary = summary(edge_weight))
     )
@@ -42,7 +42,7 @@ anchor_covariance_multiplier <- function(status,
   status[is.na(status) | !nzchar(status)] <- "unknown"
   missing_status <- setdiff(unique(status), names(inflation))
   if (length(missing_status)) {
-    alfak2_abort(
+    karst_abort(
       "Local covariance status is not covered by `anchor_covariance_inflation`.",
       diagnostics = list(stage = "anchor_covariance_multiplier", missing_status = missing_status)
     )
@@ -62,7 +62,7 @@ count_anchor_multiplier <- function(count_total,
   ok <- is.finite(count_total) & count_total > 0
   out[ok] <- pmax(1, (as.numeric(count_reference) / count_total[ok]) ^ as.numeric(power))
   if (any(!ok)) {
-    alfak2_abort(
+    karst_abort(
       "Count-weighted anchor variance requires positive finite anchor counts.",
       diagnostics = list(stage = "count_anchor_multiplier", bad_indices = which(!ok))
     )
@@ -120,8 +120,8 @@ resolve_anchor_covariance <- function(local_fit, keep, variance_multiplier,
 #' Uses the local posterior as diagonal anchor observations and solves the
 #' Gaussian graph posterior in compiled RcppEigen sparse linear algebra.
 #'
-#' @param local_fit An `alfak2_local_fit` object.
-#' @param graph Bounded global `alfak2_graph`.
+#' @param local_fit An `karst_local_fit` object.
+#' @param graph Bounded global `karst_graph`.
 #' @param lambda_l_grid,lambda_e_grid,sigma_obs_grid Hyperparameter grids for
 #'   compiled leave-one-anchor-out tuning. Supplying one value for each grid uses
 #'   fixed hyperparameters; multi-value grids require enough evaluable anchors and
@@ -177,11 +177,11 @@ fit_graph_posterior <- function(local_fit,
                                 compute_sd = TRUE,
                                 anchor_covariance = NULL,
                                 compute_covariance = FALSE) {
-  if (!inherits(local_fit, "alfak2_local_fit")) {
-    stop("`local_fit` must be an alfak2_local_fit object.", call. = FALSE)
+  if (!inherits(local_fit, "karst_local_fit")) {
+    stop("`local_fit` must be an karst_local_fit object.", call. = FALSE)
   }
   if (is.null(graph)) graph <- local_fit$graph
-  if (!inherits(graph, "alfak2_graph")) stop("`graph` must be an alfak2_graph object.", call. = FALSE)
+  if (!inherits(graph, "karst_graph")) stop("`graph` must be an karst_graph object.", call. = FALSE)
   graph_edge_weight <- match.arg(graph_edge_weight)
   if (!is.logical(compute_sd) || length(compute_sd) != 1L || is.na(compute_sd)) {
     stop("`compute_sd` must be TRUE or FALSE.", call. = FALSE)
@@ -212,7 +212,7 @@ fit_graph_posterior <- function(local_fit,
   count_ok <- rep(TRUE, nrow(local_fit$summary))
   if (!is.null(anchor_min_effective_count)) {
     if (!any(is.finite(anchor_count_all))) {
-      alfak2_abort(
+      karst_abort(
         "`anchor_min_effective_count` requires finite local effective counts.",
         diagnostics = list(stage = "global_anchor_filter")
       )
@@ -227,7 +227,7 @@ fit_graph_posterior <- function(local_fit,
   }
   keep <- which(!is.na(anchor_match) & is.finite(local_fit$summary$fitness_mean) & tier_ok & count_ok)
   if (!length(keep)) {
-    alfak2_abort(
+    karst_abort(
       "No local posterior anchors are present in the global graph.",
       diagnostics = list(
         stage = "global_anchor_filter",
@@ -240,13 +240,13 @@ fit_graph_posterior <- function(local_fit,
   anchor_var_base <- local_fit$summary$fitness_sd[keep]^2
   anchor_var <- anchor_var_base
   if (any(!is.finite(anchor_var) | anchor_var <= 0)) {
-    alfak2_abort(
+    karst_abort(
       "Global graph anchors contain non-finite local fitness variances.",
       diagnostics = list(stage = "global_anchor_variance", bad_indices = keep[!is.finite(anchor_var) | anchor_var <= 0])
     )
   }
   if (!"covariance_status" %in% names(local_fit$summary)) {
-    alfak2_abort(
+    karst_abort(
       "Local fit summary is missing covariance status; aborting instead of assigning unknown anchor status.",
       diagnostics = list(stage = "global_anchor_covariance_status")
     )
@@ -265,7 +265,7 @@ fit_graph_posterior <- function(local_fit,
   edge_weight <- graph_edge_weights(graph$edge_weight, graph_edge_weight)
 
   res <- tryCatch(
-    alfak2_graph_posterior_cpp(
+    karst_graph_posterior_cpp(
       karyotypes = graph$karyotypes,
       edge_from = as.integer(graph$edge_from),
       edge_to = as.integer(graph$edge_to),
@@ -282,7 +282,7 @@ fit_graph_posterior <- function(local_fit,
       compute_covariance = isTRUE(compute_covariance)
     ),
     error = function(e) {
-      alfak2_abort(
+      karst_abort(
         "Global graph posterior failed.",
         diagnostics = list(
           stage = "global_graph_posterior",

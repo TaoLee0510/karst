@@ -59,7 +59,7 @@
 #'   the centre and much less accurate when it is near the lowest.
 #' @param fit_function [fit_sparse_joint()] or [fit_sparse_joint_cohort()].
 #'
-#' @return An `alfak2_sparse_joint_rate_fit` object: `rates`, the `fits` at
+#' @return An `karst_sparse_joint_rate_fit` object: `rates`, the `fits` at
 #'   each of them, `parameter` (`"birth_rate"` or `"beta"`, the rate that
 #'   varies), `point`, the index of the fit used for point predictions, and
 #'   `central`, the index of the fit at the centre.
@@ -88,12 +88,12 @@ fit_sparse_joint_rates <- function(..., birth_rate_range = NULL, beta_range = NU
   central <- (length(rates) + 1L) %/% 2L
   structure(list(rates = rates, fits = fits, parameter = parameter,
                  point = if (point == "lowest") 1L else central, central = central),
-            class = "alfak2_sparse_joint_rate_fit")
+            class = "karst_sparse_joint_rate_fit")
 }
 
 #' Predict fitness over a range of birth or missegregation rates
 #'
-#' @param object An `alfak2_sparse_joint_rate_fit`.
+#' @param object An `karst_sparse_joint_rate_fit`.
 #' @param karyotypes Character labels or an integer matrix of karyotypes.
 #' @param ... Passed to the prediction method of the fits, for instance
 #'   `sample` for a cohort.
@@ -109,7 +109,7 @@ fit_sparse_joint_rates <- function(..., birth_rate_range = NULL, beta_range = NU
 #'   `rank_agreement` is the lowest Spearman correlation between the
 #'   predictions at any two rates.
 #' @export
-predict.alfak2_sparse_joint_rate_fit <- function(object, karyotypes, ...) {
+predict.karst_sparse_joint_rate_fit <- function(object, karyotypes, ...) {
   predictions <- lapply(object$fits, function(fit) stats::predict(fit, karyotypes, ...))
   z <- stats::qnorm(0.975)
   mean_at <- vapply(predictions, function(p) p$relative_fitness, numeric(nrow(predictions[[1L]])))
@@ -143,8 +143,8 @@ predict.alfak2_sparse_joint_rate_fit <- function(object, karyotypes, ...) {
 }
 
 #' @export
-print.alfak2_sparse_joint_rate_fit <- function(x, ...) {
-  cat("<alfak2_sparse_joint_rate_fit>\n")
+print.karst_sparse_joint_rate_fit <- function(x, ...) {
+  cat("<karst_sparse_joint_rate_fit>\n")
   label <- if (identical(x$parameter, "beta")) "missegregation rates:" else "baseline birth rates:"
   cat("  ", label, " ", paste(signif(x$rates, 3), collapse = ", "),
       "  point predictions at ", signif(x$rates[[x$point]], 3), "\n", sep = "")

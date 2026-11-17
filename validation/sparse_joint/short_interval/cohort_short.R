@@ -67,7 +67,7 @@ si_cohort_fit <- function(config, method, task) {
   nodes <- readRDS(file.path(config$diagnosis_dir, "nodes", paste0(members[[1L]]$dataset_id, ".rds")))
   started <- proc.time()[["elapsed"]]
   result <- tryCatch({
-    fit <- alfak2::fit_sparse_joint_cohort(samples, dt = vapply(members, function(m) m$interval, numeric(1)),
+    fit <- karst::fit_sparse_joint_cohort(samples, dt = vapply(members, function(m) m$interval, numeric(1)),
                                            beta = members[[1L]]$beta, birth_rate = 1, min_cn = 1L, max_cn = 8L,
                                            trend = "select", initial_state = "balance")
     prediction <- stats::predict(fit, nodes$karyotype, sample = 1L)

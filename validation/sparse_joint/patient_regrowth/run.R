@@ -8,7 +8,7 @@
 #   Rscript $R --stage=score [--workers=6]
 #   Rscript $R --stage=symmetry --dataset=dev_L01_P01_s0200_d875
 #
-# `--build=BUILD` (default ff13cf4) fits with that alfak2 build of the
+# `--build=BUILD` (default ff13cf4) fits with that karst build of the
 # multi-timepoint work, into results/BUILD/; run `--stage=link --build=BUILD`
 # first, after the datasets.
 #

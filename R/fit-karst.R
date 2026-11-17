@@ -1,10 +1,10 @@
-#' Fit the complete alfak2 pipeline
+#' Fit the complete karst pipeline
 #'
 #' By default fits the sparse joint count model, built for sparse counts at
 #' two or more timepoints: see [fit_sparse_joint()], whose result is
 #' returned. Its outputs
-#' can be converted to those of alfakR with [as_alfakR()], or produced
-#' directly with alfakR's arguments by [alfak_compat()].
+#' can be converted to those of alfak with [as_alfak()], or produced
+#' directly with alfak's arguments by [alfak_compat()].
 #'
 #' The earlier pipelines remain available: `"two_layer"` runs data
 #' validation, local graph construction, TMB local posterior fitting, bounded
@@ -14,7 +14,7 @@
 #' belong to these two.
 #'
 #' @param counts Count matrix with one column per timepoint or an
-#'   `alfak2_data` object. The sparse joint pipeline takes two or more
+#'   `karst_data` object. The sparse joint pipeline takes two or more
 #'   timepoints, the other two pipelines exactly two.
 #' @param dt Time interval if `counts` is not already prepared; with more than
 #'   two timepoints, one per pair of consecutive timepoints (or give `times`
@@ -72,11 +72,11 @@
 #'   fits use 200.
 #' @param observation_weight_mode How observation weights enter the
 #'   Dirichlet-multinomial likelihood. See `fit_local_posterior()`.
-#' @param alfakR_scale Logical; if `TRUE`, append `alfakR`-scale legacy fitness
-#'   columns without changing the native `alfak2` posterior estimates.
+#' @param alfak_scale Logical; if `TRUE`, append `alfak`-scale legacy fitness
+#'   columns without changing the native `karst` posterior estimates.
 #' @param n0,nb Initial and final population sizes used to calibrate the
-#'   `alfakR` absolute-growth scale. Required when `alfakR_scale = TRUE`.
-#' @param correct_efflux Logical; if `TRUE`, apply the `alfakR`
+#'   `alfak` absolute-growth scale. Required when `alfak_scale = TRUE`.
+#' @param correct_efflux Logical; if `TRUE`, apply the `alfak`
 #'   missegregation-efflux viability correction to the legacy-scale columns.
 #' @param legacy_weight Weighting scheme used to set the legacy-scale zero point.
 #'   `"pi0"` uses the local TMB posterior initial frequencies, `"directly_informed"`
@@ -108,10 +108,10 @@
 #'   maximum frequency change and log total growth change.
 #' @param forward_max_refinements Maximum joint forward step halvings and refits.
 #'
-#' @return An `alfak2_sparse_joint_fit` object for `pipeline = "sparse_joint"`,
-#'   otherwise an `alfak2_fit` object.
+#' @return An `karst_sparse_joint_fit` object for `pipeline = "sparse_joint"`,
+#'   otherwise an `karst_fit` object.
 #' @export
-fit_alfak2 <- function(counts,
+fit_karst <- function(counts,
                        dt = 1,
                        beta = 0.00005,
                        transition_kernel = c("exact", "linear"),
@@ -158,7 +158,7 @@ fit_alfak2 <- function(counts,
                        observation_model = NULL,
                        dm_concentration = NULL,
                        observation_weight_mode = c("likelihood", "fractional_count"),
-                       alfakR_scale = FALSE,
+                       alfak_scale = FALSE,
                        n0 = NULL,
                        nb = NULL,
                        correct_efflux = FALSE,
@@ -188,7 +188,7 @@ fit_alfak2 <- function(counts,
     # A model of its own, with its own domain, result and prediction method.
     return(do.call(fit_sparse_joint, c(list(counts, dt = dt, beta = beta), sparse_joint_control)))
   }
-  n_time <- ncol(if (inherits(counts, "alfak2_data")) counts$counts else as.matrix(counts))
+  n_time <- ncol(if (inherits(counts, "karst_data")) counts$counts else as.matrix(counts))
   if (n_time != 2L) {
     stop(sprintf("The %s pipeline fits two timepoints; `counts` has %d. The sparse joint pipeline, the default, fits more.",
                  pipeline, n_time), call. = FALSE)
@@ -196,8 +196,8 @@ fit_alfak2 <- function(counts,
   if (!is.list(joint_control) || (length(joint_control) &&
       (is.null(names(joint_control)) || any(!nzchar(names(joint_control))))))
     stop("`joint_control` must be a named list.", call. = FALSE)
-  if (!is.logical(alfakR_scale) || length(alfakR_scale) != 1L || is.na(alfakR_scale)) {
-    stop("`alfakR_scale` must be TRUE or FALSE.", call. = FALSE)
+  if (!is.logical(alfak_scale) || length(alfak_scale) != 1L || is.na(alfak_scale)) {
+    stop("`alfak_scale` must be TRUE or FALSE.", call. = FALSE)
   }
   modes <- validate_effective_depth_mode(input_depth, effective_depth_mode)
   input_depth <- modes$input_depth
@@ -305,11 +305,11 @@ fit_alfak2 <- function(counts,
       anchor_min_effective_count = anchor_min_effective_count
     )
   )
-  if (isTRUE(alfakR_scale)) {
+  if (isTRUE(alfak_scale)) {
     if (is.null(n0) || is.null(nb)) {
-      stop("`n0` and `nb` are required when `alfakR_scale = TRUE`.", call. = FALSE)
+      stop("`n0` and `nb` are required when `alfak_scale = TRUE`.", call. = FALSE)
     }
-    fit <- add_alfakR_scale_to_fit(
+    fit <- add_alfak_scale_to_fit(
       fit,
       n0 = n0,
       nb = nb,
@@ -317,7 +317,7 @@ fit_alfak2 <- function(counts,
       legacy_weight = legacy_weight
     )
   } else {
-    fit$diagnostics$alfakR_scale <- list(enabled = FALSE)
+    fit$diagnostics$alfak_scale <- list(enabled = FALSE)
   }
-  new_alfak2_fit(fit)
+  new_karst_fit(fit)
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-root<-"validation/observation_design";src<-Sys.getenv("ALFAK2_CONSTRAINED_SOURCE",file.path(root,"constrained"))
-out<-Sys.getenv("ALFAK2_CONSTRAINED_OUTPUT",file.path(root,"results/constrained_v1"));dir.create(out,recursive=TRUE,showWarnings=FALSE)
+root<-"validation/observation_design";src<-Sys.getenv("KARST_CONSTRAINED_SOURCE",file.path(root,"constrained"))
+out<-Sys.getenv("KARST_CONSTRAINED_OUTPUT",file.path(root,"results/constrained_v1"));dir.create(out,recursive=TRUE,showWarnings=FALSE)
 source(file.path(src,"planning_helpers.R"));source(file.path(root,"results/computation_source_v4/data.R"))
 source("validation/accuracy_round2/oracle_profile_fisher.R")
 context<-readRDS(file.path(root,"results/context.rds"));context$landscape_precision<-solve(context$covariance)

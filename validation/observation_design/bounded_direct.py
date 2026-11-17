@@ -14,10 +14,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--part", required=True, type=int, choices=[0, 1])
     args = parser.parse_args()
-    repo = Path(os.environ["ALFAK2_REPO"]).resolve()
+    repo = Path(os.environ["KARST_REPO"]).resolve()
     root = repo / "validation/observation_design"
-    source = Path(os.environ["ALFAK2_DIRECT_BATCH_SOURCE"])
-    out = Path(os.environ["ALFAK2_DIRECT_BATCH_OUTPUT"])
+    source = Path(os.environ["KARST_DIRECT_BATCH_SOURCE"])
+    out = Path(os.environ["KARST_DIRECT_BATCH_OUTPUT"])
     out.mkdir(exist_ok=True)
     spec = importlib.util.spec_from_file_location("control", root / "results/control_source_v1/bounded_run.py")
     control = importlib.util.module_from_spec(spec)
@@ -49,8 +49,8 @@ def main():
     for row in cases:
         case_id = row["case_id"]
         environment = os.environ.copy()
-        environment["ALFAK2_DIRECT_CASE"] = case_id
-        environment.pop("ALFAK2_DESIGN_OUTPUT", None)
+        environment["KARST_DIRECT_CASE"] = case_id
+        environment.pop("KARST_DESIGN_OUTPUT", None)
         (destination / "active_case.json").write_text(json.dumps({"case_id": case_id, "started_unix": time.time(),
             "parent_pid": os.getpid(), "budget_seconds": 300}, indent=2) + "\n")
         outcome = control.execute(["Rscript", str(source / "run_direct.R")], environment,

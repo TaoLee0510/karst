@@ -5,7 +5,7 @@
 #   Rscript $R --stage=truth    [--workers=6]
 #   Rscript $R --stage=datasets [--workers=6]
 #   Rscript $R --stage=fit      --methods=zero,all,ends [--datasets=REGEX] [--workers=6]
-#   Rscript $R --stage=fit      --methods=alfakR --datasets=_b20000_ --workers=1
+#   Rscript $R --stage=fit      --methods=alfak --datasets=_b20000_ --workers=1
 #   Rscript $R --stage=score    [--workers=6]
 #
 # --set=heldout --unseal-heldout for the held-out landscapes (seed base

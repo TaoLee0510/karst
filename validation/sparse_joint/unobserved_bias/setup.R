@@ -126,7 +126,7 @@ ub_stage_score <- function(config, workers) {
 # problem builder is wrapped so that the residual scale's prior is a spike at
 # `scale` (sd 0.01 on the log scale), and restored afterwards. Probe only.
 ub_with_residual_scale <- function(scale, expr) {
-  ns <- asNamespace("alfak2")
+  ns <- asNamespace("karst")
   original <- get("sparse_joint_problem", envir = ns)
   wrapped <- function(data, settings) {
     problem <- original(data, settings)
@@ -135,8 +135,8 @@ ub_with_residual_scale <- function(scale, expr) {
     problem$parameters$log_scale[4L] <- log(scale)
     problem
   }
-  utils::assignInNamespace("sparse_joint_problem", wrapped, ns = "alfak2")
-  on.exit(utils::assignInNamespace("sparse_joint_problem", original, ns = "alfak2"))
+  utils::assignInNamespace("sparse_joint_problem", wrapped, ns = "karst")
+  on.exit(utils::assignInNamespace("sparse_joint_problem", original, ns = "karst"))
   force(expr)
 }
 

@@ -2,7 +2,7 @@ design_load <- function(repo, compile=TRUE) {
   helper <- new.env(parent=globalenv())
   sys.source(file.path(repo,"validation/posterior_reference_4to8/reference.R"),helper)
   runtime <- helper$reference_load(repo,compile=FALSE)
-  module <- Sys.getenv("ALFAK2_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
+  module <- Sys.getenv("KARST_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
   files <- file.path(module,c("observation_model.cpp","positive_taylor_forward.h"))
   sha <- paste(tools::md5sum(files),collapse="")
   cache <- file.path("/private/tmp/alfak2_observation_design_model",sha)

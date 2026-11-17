@@ -7,7 +7,7 @@
 #' @return Integer matrix with one row per label.
 #' @keywords internal
 parse_karyotypes <- function(labels) {
-  alfak2_parse_karyotypes_cpp(as.character(labels))
+  karst_parse_karyotypes_cpp(as.character(labels))
 }
 
 #' Format karyotype matrix rows
@@ -16,5 +16,5 @@ parse_karyotypes <- function(labels) {
 #' @return Character vector of dot-separated labels.
 #' @keywords internal
 format_karyotypes <- function(karyotypes) {
-  alfak2_stringify_karyotypes_cpp(as.matrix(karyotypes))
+  karst_stringify_karyotypes_cpp(as.matrix(karyotypes))
 }

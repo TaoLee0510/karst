@@ -71,9 +71,9 @@ mt_config <- function(output_dir = NULL, set = c("series", "heldout")) {
     majors_any = series("all", intermediate = "majors", build = "cv4"),
     majors1 = series("all", intermediate = "majors", intermediate_weight = 1, build = "cv5"),
     majors = series("all", intermediate = "majors", build = "cv5"),
-    # alfakR dev2 f93b2d2 on every time point, as in the development benchmark
+    # alfak dev2 f93b2d2 on every time point, as in the development benchmark
     # (minobs 20, 45 bootstraps), with the window's bottleneck as n0.
-    alfakR = list(type = "alfakR", build = NULL, library = "alfakR_f93b2d2", minobs = 20L, nboot = 45L,
+    alfak = list(type = "alfak", build = NULL, library = "alfakR_f93b2d2", minobs = 20L, nboot = 45L,
                   nn_prior = "empirical")
   )
   config
@@ -224,7 +224,7 @@ mt_dispersion <- function(fit) {
 mt_fit_series <- function(config, dataset, nodes, method) {
   counts <- mt_counts(dataset, method$columns)
   times <- if (identical(method$columns, "ends")) dataset$times[c(1L, length(dataset$times))] else dataset$times
-  fit <- do.call(alfak2::fit_sparse_joint, c(
+  fit <- do.call(karst::fit_sparse_joint, c(
     list(counts, times = times, beta = dataset$beta, birth_rate = method$birth_rate, min_cn = method$min_cn,
          max_cn = method$max_cn),
     method$arguments
@@ -243,8 +243,8 @@ mt_fit_series <- function(config, dataset, nodes, method) {
        history_profile = d$history_profile, domain_coverage = d$domain_coverage)
 }
 
-mt_fit_alfakR <- function(config, dataset, nodes, method) {
-  work <- tempfile("alfakR_")
+mt_fit_alfak <- function(config, dataset, nodes, method) {
+  work <- tempfile("alfak_")
   on.exit(unlink(work, recursive = TRUE), add = TRUE)
   counts <- mt_counts(dataset, "all")
   yi <- list(x = data.frame(counts, check.names = FALSE), dt = 1)
@@ -277,7 +277,7 @@ si_run_method <- function(config, dataset, nodes, method) {
       zero = list(status = "ok", prediction = data.frame(karyotype = nodes$karyotype, fitness = 0,
                                                          fitness_sd = NA_real_, stringsAsFactors = FALSE)),
       series = mt_fit_series(config, dataset, nodes, method),
-      alfakR = mt_fit_alfakR(config, dataset, nodes, method),
+      alfak = mt_fit_alfak(config, dataset, nodes, method),
       stop("Unknown method type: ", method$type, call. = FALSE)
     ),
     error = function(e) list(status = "failed", prediction = NULL, detail = conditionMessage(e),
@@ -287,14 +287,14 @@ si_run_method <- function(config, dataset, nodes, method) {
   result
 }
 
-# alfakR runs from its own library; the alfak2 arms from an alfak2 build.
+# alfak runs from its own library; the karst arms from an karst build.
 mt_stage_fit <- function(config, workers, method_names, datasets) {
   libraries <- unique(unlist(lapply(config$methods[method_names], `[[`, "library")))
   if (length(libraries)) {
-    if (length(method_names) != 1L) stop("Run alfakR on its own.", call. = FALSE)
+    if (length(method_names) != 1L) stop("Run alfak on its own.", call. = FALSE)
     .libPaths(c(file.path(config$library_root, "lib", libraries), .libPaths()))
-    loadNamespace("alfakR")
-    cat("alfakR from", dirname(find.package("alfakR")), "\n")
+    loadNamespace("alfak")
+    cat("alfak from", dirname(find.package("alfakR")), "\n")
   }
   si_stage_fit(config, workers, method_names, datasets)
 }

@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-out<-normalizePath(Sys.getenv("ALFAK2_IS_OUTPUT"));dest<-file.path(out,"mechanism")
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+out<-normalizePath(Sys.getenv("KARST_IS_OUTPUT"));dest<-file.path(out,"mechanism")
 stopifnot(!dir.exists(dest));dir.create(dest);dir.create(file.path(dest,"data"));dir.create(file.path(dest,"inference"));dir.create(file.path(dest,"fits"))
 source(file.path(root,"results/computation_source_v4/data.R"))
 source(file.path(repo,"validation/accuracy_round2/process_prepare_data.R"))
 ctxfile<-file.path(root,"results/context.rds");ctx<-readRDS(ctxfile)
 old<-read.csv(file.path(root,"results/constrained_v2/all_fit_status.csv"));old<-old[old$design=="opt_single",]
-pre_manifest<-normalizePath(Sys.getenv("ALFAK2_IS_PREFLIGHT_MANIFEST",file.path(out,"preflight_manifest.csv")))
+pre_manifest<-normalizePath(Sys.getenv("KARST_IS_PREFLIGHT_MANIFEST",file.path(out,"preflight_manifest.csv")))
 pre<-read.csv(pre_manifest);rows<-audit<-list()
 for(i in seq_len(nrow(old))) {
  base<-readRDS(old$file[i]);pathsfile<-file.path(root,"results/constrained_v2/latent_paths",paste0(base$id,".rds"))
@@ -36,7 +36,7 @@ for(i in seq_len(nrow(old))) {
    fitted<-readRDS(file.path(p$output,"result.rds"));resource<-read.csv(file.path(p$output,"resource.csv"))
    stopifnot(all(fitted$flags),fitted$numerical_seed==seed,tolower(as.character(resource$resource_pass))=="true")
    ledger<-read.csv(file.path(p$output,"source_sha256.csv"))
-   sources<-file.path(normalizePath(Sys.getenv("ALFAK2_IS_SOURCE")),c("model.R","integrate.R","importance.cpp","importance_model.cpp","positive_taylor_forward.h","run_case.R"))
+   sources<-file.path(normalizePath(Sys.getenv("KARST_IS_SOURCE")),c("model.R","integrate.R","importance.cpp","importance_model.cpp","positive_taylor_forward.h","run_case.R"))
    stopifnot(all(sources%in%ledger$file),all(vapply(sources,digest::digest,character(1),algo="sha256",file=TRUE)==ledger$sha256[match(sources,ledger$file)]))
    output<-p$output;reuse<-TRUE
   }

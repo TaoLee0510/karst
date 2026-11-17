@@ -11,7 +11,7 @@ test_that("global compute_sd false preserves posterior means", {
       c("0", "90")
     )
   )
-  dat <- prepare_alfak2_data(counts, dt = 90)
+  dat <- prepare_karst_data(counts, dt = 90)
   graph <- build_karyotype_graph(dat, shell_depth = 1, max_nodes = 1000)
   local <- fit_local_posterior(
     dat,
@@ -37,7 +37,7 @@ test_that("local optimizer diagnostics are optional and include f block", {
       c("0", "90")
     )
   )
-  dat <- prepare_alfak2_data(counts, dt = 90)
+  dat <- prepare_karst_data(counts, dt = 90)
   graph <- build_karyotype_graph(dat, shell_depth = 1, max_nodes = 1000)
   plain <- fit_local_posterior(
     dat,
@@ -58,7 +58,7 @@ test_that("local optimizer diagnostics are optional and include f block", {
     local_centering_weight = 10,
     fixed_sigma_neighbor = 0.1
   )
-  expect_s3_class(diag, "alfak2_local_fit")
+  expect_s3_class(diag, "karst_local_fit")
   expect_true(all(c("grad_f_max_abs", "max_gradient_block_name") %in% names(diag$diagnostics$optimizer$gradient_block_summary)))
   expect_true(is.finite(diag$diagnostics$optimizer$gradient_block_summary$grad_f_max_abs))
 })

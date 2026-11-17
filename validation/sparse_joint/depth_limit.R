@@ -10,7 +10,7 @@
 #                karyotype detail would give;
 #   deep fit     the model given (nearly) the whole population.
 # The fit at the benchmark depth is read from the benchmark's fits.
-# Set STT_R_LIB to the library holding the alfak2 build under test.
+# Set STT_R_LIB to the library holding the karst build under test.
 
 library_dir <- Sys.getenv("STT_R_LIB", unset = "")
 if (nzchar(library_dir)) .libPaths(c(library_dir, .libPaths()))
@@ -57,13 +57,13 @@ score_one <- function(id) {
   deep <- stt_sample_counts(dataset$truth$frequency_t0, dataset$truth$frequency_t1, depth, depth,
                             dataset$interval, dataset$seed + 7L)
   storage.mode(deep) <- "integer"
-  method <- config$methods$alfak2_sparse_joint
+  method <- config$methods$karst_sparse_joint
   started <- proc.time()[["elapsed"]]
-  fit <- alfak2::fit_sparse_joint(deep, dt = dataset$interval, beta = dataset$beta, birth_rate = method$birth_rate,
+  fit <- karst::fit_sparse_joint(deep, dt = dataset$interval, beta = dataset$beta, birth_rate = method$birth_rate,
                                   min_cn = method$min_cn, max_cn = method$max_cn)
   seconds <- proc.time()[["elapsed"]] - started
   prediction <- stats::predict(fit, nodes$karyotype)
-  benchmark_fit <- readRDS(file.path(config$output_dir, "fits", sprintf("%s__alfak2_sparse_joint.rds", id)))
+  benchmark_fit <- readRDS(file.path(config$output_dir, "fits", sprintf("%s__karst_sparse_joint.rds", id)))
   rows <- rbind(
     score(data.frame(karyotype = nodes$karyotype, fitness = shell_mean), "shell mean"),
     score(benchmark_fit$prediction, "benchmark depth"),

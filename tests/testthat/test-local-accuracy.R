@@ -6,7 +6,7 @@ local_accuracy_counts <- function() {
 }
 
 local_accuracy_problem <- function() {
-  data <- prepare_alfak2_data(local_accuracy_counts(), dt = 1, beta = 0.00005)
+  data <- prepare_karst_data(local_accuracy_counts(), dt = 1, beta = 0.00005)
   graph <- build_karyotype_graph(data, shell_depth = 1, min_cn = 1, max_cn = 3,
                                  max_nodes = 50)
   list(data = data, graph = graph)
@@ -15,7 +15,7 @@ local_accuracy_problem <- function() {
 test_that("fitness integration coordinates preserve marginal evidence", {
   counts <- matrix(c(50, 30, 50, 70), 2L, byrow = TRUE,
     dimnames = list(c("1", "2"), c("t0", "t1")))
-  data <- prepare_alfak2_data(counts, dt = 2, beta = 0)
+  data <- prepare_karst_data(counts, dt = 2, beta = 0)
   graph <- build_karyotype_graph(data, shell_depth = 0, min_cn = 1, max_cn = 2)
   args <- list(data = data, graph = graph, forward_model = "selection_transport",
     fixed_sigma_anchor = 0.6, fixed_sigma_neighbor = 0.35, fixed_tau_group = 0.2)
@@ -83,7 +83,7 @@ test_that("fixed scales do not leave unused Hessian columns", {
 test_that("Laplace contrast uncertainty agrees with independent posterior quadrature", {
   counts <- matrix(c(50, 30, 50, 70), 2L, byrow = TRUE,
                    dimnames = list(c("1", "2"), c("t0", "t1")))
-  data <- prepare_alfak2_data(counts, dt = 1, beta = 0)
+  data <- prepare_karst_data(counts, dt = 1, beta = 0)
   graph <- build_karyotype_graph(data, shell_depth = 0, min_cn = 1, max_cn = 2)
   fit <- fit_local_posterior(data, graph, forward_model = "selection_transport",
                              fixed_sigma_anchor = 0.6, fixed_sigma_neighbor = 0.35,
@@ -132,7 +132,7 @@ test_that("division-process summaries preserve positive support and joint uncert
 test_that("joint structured residual prior matches the independent local Gaussian prior", {
   counts <- matrix(c(50, 30, 50, 70), 2L, byrow = TRUE,
                    dimnames = list(c("1", "2"), c("t0", "t1")))
-  data <- prepare_alfak2_data(counts, dt = 1, beta = 0)
+  data <- prepare_karst_data(counts, dt = 1, beta = 0)
   graph <- build_karyotype_graph(data, shell_depth = 0, min_cn = 1, max_cn = 2)
   reference <- fit_local_posterior(data, graph, forward_model = "selection_transport",
                                    fixed_sigma_anchor = 0.6, fixed_sigma_neighbor = 0.35,
@@ -150,7 +150,7 @@ test_that("joint structured residual prior matches the independent local Gaussia
 
 test_that("actual population growth identifies an otherwise unobserved birth baseline", {
   counts <- matrix(c(100, 100), 1L, dimnames = list("2", c("t0", "t1")))
-  data <- prepare_alfak2_data(counts, dt = 2, beta = 0)
+  data <- prepare_karst_data(counts, dt = 2, beta = 0)
   graph <- build_karyotype_graph(data, shell_depth = 0, min_cn = 1, max_cn = 3)
   controls <- list(data = data, graph = graph, forward_model = "division_process",
                    fixed_sigma_anchor = 1, fixed_sigma_neighbor = 0.35,

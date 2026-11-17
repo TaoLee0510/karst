@@ -1,6 +1,6 @@
 # Draw from the actual model mixture, retaining correlations before taking any
 # fitness reference contrast. Components share one fitness interpretation.
-draw_alfak2_posterior_components <- function(components, target_labels, n_draws = 8000L,
+draw_karst_posterior_components <- function(components, target_labels, n_draws = 8000L,
                                              seed = 711204L, default_labels = NULL) {
   if (!length(components)) stop("No posterior components")
   weights <- vapply(components, function(x) as.numeric(x$weight), numeric(1))

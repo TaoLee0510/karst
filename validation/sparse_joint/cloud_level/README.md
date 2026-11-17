@@ -8,7 +8,7 @@ stay as they are until the user decides.
 ## Question
 
 On the Salehi passages, with one interval between the two time points,
-alfak2's fitness differences depend on the history that the balance prior was
+KARST's fitness differences depend on the history that the balance prior was
 given, and the history does not follow how much the population changed. Can
 the model be made to take the size of the cloud around the major karyotypes
 as given, without losing accuracy on simulations?
@@ -138,7 +138,7 @@ Landscapes are the unit of the bootstrap.
    does not depend on the chosen history (`level`), or there is no history to
    choose (`level_dt`).
 4. **Salehi, as a confirmation only.** On the trajectories with one interval,
-   the rank agreement of predicted and observed change is not below alfakR's
+   the rank agreement of predicted and observed change is not below alfak's
    (paired difference with an interval that includes zero or lies above it).
    No setting is tuned on the Salehi results.
 
@@ -224,15 +224,15 @@ bootstrap):
 
 | Arm | All (471 rows) | One interval (147) | More intervals (324) |
 | --- | --- | --- | --- |
-| alfakR | 0.32 | 0.60 | 0.18 |
-| alfak2 (`base`) | 0.29 | 0.45 | 0.22 |
+| alfak | 0.32 | 0.60 | 0.18 |
+| KARST (`base`) | 0.29 | 0.45 | 0.22 |
 | `level` | 0.34 | 0.59 | 0.21 |
 | `level_dt` | 0.33 | 0.60 | 0.21 |
 | `select` | 0.31 | 0.54 | 0.21 |
 | `free` | 0.37 | 0.60 | 0.25 |
 
 - On one interval, `level_dt` and `free` gain 0.15 over `base` (lineage
-  interval 0.02-0.18 for both) and equal alfakR (−0.002). `select` gains
+  interval 0.02-0.18 for both) and equal alfak (−0.002). `select` gains
   0.09 (−0.02 to 0.17).
 - With more intervals no arm differs from `base`.
 - At 15 days, `base`'s fitness variance among the parent's cells follows the
@@ -252,7 +252,7 @@ landscape from a worse one on such data.
 
 ## Conclusion
 
-- The balance prior is what makes alfak2 accurate when its missegregation
+- The balance prior is what makes KARST accurate when its missegregation
   rate is right, and what makes it wrong when the cloud is larger for other
   reasons. No arm tested keeps the first and avoids the second.
 - The size of the cloud cannot be attributed from the counts of one
@@ -271,7 +271,7 @@ landscape from a worse one on such data.
 
 Plan: (1) confirm on new landscapes a rule that switches to
 `initial_state = "free"` when the level fitted by `level_dt` exceeds 1;
-(2) find why alfak2 trails alfakR most when every passage is fitted; (3) make
+(2) find why KARST trails alfak most when every passage is fitted; (3) make
 the rule an option; (4) the user decides the default.
 
 ### Step 1: confirmation sets
@@ -318,7 +318,7 @@ give an error.
   (`results/platform_check.R`); against the study's HPC fits, free fits
   differ by up to 0.013 in relative fitness, which is the difference
   between machines.
-- `as_alfakR()` runs on an `"auto"` fit.
+- `as_alfak()` runs on an `"auto"` fit.
 - The package's tests pass (`test-sparse-joint.R` 18, `test-sparse-joint-rates.R`
   5), with the two tests that build the model's inputs by hand given the new
   inputs and one test added for the option.
@@ -326,7 +326,7 @@ give an error.
 
 ### Step 4: the default, and its reversal
 
-The user made `initial_state = "auto"` the default on 2026-11-16 (alfak2
+The user made `initial_state = "auto"` the default on 2026-11-16 (KARST
 827c4b5): `"auto"` was `"balance"` with more than two time points, stored fits
 still rebuilt, and the test suite passed.
 
@@ -351,7 +351,7 @@ points one passage apart (windows of two passages, `w2_ends`):
   RMSE, where `free` was not worse; the paper benchmark scores landscape
   correlation and cross-validation against the truth.
 
-The user returned the default to `"balance"` the same day (alfak2 348addd);
+The user returned the default to `"balance"` the same day (KARST 348addd);
 `"auto"` stays an option with this limitation documented.
 
 ### Step 5: a corrected rule (stopped after its step 0)

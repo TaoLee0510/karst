@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design");r<-file.path(root,"results")
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design");r<-file.path(root,"results")
 out<-file.path(r,"adaptive_complete_v1");dir.create(out,showWarnings=FALSE)
 source(file.path(repo,"validation/accuracy_round2/common.R"))
 compat<-read.csv(file.path(r,"adaptive_compatibility_v1/compatibility.csv"))

@@ -8,7 +8,7 @@ check_sparse_joint_counts(counts, major_count = 3)
 }
 \arguments{
 \item{counts}{Count matrix with karyotype row names and one column per
-time point, or an \code{alfak2_data} object.}
+time point, or an \code{karst_data} object.}
 
 \item{major_count}{Number of cells from which a karyotype counts as
 repeated, as \code{major_count} of \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}.}
@@ -35,7 +35,7 @@ at the same time point, gives it little to anchor on. That pattern can be real
 diversity, but it is also what copy-number calls that vary from cell to
 cell produce. When a timepoint has no cell next to a major karyotype,
 \code{\link[=fit_sparse_joint]{fit_sparse_joint()}} stops with an error of class
-\code{alfak2_domain_coverage_error}; a fit that succeeds reports the share of
+\code{karst_domain_coverage_error}; a fit that succeeds reports the share of
 each time point inside its domain in \code{diagnostics$domain_coverage}.
 
 For orientation: in the single-cell data of Salehi et al. (2021) used by

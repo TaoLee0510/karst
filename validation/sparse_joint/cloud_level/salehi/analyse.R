@@ -9,8 +9,8 @@
 #
 # Reads the rows that the benchmark's scripts/fig2d_check.R wrote, one per
 # fit, minobs and daughter passage:
-#   <benchmark>/results_05a8855/analysis/fig2d_check/salehi   alfak2, alfakR
-#   results/salehi/check            this study's arms (alfak2 build cl1)
+#   <benchmark>/results_05a8855/analysis/fig2d_check/salehi   karst, alfak
+#   results/salehi/check            this study's arms (karst build cl1)
 #   results/salehi/variants_check   the alfak2-salehi-variants project's fits
 # All comparisons are on the rows that every compared method has, without
 # the paper's selection by cross-validation. Intervals: 95% percentile
@@ -46,7 +46,7 @@ x <- do.call(rbind, lapply(tables, function(r) {
   r[setdiff(columns, names(r))] <- NA
   r[columns]
 }))
-x$method <- sub("^alfak2_", "", x$method)
+x$method <- sub("^karst_", "", x$method)
 x$key <- paste(x$fi, x$min_obs, x$dj)
 x$passages <- as.integer(sub("^.*_l_([0-9]+)_.*$", "\\1", x$fi))
 x$sample <- sub("_X[0-9]+_l_.*$", "", x$fi)
@@ -64,10 +64,10 @@ show <- function(table, title) {
   print(table, row.names = FALSE)
 }
 
-# 1. The build at its defaults against the round's alfak2 fits.
+# 1. The build at its defaults against the round's karst fits.
 if ("base" %in% x$method) {
   a <- x[x$method == "base", ]
-  b <- x[x$method == "alfak2", ]
+  b <- x[x$method == "karst", ]
   m <- merge(a[c("key", "pred0", "var_f", "history")], b[c("key", "pred0", "var_f", "history")], by = "key",
              suffixes = c("_build", "_round"))
   same <- data.frame(rows = nrow(m), inputs = length(unique(a$fi)),
@@ -75,21 +75,21 @@ if ("base" %in% x$method) {
                      max_difference_variance = max(abs(m$var_f_build - m$var_f_round)),
                      max_difference_predicted_change = max(abs(m$pred0_build - m$pred0_round)))
   utils::write.csv(same, file.path(out_dir, "default_reproduces_round.csv"), row.names = FALSE)
-  show(same, "Build cl1 at its defaults against the round's alfak2 fits")
+  show(same, "Build cl1 at its defaults against the round's karst fits")
 }
 
 # Derived arm `select`, as in the simulations (report.R): per input, the fit
-# with the higher marginal likelihood of the round's alfak2 fit (the default)
+# with the higher marginal likelihood of the round's karst fit (the default)
 # and level_dt. Objectives: the round's from step 0 (results/step0), level_dt's
 # from its run.Rds (results/salehi/runs).
 step0 <- utils::read.csv(file.path(script_dir, "..", "results", "step0", "salehi_fits.csv"), stringsAsFactors = FALSE)
-step0 <- step0[step0$design == "ends" & step0$method == "alfak2", c("id", "objective")]
-run_files <- Sys.glob(file.path(results, "runs", "salehi", "*", "ends", "alfak2_*", "minobs_5", "run.Rds"))
+step0 <- step0[step0$design == "ends" & step0$method == "karst", c("id", "objective")]
+run_files <- Sys.glob(file.path(results, "runs", "salehi", "*", "ends", "karst_*", "minobs_5", "run.Rds"))
 runs <- do.call(rbind, lapply(run_files, function(f) {
   r <- readRDS(f)
   parts <- strsplit(f, "/", fixed = TRUE)[[1L]]
   n <- length(parts)
-  data.frame(id = parts[n - 4L], method = sub("^alfak2_", "", parts[n - 2L]), status = r$status,
+  data.frame(id = parts[n - 4L], method = sub("^karst_", "", parts[n - 2L]), status = r$status,
              objective = if (is.null(r$objective)) NA_real_ else r$objective, stringsAsFactors = FALSE)
 }))
 if ("base" %in% runs$method) {
@@ -99,7 +99,7 @@ if ("base" %in% runs$method) {
 }
 level_dt_objective <- runs[runs$method == "level_dt" & runs$status == "ok", c("id", "objective")]
 choice <- merge(step0, level_dt_objective, by = "id", suffixes = c("_default", "_level_dt"))
-choice$pick <- ifelse(choice$objective_level_dt < choice$objective_default, "level_dt", "alfak2")
+choice$pick <- ifelse(choice$objective_level_dt < choice$objective_default, "level_dt", "karst")
 choice$passages <- as.integer(sub("^.*_l_([0-9]+)_.*$", "\\1", choice$id))
 picked <- as.data.frame(table(one_interval = choice$passages == 2L, pick = choice$pick))
 utils::write.csv(choice, file.path(out_dir, "select_choice.csv"), row.names = FALSE)
@@ -112,7 +112,7 @@ select_rows <- do.call(rbind, lapply(seq_len(nrow(choice)), function(i) {
 x <- rbind(x, select_rows)
 
 # 2. Rank agreement on common rows.
-main <- intersect(c("alfakR", "alfak2", "level", "level_dt", "select", "free"), unique(x$method))
+main <- intersect(c("alfak", "karst", "level", "level_dt", "select", "free"), unique(x$method))
 extra <- intersect(c("wide", "observed", "observed_free"), unique(x$method))
 common_keys <- function(methods) Reduce(intersect, lapply(methods, function(m) x$key[x$method == m & is.finite(x$pred0) & is.finite(x$base)]))
 subsets <- list(all = function(d) rep(TRUE, nrow(d)), `one interval` = function(d) d$passages == 2L,
@@ -150,8 +150,8 @@ rank_tables <- function(methods, label) {
   }))
   paired <- do.call(rbind, lapply(names(subsets), function(s) {
     d <- wide[subsets[[s]](wide), ]
-    do.call(rbind, lapply(setdiff(methods, c("alfakR", "alfak2")), function(m) {
-      do.call(rbind, lapply(intersect(c("alfakR", "alfak2"), methods), function(reference) {
+    do.call(rbind, lapply(setdiff(methods, c("alfak", "karst")), function(m) {
+      do.call(rbind, lapply(intersect(c("alfak", "karst"), methods), function(reference) {
         do.call(rbind, lapply(c("type", "sample"), function(cluster) {
           statistic <- function(b) sp(b$base, b[[paste0("pred0_", m)]]) - sp(b$base, b[[paste0("pred0_", reference)]])
           values <- boot_values(d, cluster, statistic)
@@ -181,7 +181,7 @@ if (length(extra)) {
 # 3. Does the scale follow the history? Trajectories with one interval of 15
 # days, one row per fit and daughter passage (minobs 5).
 one <- x[x$passages == 2L & x$min_obs == 5 & is.finite(x$fit_dt) & x$fit_dt == 15, ]
-history <- do.call(rbind, lapply(intersect(c("alfak2", "level", "level_dt", "free"), unique(one$method)), function(m) {
+history <- do.call(rbind, lapply(intersect(c("karst", "level", "level_dt", "free"), unique(one$method)), function(m) {
   d <- one[one$method == m, ]
   data.frame(method = m, n = nrow(d), fits = length(unique(d$fi)),
              history_15 = sum(d$history == 15), history_30 = sum(d$history == 30), history_100 = sum(d$history >= 100),
@@ -195,7 +195,7 @@ history <- do.call(rbind, lapply(intersect(c("alfak2", "level", "level_dt", "fre
 }))
 utils::write.csv(history, file.path(out_dir, "history_one_interval_15d.csv"), row.names = FALSE)
 show(history, "One interval of 15 days, minobs 5: history and scale")
-by_history <- do.call(rbind, lapply(intersect(c("alfak2", "level"), unique(one$method)), function(m) {
+by_history <- do.call(rbind, lapply(intersect(c("karst", "level"), unique(one$method)), function(m) {
   d <- one[one$method == m, ]
   d$group <- ifelse(d$history >= 100, "100+", as.character(d$history))
   rows <- stats::aggregate(cbind(var_f, pred0, base) ~ group, data = d, FUN = stats::median)

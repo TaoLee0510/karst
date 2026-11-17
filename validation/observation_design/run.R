@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
-src<-Sys.getenv("ALFAK2_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
+src<-Sys.getenv("KARST_DESIGN_SOURCE",file.path(repo,"validation/observation_design"))
 source(file.path(src,"model.R"));source(file.path(src,"score.R"))
 source(file.path(repo,"validation/accuracy_round2/oracle_posterior_reference.R"))
 source(file.path(repo,"validation/baseline_quadrature/quadrature.R"))
 source(file.path(repo,"validation/accuracy_round2/common.R"))
-output<-Sys.getenv("ALFAK2_DESIGN_OUTPUT",file.path(repo,"validation/observation_design/results"))
-part<-Sys.getenv("ALFAK2_DESIGN_PART","all")
+output<-Sys.getenv("KARST_DESIGN_OUTPUT",file.path(repo,"validation/observation_design/results"))
+part<-Sys.getenv("KARST_DESIGN_PART","all")
 destination<-file.path(output,paste0("fits_",part));dir.create(destination,recursive=TRUE,showWarnings=FALSE)
 validation<-read.csv(file.path(output,"validation/validation_tests.csv"))
 if(any(validation$failed>0|validation$error|validation$warning>0))stop("Joint model validation not passed")
@@ -23,7 +23,7 @@ sha<-round2_sha256(files);source_key<-round2_hash_object(sha)
 write.csv(data.frame(file=names(sha),sha256=unname(sha)),file.path(destination,"source_sha256.csv"),row.names=FALSE)
 cache<-file.path("/private/tmp/alfak2_observation_design_fits",substr(source_key,1,12))
 dir.create(cache,recursive=TRUE,showWarnings=FALSE)
-only<-Sys.getenv("ALFAK2_DESIGN_ONLY","")
+only<-Sys.getenv("KARST_DESIGN_ONLY","")
 if(nzchar(only)) {
   manifest<-manifest[manifest$case_id==only,]
 } else if(part %in% c("0","1")) {

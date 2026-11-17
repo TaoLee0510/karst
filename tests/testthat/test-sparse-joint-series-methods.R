@@ -49,7 +49,7 @@ test_that("the pairwise method fits each pair as two time points with one landsc
   expect_lt(max(abs(fit$summary$fitness_mean - cohort$landscape$fitness_mean[index])), 1e-3)
   # Balance at the start of each pair over the history alone (internal
   # option of the evaluation) rather than plus the population's age.
-  old <- options(alfak2.pair_history = "same")
+  old <- options(karst.pair_history = "same")
   same <- fit_sparse_joint(sim$counts, times = sim$times, beta = sim$beta, max_cn = 4, history = 60,
                            series = "pairwise")
   options(old)
@@ -80,7 +80,7 @@ test_that("the state-space method follows the anchored fit when there is no drif
   # Nearly no drift: the closed form from time point to time point, as the anchored
   # model with every time point for every karyotype, up to the second order in
   # the mutational flux.
-  old <- options(alfak2.state_space_drift = 1e-8)
+  old <- options(karst.state_space_drift = 1e-8)
   on.exit(options(old), add = TRUE)
   tight <- fit_sparse_joint(sim$counts, times = sim$times, beta = sim$beta, max_cn = 4, history = 60,
                             series = "state_space")
@@ -94,7 +94,7 @@ test_that("the state-space method follows the anchored fit when there is no drif
   expect_lt(max(abs(anchored$summary$relative_fitness[major] - tight$summary$relative_fitness[index][major])), 1e-3)
 })
 
-test_that("predictions and alfakR outputs work for every series method", {
+test_that("predictions and alfak outputs work for every series method", {
   sim <- simulate_series_counts()
   for (method in c("pairwise", "state_space")) {
     fit <- fit_sparse_joint(sim$counts, times = sim$times, beta = sim$beta, max_cn = 4, history = 60,
@@ -102,7 +102,7 @@ test_that("predictions and alfakR outputs work for every series method", {
     prediction <- predict(fit, c(fit$summary$karyotype[1:2], "1.1.1.1"))
     expect_true(all(is.finite(prediction$relative_fitness)))
     expect_true(all(prediction$relative_sd > 0))
-    out <- as_alfakR(fit, minobs = 20, nboot = 5, n0 = 1e5, nb = 1e7)
+    out <- as_alfak(fit, minobs = 20, nboot = 5, n0 = 1e5, nb = 1e7)
     expect_true(all(out$landscape$k[out$landscape$fq] %in% rownames(sim$counts)))
     expect_true(is.finite(out$xval$R2R))
   }
@@ -115,7 +115,7 @@ test_that("a first time point outside every pair's domain stops the fit", {
                   "4.2.3" = c(1, 0, 0))
   expect_identical(sparse_joint_pair_left_out(counts, 0.01, 3, 5000, 1L, 4L)$left_out, 2L)
   expect_error(suppressWarnings(fit_sparse_joint(counts, dt = c(10, 10), beta = 0.001, series = "pairwise")),
-               class = "alfak2_domain_coverage_error")
+               class = "karst_domain_coverage_error")
 })
 
 # The simulated series with time point `k` replaced by `cells`.
@@ -142,7 +142,7 @@ test_that("a time point in between with no cell in its pair's domain is left out
   for (method in c("pairwise", "state_space")) {
     expect_warning(fit <- fit_sparse_joint(counts, times = sim$times, beta = sim$beta, max_cn = 4, history = 60,
                                            series = method),
-                   class = "alfak2_samples_left_out_warning")
+                   class = "karst_samples_left_out_warning")
     direct <- fit_sparse_joint(kept, times = sim$times[-3L], beta = sim$beta, max_cn = 4, history = 60,
                                series = method)
     expect_identical(fit$summary, direct$summary)

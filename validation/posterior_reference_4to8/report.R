@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 directory <- "validation/posterior_reference_4to8"
-output <- Sys.getenv("ALFAK2_REFERENCE_OUTPUT", file.path(directory, "results"))
+output <- Sys.getenv("KARST_REFERENCE_OUTPUT", file.path(directory, "results"))
 status <- read.csv(file.path(output, "case_status.csv"))
 moments <- read.csv(file.path(output, "moment_comparison.csv"))
 covariance <- read.csv(file.path(output, "covariance_comparison.csv"))
@@ -70,5 +70,5 @@ lines <- c(lines, "", "## Numerical forward checks", "",
   "The original live runner emitted a trailing parser error after all 16 completed outputs were written: file-path options were edited while its already-parsed sampling loop was running. The saved results were subsequently verified case by case, including four-chain dimensions, retained lengths, convergence and raw-file SHA256 (`results/completion_integrity.txt`). Exact original computation sources were archived before those file-path edits. All target/sampler/case/fit/diagnostic function bodies remained unchanged, and a separate portable-path validation rerun passed the same 99 assertions. The current portable runner parses cleanly; the late process-exit error is recorded rather than hidden.", "",
   "The subsequent prior-preserving scalar-integration candidate and deployment-prior development pilot are reported separately in [the candidate review](../baseline_quadrature/REVIEW.md). Numerical accuracy and generating-truth accuracy remain separate decisions.", "",
   paste("Generated:", format(Sys.time(), tz = "America/New_York", usetz = TRUE)))
-writeLines(lines, Sys.getenv("ALFAK2_REFERENCE_REPORT", file.path(directory, "REVIEW.md")))
+writeLines(lines, Sys.getenv("KARST_REFERENCE_REPORT", file.path(directory, "REVIEW.md")))
 cat("Wrote REVIEW.md and comparison summaries.\n")

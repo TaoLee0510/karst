@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-src<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_SOURCE"));out<-normalizePath(Sys.getenv("ALFAK2_MECHANISM_OUTPUT"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+src<-normalizePath(Sys.getenv("KARST_MECHANISM_SOURCE"));out<-normalizePath(Sys.getenv("KARST_MECHANISM_OUTPUT"))
 source(file.path(src,"common.R"));runtime<-mechanism_load(repo,src)
 test<-read.csv(file.path(out,"validation_tests.csv"));stopifnot(all(test$failed==0),!any(test$error),all(test$warning==0))
-cases<-readRDS(file.path(out,"frozen_cases.rds"));i<-as.integer(Sys.getenv("ALFAK2_MECHANISM_INDEX"));case<-cases[[i]];case$proposal<-readRDS(file.path(out,paste0("proposal_",i,".rds")))
+cases<-readRDS(file.path(out,"frozen_cases.rds"));i<-as.integer(Sys.getenv("KARST_MECHANISM_INDEX"));case<-cases[[i]];case$proposal<-readRDS(file.path(out,paste0("proposal_",i,".rds")))
 context<-readRDS(file.path(out,"context.rds"));dest<-file.path(out,case$id)
 dir.create(dest,showWarnings=FALSE);stopifnot(!file.exists(file.path(dest,"COMPLETE")))
 ledger<-mechanism_source_manifest(repo,src,out,file.path(out,c("frozen_cases.rds","context.rds","input_freeze_sha256.csv","validation_tests.csv",paste0("proposal_",i,".rds"))),runtime)

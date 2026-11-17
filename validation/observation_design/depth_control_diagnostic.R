@@ -2,7 +2,7 @@
 # The protocol prespecifies control300 to quantify doubled depth. This separate
 # descriptive contrast requires all twelve complete pairs; it cannot rank the
 # incomplete five-design study or qualify another design for promotion.
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
 out<-file.path(root,"results/analysis_input")
 status<-read.csv(file.path(out,"all_fit_status.csv"))
 metrics<-read.csv(file.path(out,"all_case_metrics.csv"))

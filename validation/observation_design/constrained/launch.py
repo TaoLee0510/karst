@@ -10,8 +10,8 @@ import time
 
 
 def main():
-    src = Path(os.environ["ALFAK2_CONSTRAINED_SOURCE"])
-    out = Path(os.environ["ALFAK2_CONSTRAINED_OUTPUT"])
+    src = Path(os.environ["KARST_CONSTRAINED_SOURCE"])
+    out = Path(os.environ["KARST_CONSTRAINED_OUTPUT"])
     if not (out / "noise/COMPLETE").exists():
         raise RuntimeError("Finish process-noise computation before budgeted fit timing")
     for phase in ["preflight", "main"]:

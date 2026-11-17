@@ -26,9 +26,9 @@ fit_graph_posterior(
 )
 }
 \arguments{
-\item{local_fit}{An \code{alfak2_local_fit} object.}
+\item{local_fit}{An \code{karst_local_fit} object.}
 
-\item{graph}{Bounded global \code{alfak2_graph}.}
+\item{graph}{Bounded global \code{karst_graph}.}
 
 \item{lambda_l_grid, lambda_e_grid, sigma_obs_grid}{Hyperparameter grids for
 compiled leave-one-anchor-out tuning. Supplying one value for each grid uses

@@ -38,9 +38,9 @@ mm_args <- function() {
 
 mm_load <- function(build) {
   Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
-  .libPaths(c(file.path(mm_lib, paste0("alfak2_", build)), .libPaths()))
-  loadNamespace("alfak2")
-  cat("alfak2 from", dirname(find.package("alfak2")), "\n")
+  .libPaths(c(file.path(mm_lib, paste0("karst_", build)), .libPaths()))
+  loadNamespace("karst")
+  cat("karst from", dirname(find.package("karst")), "\n")
 }
 
 mm_parallel <- function(x, f, workers) {
@@ -95,7 +95,7 @@ mm_stage_fits <- function(set, workers) {
     counts <- dataset$counts
     storage.mode(counts) <- "integer"
     history <- row$history
-    candidates <- mm_capture(quote(alfak2::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta,
+    candidates <- mm_capture(quote(karst::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta,
                                                              birth_rate = 1, min_cn = 1L, max_cn = 8L,
                                                              history = history)))
     candidate <- candidates[[length(candidates)]]

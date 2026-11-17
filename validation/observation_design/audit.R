@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 # Post-batch checks of saved numerical distributions and immutable inputs.
 # This performs no fits and does not change the prespecified analysis rules.
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
-out<-Sys.getenv("ALFAK2_DESIGN_OUTPUT",file.path(repo,"validation/observation_design/results"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
+out<-Sys.getenv("KARST_DESIGN_OUTPUT",file.path(repo,"validation/observation_design/results"))
 source(file.path(repo,"validation/accuracy_round2/common.R"))
 status<-read.csv(file.path(out,"all_fit_status.csv"))
 manifest<-read.csv(file.path(out,"dataset_manifest.csv"))

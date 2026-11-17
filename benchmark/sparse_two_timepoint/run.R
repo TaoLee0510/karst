@@ -12,7 +12,7 @@
 # Options: --workers=N (default 2), --output-dir=DIR, --scenarios=REGEX (fit only
 # matching scenarios), --cohort (also build the cohort
 # datasets of every patient), --unseal-heldout (required for --split=heldout).
-# Set STT_R_LIB to a library directory holding the alfak2 and alfakR builds
+# Set STT_R_LIB to a library directory holding the karst and alfak builds
 # under test; otherwise the installed packages are used.
 
 script_dir <- local({

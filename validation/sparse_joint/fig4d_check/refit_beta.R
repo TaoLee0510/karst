@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Fig. 4d check, step 3b: do the data prefer a missegregation rate? One
-# Salehi trajectory (first and last time point, as the "alfak2 2 time points"
+# Salehi trajectory (first and last time point, as the "karst 2 time points"
 # arm) fitted at beta = 5e-5 x {1/16, 1/4, 1, 4}, with min_cn 0 as the
 # benchmark. beta is fixed in each fit, so the objectives (negative log
 # marginal likelihood of the same counts) compare the rates. Also records
@@ -11,7 +11,7 @@
 #   Rscript refit_beta.R TASKS.tsv OUT_DIR [MULTIPLES]   (SLURM_ARRAY_TASK_ID = row;
 #   MULTIPLES comma-separated, default 0.0625,0.25,1,4)
 
-suppressPackageStartupMessages(library(alfak2))
+suppressPackageStartupMessages(library(karst))
 args <- commandArgs(TRUE)
 tasks <- utils::read.delim(args[1], stringsAsFactors = FALSE)
 out_dir <- args[2]

@@ -1,4 +1,4 @@
-# alfak2: final independent exact-division validation
+# KARST: final independent exact-division validation
 
 The frozen joint division candidate lowers average relative-fitness RMSE at every evaluated distance, but 4/4 distance-specific paired 95% intervals still include zero. Family-specific regressions and calibrated interval-score tradeoffs remain. These results do not establish uniformly better estimation for every karyotype or scenario.
 

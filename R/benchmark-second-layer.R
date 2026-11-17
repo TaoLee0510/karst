@@ -291,7 +291,7 @@ second_layer_canonical_eval_graph <- function(counts,
   transition_kernel <- match.arg(transition_kernel)
   if (is.null(min_cn)) min_cn <- landscape$min_cn
   if (is.null(max_cn)) max_cn <- landscape$max_cn
-  data <- prepare_alfak2_data(counts, dt = dt, beta = beta)
+  data <- prepare_karst_data(counts, dt = dt, beta = beta)
   graph <- build_karyotype_graph(
     data,
     beta = beta,
@@ -359,11 +359,11 @@ second_layer_attach_predictions <- function(eval_graph, predictions) {
   list(nodes = nodes, edges = edges)
 }
 
-second_layer_alfak2_methods <- function() {
-  alfak2_extrapolation_methods()
+second_layer_karst_methods <- function() {
+  karst_extrapolation_methods()
 }
 
-second_layer_alfakR_slots <- function() {
+second_layer_alfak_slots <- function() {
   out <- data.frame(
     NN_prior_slot = c(
       "none",
@@ -396,37 +396,37 @@ second_layer_build_run_index <- function(mode = c("full", "quick")) {
   )
   landscape_grid$grf_lambda <- lambdas[landscape_grid$lambda_index]
   landscape_grid$landscape_id <- sprintf("lambda%s_rep%s", gsub("\\.", "p", as.character(landscape_grid$grf_lambda)), landscape_grid$landscape_rep)
-  alfak2 <- merge(
+  karst <- merge(
     landscape_grid,
     expand.grid(
-      package = "alfak2",
+      package = "karst",
       input_mode = c("full", "minobs_matched", "soft_minobs"),
-      extrapolation_method = second_layer_alfak2_methods(),
+      extrapolation_method = second_layer_karst_methods(),
       stringsAsFactors = FALSE
     ),
     all = TRUE
   )
-  alfak2$minobs <- NA_integer_
-  alfak2$NN_prior_slot <- NA_character_
-  alfak2$NN_prior <- NA_character_
-  alfak2$NN_prior_value <- NA_character_
-  slots <- second_layer_alfakR_slots()
-  alfakR_modes <- expand.grid(
-    package = "alfakR",
+  karst$minobs <- NA_integer_
+  karst$NN_prior_slot <- NA_character_
+  karst$NN_prior <- NA_character_
+  karst$NN_prior_value <- NA_character_
+  slots <- second_layer_alfak_slots()
+  alfak_modes <- expand.grid(
+    package = "alfak",
     minobs = if (identical(mode, "quick")) 5L else c(5L, 10L, 20L),
     slot_row = seq_len(nrow(slots)),
     stringsAsFactors = FALSE
   )
-  alfakR_modes$NN_prior_slot <- slots$NN_prior_slot[alfakR_modes$slot_row]
-  alfakR_modes$NN_prior <- slots$NN_prior[alfakR_modes$slot_row]
-  alfakR_modes$NN_prior_value <- slots$NN_prior_value[alfakR_modes$slot_row]
-  alfakR_modes$slot_row <- NULL
-  alfakR <- merge(landscape_grid, alfakR_modes, all = TRUE)
-  alfakR$input_mode <- NA_character_
-  alfakR$extrapolation_method <- NA_character_
+  alfak_modes$NN_prior_slot <- slots$NN_prior_slot[alfak_modes$slot_row]
+  alfak_modes$NN_prior <- slots$NN_prior[alfak_modes$slot_row]
+  alfak_modes$NN_prior_value <- slots$NN_prior_value[alfak_modes$slot_row]
+  alfak_modes$slot_row <- NULL
+  alfak <- merge(landscape_grid, alfak_modes, all = TRUE)
+  alfak$input_mode <- NA_character_
+  alfak$extrapolation_method <- NA_character_
   out <- rbind(
-    alfak2[, c("package", "grf_lambda", "lambda_index", "landscape_id", "landscape_rep", "input_mode", "extrapolation_method", "minobs", "NN_prior_slot", "NN_prior", "NN_prior_value")],
-    alfakR[, c("package", "grf_lambda", "lambda_index", "landscape_id", "landscape_rep", "input_mode", "extrapolation_method", "minobs", "NN_prior_slot", "NN_prior", "NN_prior_value")]
+    karst[, c("package", "grf_lambda", "lambda_index", "landscape_id", "landscape_rep", "input_mode", "extrapolation_method", "minobs", "NN_prior_slot", "NN_prior", "NN_prior_value")],
+    alfak[, c("package", "grf_lambda", "lambda_index", "landscape_id", "landscape_rep", "input_mode", "extrapolation_method", "minobs", "NN_prior_slot", "NN_prior", "NN_prior_value")]
   )
   out$run_id <- sprintf("run_%04d", seq_len(nrow(out)))
   out$landscape_seed <- 100000L + 1000L * as.integer(out$lambda_index) + as.integer(out$landscape_rep)

@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."))
-out<-Sys.getenv("ALFAK2_DESIGN_OUTPUT",file.path(repo,"validation/observation_design/results"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."))
+out<-Sys.getenv("KARST_DESIGN_OUTPUT",file.path(repo,"validation/observation_design/results"))
 parts<-file.path(out,paste0("fits_",0:1))
 status<-do.call(rbind,lapply(parts,function(p)read.csv(file.path(p,"status.csv"))))
 metrics<-do.call(rbind,lapply(parts,function(p)read.csv(file.path(p,"case_metrics.csv"))))

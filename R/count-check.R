@@ -10,7 +10,7 @@
 #' diversity, but it is also what copy-number calls that vary from cell to
 #' cell produce. When a timepoint has no cell next to a major karyotype,
 #' [fit_sparse_joint()] stops with an error of class
-#' `alfak2_domain_coverage_error`; a fit that succeeds reports the share of
+#' `karst_domain_coverage_error`; a fit that succeeds reports the share of
 #' each time point inside its domain in `diagnostics$domain_coverage`.
 #'
 #' For orientation: in the single-cell data of Salehi et al. (2021) used by
@@ -18,7 +18,7 @@
 #' about 8 at two time points at which every cell had a different karyotype.
 #'
 #' @param counts Count matrix with karyotype row names and one column per
-#'   time point, or an `alfak2_data` object.
+#'   time point, or an `karst_data` object.
 #' @param major_count Number of cells from which a karyotype counts as
 #'   repeated, as `major_count` of [fit_sparse_joint()].
 #'
@@ -32,7 +32,7 @@
 #'   for a single time point).
 #' @export
 check_sparse_joint_counts <- function(counts, major_count = 3) {
-  if (inherits(counts, "alfak2_data")) counts <- counts$counts
+  if (inherits(counts, "karst_data")) counts <- counts$counts
   if (is.data.frame(counts)) counts <- as.matrix(counts)
   if (!is.matrix(counts) || !is.numeric(counts) || ncol(counts) < 1L) {
     stop("`counts` must be a numeric matrix with one column per time point.", call. = FALSE)

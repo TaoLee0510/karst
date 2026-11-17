@@ -1,6 +1,6 @@
 # Multi-timepoint fits
 
-Two timepoints are the minimum input of alfak2, not its limit. This study
+Two timepoints are the minimum input of KARST, not its limit. This study
 extends `fit_sparse_joint()` to one population sampled at two or more times,
 checks that two-timepoint fits are unchanged, and measures what the extra
 time points give and what passaging drift between them costs. The plan and its
@@ -8,22 +8,22 @@ status are in the repository's local handoff
 (`HANDOFF_CLAUDE_2026-11-13_multi_timepoint.md`, git-ignored).
 
 Frozen baseline: ff13cf4 (`dev` HEAD on 2026-11-13), installed as
-`results/lib/alfak2_ff13cf4` from `results/src/alfak2_ff13cf4.tar.gz` (`git
+`results/lib/alfak2_ff13cf4` from `results/src/karst_ff13cf4.tar.gz` (`git
 archive`, sha256 beside it).
 
 ## Stage 0 and the regression check (`reference.R`)
 
 `reference.R --stage=fit --build=B` fits, with the library
-`results/lib/alfak2_B`:
+`results/lib/karst_B`:
 
 - `dev`: `fit_sparse_joint()` at its defaults on patient 1 of the 12
   development landscapes of `benchmark/sparse_two_timepoint`, in its 8 core
   and 2 short-interval scenarios (120 fits);
-- `entry`: `fit_alfak2()` on two of them; `free`: `initial_state = "free"` on
+- `entry`: `fit_karst()` on two of them; `free`: `initial_state = "free"` on
   the 12 typical ones; `rates`: `fit_sparse_joint_rates()` on two;
 - `cohort`: `fit_sparse_joint_cohort()` of the 8 patients of two landscapes,
   free and balance;
-- `compat`: `as_alfakR()` and `alfak_compat()` on four;
+- `compat`: `as_alfak()` and `alfak_compat()` on four;
 - `gbm`: the 20 GBM inputs at birth rate sqrt(0.02) per day. These are
   patient data: they are read in place and the fits are written to
   `~/Documents/alfak2_private/multi_timepoint/reference/B/gbm`, outside the
@@ -46,13 +46,13 @@ offset. Two timepoints keep `src/sparse_joint_model.h`. Majors are
 judged by their share at any time point; a karyotype first seen later starts from
 its frequency at the earliest timepoint it was seen; the history of the
 balance prior is at least the time from the first to the last time point. Cohort
-fits, `as_alfakR()`, `alfak_compat()` and the two older pipelines take two
+fits, `as_alfak()`, `alfak_compat()` and the two older pipelines take two
 timepoints and say so.
 
-Build `mt1` is this code (`results/src/alfak2_mt1.tar.gz`, with the diff
+Build `mt1` is this code (`results/src/karst_mt1.tar.gz`, with the diff
 against ff13cf4). Two things changed later:
 
-- From cv4, `as_alfakR()` and `alfak_compat()` take more than two
+- From cv4, `as_alfak()` and `alfak_compat()` take more than two
   timepoints. The level is log(nb/n0) over the first interval.
 - From cv6, the majors and the domain come by default from the first and the
   last time point (stage 2).
@@ -132,15 +132,15 @@ cell on the states it counts for (the majors, or the domain with `"all"`)
 therefore has its likelihood largest as the offset goes to minus infinity, where the
 time point adds nothing. The Laplace integral over the offset is improper. From
 cv7 such a time point is left out with a warning (`diagnostics$dropped_samples`),
-which is that limit. The ends are still required. `as_alfakR()` keeps
-alfakR's karyotypes from every time point (`fit$input`).
+which is that limit. The ends are still required. `as_alfak()` keeps
+alfak's karyotypes from every time point (`fit$input`).
 
 The convergence check also reads an inner Hessian with non-finite entries as
 near-singular instead of stopping. Under 21aedca it stopped on
 SA609_X10_l_10_d1_0_d2_0 with all 10 passages. With cv8 that trajectory
 leaves out passages 2 and 3, with 243 and 171 cells, 4 and 5 of them in the
-domain, none on a major. The fit is accepted, and `as_alfakR()`'s frequent
-karyotypes are alfakR's.
+domain, none on a major. The fit is accepted, and `as_alfak()`'s frequent
+karyotypes are alfak's.
 
 Checks:
 - tests 141/141 (cv8);

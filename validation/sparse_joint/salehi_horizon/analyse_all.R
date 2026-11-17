@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # Salehi forecasts against later passages, for fits of every passage of a
-# trajectory ("all" design, trajectories of three or more passages): alfak2
-# anchored (the default), pairwise and state_space, alfakR, and alfak2 "free",
+# trajectory ("all" design, trajectories of three or more passages): karst
+# anchored (the default), pairwise and state_space, alfak, and karst "free",
 # and beside them the two-time-point ("ends") fits of the same trajectories.
 # Score and intervals as in analyse.R: log-likelihood per cell of the later
 # passage under the forecast minus under persistence (mixture weight 0.01),
@@ -33,8 +33,8 @@ e <- read_rows(file.path(res, "rows"), "ends")
 st <- rbind(a$status, e$status)
 cat("Tasks:\n"); print(stats::aggregate(n ~ design + method + status, data = transform(st, n = 1), FUN = sum), row.names = FALSE)
 x <- rbind(a$rows, e$rows)
-label <- c(alfak2 = "anchored", alfak2_pairwise = "pairwise", alfak2_state_space = "state_space", alfakR = "alfakR",
-           alfak2_free = "free")
+label <- c(karst = "anchored", karst_pairwise = "pairwise", karst_state_space = "state_space", alfak = "alfak",
+           karst_free = "free")
 x$arm <- paste(x$design, label[x$method], sep = ":")
 lineage_map <- c(SA1035T = "SA1035", SA1035U = "SA1035", SA532 = "SA532", SA609 = "SA609", SA609UnBU = "SA609",
                  SA906a = "p53 k.o", SA906b = "p53 k.o", SA039U = "p53 w.t", SA535_CISPLATIN_CombinedT = "SA535",
@@ -105,12 +105,12 @@ show <- function(t, title) {
   print(t, row.names = FALSE)
 }
 
-# 1. The fits of every passage: alfak2's three methods against alfakR.
-arms <- c("all:anchored", "all:pairwise", "all:state_space", "all:alfakR")
+# 1. The fits of every passage: karst's three methods against alfak.
+arms <- c("all:anchored", "all:pairwise", "all:state_space", "all:alfak")
 w <- wide(arms)
 s1 <- summarise(w, arms)
-p1 <- paired(w, list(c("all:anchored", "all:alfakR"), c("all:pairwise", "all:alfakR"),
-                     c("all:state_space", "all:alfakR"), c("all:state_space", "all:anchored"),
+p1 <- paired(w, list(c("all:anchored", "all:alfak"), c("all:pairwise", "all:alfak"),
+                     c("all:state_space", "all:alfak"), c("all:state_space", "all:anchored"),
                      c("all:pairwise", "all:anchored")))
 show(s1, "All time points: log score over persistence per cell")
 show(p1, "All time points: paired differences")
@@ -119,21 +119,21 @@ utils::write.csv(p1, file.path(out_dir, "paired_all.csv"), row.names = FALSE)
 
 # 2. Does fitting every passage help? Each method against its two-time-point
 # fit of the same trajectory, and the best of each design.
-arms2 <- c("all:anchored", "all:state_space", "all:alfakR", "ends:anchored", "ends:alfakR")
+arms2 <- c("all:anchored", "all:state_space", "all:alfak", "ends:anchored", "ends:alfak")
 w2 <- wide(arms2)
 s2 <- summarise(w2, arms2)
 p2 <- paired(w2, list(c("all:anchored", "ends:anchored"), c("all:state_space", "ends:anchored"),
-                      c("all:alfakR", "ends:alfakR"), c("ends:anchored", "ends:alfakR")))
+                      c("all:alfak", "ends:alfak"), c("ends:anchored", "ends:alfak")))
 show(s2, "All time points against two time points (same trajectories)")
 show(p2, "Paired: every passage against two time points")
 utils::write.csv(s2, file.path(out_dir, "gain_all_vs_ends.csv"), row.names = FALSE)
 utils::write.csv(p2, file.path(out_dir, "paired_all_vs_ends.csv"), row.names = FALSE)
 
-# 3. alfak2 "free" (every passage), where its fits exist.
-arms3 <- c("all:anchored", "all:free", "all:alfakR")
+# 3. karst "free" (every passage), where its fits exist.
+arms3 <- c("all:anchored", "all:free", "all:alfak")
 w3 <- wide(arms3)
-p3 <- paired(w3, list(c("all:free", "all:anchored"), c("all:free", "all:alfakR")))
-show(p3, "alfak2 free, every passage")
+p3 <- paired(w3, list(c("all:free", "all:anchored"), c("all:free", "all:alfak")))
+show(p3, "karst free, every passage")
 utils::write.csv(p3, file.path(out_dir, "paired_all_free.csv"), row.names = FALSE)
 saveRDS(list(all = w, all_vs_ends = w2, free = w3), file.path(out_dir, "rows.Rds"))
 

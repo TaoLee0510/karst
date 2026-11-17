@@ -1,5 +1,5 @@
 // [[Rcpp::depends(RcppEigen)]]
-#include "alfak2_core.h"
+#include "karst_core.h"
 
 using namespace Rcpp;
 
@@ -61,12 +61,12 @@ static Rcpp::List simulate_counts_impl(Rcpp::IntegerMatrix karyotypes,
   std::unordered_map<std::string, int> id;
   for (int i = 0; i < n; ++i) {
     for (int c = 0; c < p; ++c) nodes[i][c] = karyotypes(i, c);
-    id[alfak2::make_key(nodes[i])] = i;
+    id[karst::make_key(nodes[i])] = i;
   }
-  std::vector<alfak2::Edge> raw_edges = alfak2::one_step_edges(nodes, id, beta);
+  std::vector<karst::Edge> raw_edges = karst::one_step_edges(nodes, id, beta);
   std::vector<int> from, to;
   std::vector<double> weight;
-  alfak2::add_row_stochastic_transition(raw_edges, n, from, to, weight);
+  karst::add_row_stochastic_transition(raw_edges, n, from, to, weight);
 
   std::vector<double> growth(n);
   double maxg = -std::numeric_limits<double>::infinity();
@@ -129,7 +129,7 @@ static Rcpp::List simulate_counts_impl(Rcpp::IntegerMatrix karyotypes,
 }
 
 // [[Rcpp::export]]
-Rcpp::List alfak2_simulate_counts_cpp(Rcpp::IntegerMatrix karyotypes,
+Rcpp::List karst_simulate_counts_cpp(Rcpp::IntegerMatrix karyotypes,
                                       Rcpp::CharacterVector labels,
                                       Rcpp::NumericVector fitness,
                                       double beta = 0.00005,

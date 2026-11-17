@@ -7,11 +7,11 @@ stt_run_method <- function(method, dataset, nodes, work_dir) {
   result <- tryCatch(
     switch(method$type,
       zero = stt_method_zero(dataset, nodes),
-      alfakR = stt_method_alfakR(dataset, nodes, method, work_dir),
-      alfak2_two_layer = stt_method_alfak2_two_layer(dataset, nodes, method),
-      alfak2_sparse_joint = stt_method_alfak2_sparse_joint(dataset, nodes, method),
-      alfak2_sparse_joint_cohort = stt_method_alfak2_sparse_joint_cohort(dataset, nodes, method),
-      alfak2_sparse_joint_rates = stt_method_alfak2_sparse_joint_rates(dataset, nodes, method),
+      alfak = stt_method_alfak(dataset, nodes, method, work_dir),
+      karst_two_layer = stt_method_karst_two_layer(dataset, nodes, method),
+      karst_sparse_joint = stt_method_karst_sparse_joint(dataset, nodes, method),
+      karst_sparse_joint_cohort = stt_method_karst_sparse_joint_cohort(dataset, nodes, method),
+      karst_sparse_joint_rates = stt_method_karst_sparse_joint_rates(dataset, nodes, method),
       stop("Unknown method type: ", method$type, call. = FALSE)
     ),
     error = function(e) list(status = "failed", prediction = NULL, detail = conditionMessage(e))
@@ -30,8 +30,8 @@ stt_method_zero <- function(dataset, nodes) {
 # Original ALFA-K. Its landscape table covers the frequent karyotypes and two
 # shells around them; any other scored node is predicted from the saved
 # Kriging mean surface, without an uncertainty.
-stt_method_alfakR <- function(dataset, nodes, method, work_dir) {
-  out_dir <- file.path(work_dir, "alfakR")
+stt_method_alfak <- function(dataset, nodes, method, work_dir) {
+  out_dir <- file.path(work_dir, "alfak")
   unlink(out_dir, recursive = TRUE)
   on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
   yi <- list(x = data.frame(dataset$counts, check.names = FALSE), dt = 1)
@@ -62,7 +62,7 @@ stt_method_alfakR <- function(dataset, nodes, method, work_dir) {
                                fitness_sd = fitness_sd, stringsAsFactors = FALSE))
 }
 
-# Current alfak2 two-layer pipeline, configured as in the June 22-chromosome
+# Current karst two-layer pipeline, configured as in the June 22-chromosome
 # benchmark and the real-data workflow: local fit on observed karyotypes,
 # graph Gaussian extrapolation with normalised edge weights. The global graph
 # is the observed karyotypes plus the scored nodes.
@@ -71,7 +71,7 @@ stt_method_alfakR <- function(dataset, nodes, method, work_dir) {
 # sigma_obs). Without it the package default applies: leave-one-anchor-out
 # selection over a 27-point grid, which refactorises the graph once per anchor
 # and grid point and takes hours per dataset at 22 chromosomes.
-stt_method_alfak2_two_layer <- function(dataset, nodes, method) {
+stt_method_karst_two_layer <- function(dataset, nodes, method) {
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
   karyotypes <- stt_parse_karyotypes(nodes$karyotype)
@@ -95,8 +95,8 @@ stt_method_alfak2_two_layer <- function(dataset, nodes, method) {
     arguments$lambda_e_grid <- fixed[["lambda_e"]]
     arguments$sigma_obs_grid <- fixed[["sigma_obs"]]
   }
-  fit <- suppressWarnings(do.call(alfak2::fit_alfak2, arguments))
-  summary <- alfak2::summarize_alfak2(fit, layer = "global")
+  fit <- suppressWarnings(do.call(karst::fit_karst, arguments))
+  summary <- karst::summarize_karst(fit, layer = "global")
   index <- match(nodes$karyotype, as.character(summary$karyotype))
   list(status = "ok",
        detail = sprintf("local_covariance=%s nodes=%d",
@@ -109,11 +109,11 @@ stt_method_alfak2_two_layer <- function(dataset, nodes, method) {
 
 # Sparse joint count model. The baseline birth rate is an input; the benchmark
 # supplies one value for all datasets and never the simulated truth.
-stt_method_alfak2_sparse_joint <- function(dataset, nodes, method) {
+stt_method_karst_sparse_joint <- function(dataset, nodes, method) {
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
   # `method$arguments` holds any further arguments of the variant under test.
-  fit <- do.call(alfak2::fit_sparse_joint, c(
+  fit <- do.call(karst::fit_sparse_joint, c(
     list(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = method$birth_rate,
          min_cn = method$min_cn, max_cn = method$max_cn),
     method$arguments
@@ -148,7 +148,7 @@ stt_cohort_members <- function(dataset, method) {
 }
 
 # Cohort fit of the sparse joint model, predicted for the first member.
-stt_method_alfak2_sparse_joint_cohort <- function(dataset, nodes, method) {
+stt_method_karst_sparse_joint_cohort <- function(dataset, nodes, method) {
   members <- stt_cohort_members(dataset, method)
   samples <- lapply(members, function(member) {
     counts <- member$counts
@@ -156,7 +156,7 @@ stt_method_alfak2_sparse_joint_cohort <- function(dataset, nodes, method) {
     counts
   })
   names(samples) <- vapply(members, function(member) member$dataset_id, character(1))
-  fit <- do.call(alfak2::fit_sparse_joint_cohort, c(
+  fit <- do.call(karst::fit_sparse_joint_cohort, c(
     list(samples, dt = vapply(members, function(member) member$interval, numeric(1)), beta = dataset$beta,
          birth_rate = method$birth_rate, min_cn = method$min_cn, max_cn = method$max_cn),
     method$arguments
@@ -179,10 +179,10 @@ stt_method_alfak2_sparse_joint_cohort <- function(dataset, nodes, method) {
 
 # Sparse joint model with the baseline birth rate known only as a range: the
 # prediction at the centre of the range, with an interval covering the range.
-stt_method_alfak2_sparse_joint_rates <- function(dataset, nodes, method) {
+stt_method_karst_sparse_joint_rates <- function(dataset, nodes, method) {
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
-  fit <- do.call(alfak2::fit_sparse_joint_rates, c(
+  fit <- do.call(karst::fit_sparse_joint_rates, c(
     list(counts, dt = dataset$interval, beta = dataset$beta, min_cn = method$min_cn, max_cn = method$max_cn,
          birth_rate_range = method$birth_rate_range),
     method$arguments

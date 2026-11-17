@@ -25,19 +25,19 @@ boot <- function(a, b, draws = 4000L) {
   stats::quantile(v, c(0.025, 0.975), na.rm = TRUE, names = FALSE)
 }
 noise_mean <- (w$noise + w$noise_daughter) / 2
-pred <- c("all:alfakR", "all:alfak2", "all:state_space", "all:free")
+pred <- c("all:alfak", "all:karst", "all:state_space", "all:free")
 tab <- data.frame(
   predictor = c("noise: halves of the parent passage", "noise: halves of the daughter passage", "noise: mean of the two",
                 "recent change (passage before -> parent)", paste("forecast", pred)),
   spearman = c(sp(w$base, w$noise), sp(w$base, w$noise_daughter), sp(w$base, noise_mean), sp(w$base, w$base_prev),
                sapply(pred, function(m) sp(w$base, w[[paste0("pred0|", m)]]))))
-ci <- t(sapply(list(w$noise, w$noise_daughter, noise_mean, w$base_prev, w[["pred0|all:alfakR"]], w[["pred0|all:alfak2"]],
+ci <- t(sapply(list(w$noise, w$noise_daughter, noise_mean, w$base_prev, w[["pred0|all:alfak"]], w[["pred0|all:karst"]],
                     w[["pred0|all:state_space"]], w[["pred0|all:free"]]), function(p) boot(w$base, p)))
 tab$low <- ci[, 1]; tab$high <- ci[, 2]
 cat("Rows:", nrow(w), "\n\n== Spearman with the observed change ==\n"); print(tab, digits = 3, row.names = FALSE)
 cat("\nRecent change vs parent noise:", round(sp(w$base_prev, w$noise), 3), "\n")
-cat("alfakR forecast size vs parent noise:", round(sp(w[["pred0|all:alfakR"]], w$noise), 3),
-    "  alfak2:", round(sp(w[["pred0|all:alfak2"]], w$noise), 3), "\n")
+cat("alfak forecast size vs parent noise:", round(sp(w[["pred0|all:alfak"]], w$noise), 3),
+    "  karst:", round(sp(w[["pred0|all:karst"]], w$noise), 3), "\n")
 pt <- data.frame(method = pred,
   given_noise = sapply(pred, function(m) partial(w$base, w[[paste0("pred0|", m)]], data.frame(noise_mean))),
   given_noise_and_recent = sapply(pred, function(m) partial(w$base, w[[paste0("pred0|", m)]], data.frame(noise_mean, w$base_prev))))

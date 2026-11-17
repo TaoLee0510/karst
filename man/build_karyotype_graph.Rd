@@ -15,7 +15,7 @@ build_karyotype_graph(
 )
 }
 \arguments{
-\item{x}{An \code{alfak2_data} object or character vector of observed karyotypes.}
+\item{x}{An \code{karst_data} object or character vector of observed karyotypes.}
 
 \item{beta}{Missegregation rate. Defaults to \code{x$beta} for data objects.}
 
@@ -30,7 +30,7 @@ transport. \code{"exact"} uses chromosome-level missegregation probabilities;
 \item{max_nodes}{Hard bound on graph expansion.}
 }
 \value{
-An \code{alfak2_graph} object.
+An \code{karst_graph} object.
 }
 \description{
 Build a bounded karyotype graph

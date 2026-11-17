@@ -36,7 +36,7 @@
 #' `flat_direction` also names the dataset of each karyotype.
 #'
 #' @param samples List of two-column count matrices with karyotype row names,
-#'   or of `alfak2_data` objects. Names identify the datasets.
+#'   or of `karst_data` objects. Names identify the datasets.
 #' @param dt Time between the two time points: one value, or one per dataset.
 #'   Used for count matrices only.
 #' @param sharing `"partial"` or `"full"`; see above.
@@ -55,13 +55,13 @@
 #'   by the candidates of every dataset.
 #' @inheritParams fit_sparse_joint
 #'
-#' @return An `alfak2_sparse_joint_cohort_fit` object. `landscape` has one row
+#' @return An `karst_sparse_joint_cohort_fit` object. `landscape` has one row
 #'   per karyotype in any dataset's domain, with the shared fitness; `samples`
 #'   has one summary per dataset, as returned by [fit_sparse_joint()].
 #'   `diagnostics$domain_coverage` is the table of [fit_sparse_joint()] with a
 #'   `sample` column, one row per dataset and timepoint. If a timepoint of any
 #'   dataset has no cell inside that dataset's domain, the function stops with
-#'   an error of class `alfak2_domain_coverage_error` that names the dataset;
+#'   an error of class `karst_domain_coverage_error` that names the dataset;
 #'   this is checked for every dataset before any is fitted.
 #' @export
 fit_sparse_joint_cohort <- function(samples,
@@ -85,8 +85,8 @@ fit_sparse_joint_cohort <- function(samples,
                                     calibration = sparse_joint_default_calibration,
                                     control = list(eval.max = 200, iter.max = 100),
                                     inner_control = list(maxit = 200, tol = 1e-10)) {
-  if (!is.list(samples) || inherits(samples, "alfak2_data") || !length(samples)) {
-    stop("`samples` must be a list of count matrices or `alfak2_data` objects.", call. = FALSE)
+  if (!is.list(samples) || inherits(samples, "karst_data") || !length(samples)) {
+    stop("`samples` must be a list of count matrices or `karst_data` objects.", call. = FALSE)
   }
   sparse_joint_cohort_check_pairs(samples)
   trend_mode <- match.arg(trend)
@@ -107,7 +107,7 @@ fit_sparse_joint_cohort <- function(samples,
     # Only the chosen trend's convergence is warned about.
     fits <- lapply(c(shared = "shared", sample = "sample"), function(mode) {
       tryCatch(withCallingHandlers(do.call(fit_sparse_joint_cohort, utils::modifyList(arguments, list(trend = mode))),
-                                   alfak2_convergence_warning = function(w) invokeRestart("muffleWarning")),
+                                   karst_convergence_warning = function(w) invokeRestart("muffleWarning")),
                error = function(e) e)
     })
     failed <- vapply(fits, inherits, logical(1), what = "error")
@@ -139,7 +139,7 @@ fit_sparse_joint_cohort <- function(samples,
   if (anyDuplicated(names(samples)) || any(!nzchar(names(samples)))) {
     stop("`samples` need distinct, non-empty names.", call. = FALSE)
   }
-  is_data <- vapply(samples, inherits, logical(1), what = "alfak2_data")
+  is_data <- vapply(samples, inherits, logical(1), what = "karst_data")
   if (any(!is_data)) {
     if (is.null(dt) || !length(dt) %in% c(1L, n_sample)) {
       stop("`dt` must give one interval, or one per dataset.", call. = FALSE)
@@ -147,7 +147,7 @@ fit_sparse_joint_cohort <- function(samples,
     dt <- rep_len(dt, n_sample)
   }
   data <- lapply(seq_len(n_sample), function(s) {
-    if (is_data[[s]]) samples[[s]] else prepare_alfak2_data(samples[[s]], dt = dt[[s]], beta = beta)
+    if (is_data[[s]]) samples[[s]] else prepare_karst_data(samples[[s]], dt = dt[[s]], beta = beta)
   })
   beta <- data[[1L]]$beta
   if (any(vapply(data, function(d) !isTRUE(all.equal(d$beta, beta)), logical(1)))) {
@@ -264,7 +264,7 @@ fit_sparse_joint_cohort <- function(samples,
   # One trend: every column of `coef` is the same parameters.
   if (shared_trend) map$coef <- factor(rep(seq_len(n_coef), n_sample))
   random <- c("zeta", "m", if (deviations) "g", "coef", "theta1")
-  objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = random, DLL = "alfak2",
+  objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = random, DLL = "karst",
                               silent = TRUE, inner.control = inner_control)
   labels <- sparse_joint_latent_labels(
     names(objective$env$par)[objective$env$random],
@@ -375,7 +375,7 @@ fit_sparse_joint_cohort <- function(samples,
       min_cn = as.integer(min_cn), max_cn = as.integer(max_cn),
       seconds = proc.time()[["elapsed"]] - started
     )
-  ), class = "alfak2_sparse_joint_cohort_fit")
+  ), class = "karst_sparse_joint_cohort_fit")
   sparse_joint_convergence_warning(fit$diagnostics$optimisation)
   fit
 }
@@ -387,9 +387,9 @@ fit_sparse_joint_cohort <- function(samples,
 #' returns fitness in that dataset: its own posterior inside its domain; the
 #' shared value, widened by the between-dataset deviation, for a karyotype that
 #' only other datasets have in their domain; and otherwise as
-#' [predict.alfak2_sparse_joint_fit()] does for a single dataset.
+#' [predict.karst_sparse_joint_fit()] does for a single dataset.
 #'
-#' @param object An `alfak2_sparse_joint_cohort_fit`.
+#' @param object An `karst_sparse_joint_cohort_fit`.
 #' @param karyotypes Character labels or an integer matrix of karyotypes.
 #' @param sample Name or index of a dataset, or `NULL` for the shared landscape.
 #' @param ... Unused.
@@ -402,7 +402,7 @@ fit_sparse_joint_cohort <- function(samples,
 #'   or of all datasets' when `sample` is `NULL`; `shell` is the distance to the
 #'   nearest major karyotype of the dataset, or of any dataset.
 #' @export
-predict.alfak2_sparse_joint_cohort_fit <- function(object, karyotypes, sample = NULL, ...) {
+predict.karst_sparse_joint_cohort_fit <- function(object, karyotypes, sample = NULL, ...) {
   labels <- if (is.character(karyotypes)) karyotypes else format_karyotypes(as.matrix(karyotypes))
   trend <- object$trend
   shared <- is.null(sample)
@@ -498,9 +498,9 @@ predict.alfak2_sparse_joint_cohort_fit <- function(object, karyotypes, sample = 
 }
 
 #' @export
-print.alfak2_sparse_joint_cohort_fit <- function(x, ...) {
+print.karst_sparse_joint_cohort_fit <- function(x, ...) {
   d <- x$diagnostics
-  cat("<alfak2_sparse_joint_cohort_fit>\n")
+  cat("<karst_sparse_joint_cohort_fit>\n")
   cat("  datasets:", d$n_samples, " karyotypes:", d$n_nodes, "(", d$shared_nodes, "in more than one dataset )\n")
   cat("  sharing:", d$sharing, " trend:", d$trend, " between-dataset deviation:",
       signif(x$trend$scales[["deviation"]], 3), "\n")
@@ -534,7 +534,7 @@ sparse_joint_cohort_coverage <- function(data, domains, sample_names, major_freq
 # Cohort fits take two timepoints per dataset.
 sparse_joint_cohort_check_pairs <- function(samples) {
   n_time <- vapply(samples, function(s) {
-    counts <- if (inherits(s, "alfak2_data")) s$counts else s
+    counts <- if (inherits(s, "karst_data")) s$counts else s
     if (is.null(dim(counts))) NA_integer_ else ncol(counts)
   }, integer(1))
   bad <- which(!is.na(n_time) & n_time != 2L)
@@ -549,14 +549,14 @@ sparse_joint_cohort_check_pairs <- function(samples) {
 sparse_joint_cohort_histories <- function(arguments) {
   samples <- arguments$samples
   n_sample <- length(samples)
-  is_data <- vapply(samples, inherits, logical(1), what = "alfak2_data")
+  is_data <- vapply(samples, inherits, logical(1), what = "karst_data")
   dt <- arguments$dt
   if (any(!is_data) && (is.null(dt) || !length(dt) %in% c(1L, n_sample))) {
     stop("`dt` must give one interval, or one per dataset.", call. = FALSE)
   }
   if (!is.null(dt)) dt <- rep_len(dt, n_sample)
   data <- lapply(seq_len(n_sample), function(s) {
-    if (is_data[[s]]) samples[[s]] else prepare_alfak2_data(samples[[s]], dt = dt[[s]], beta = arguments$beta)
+    if (is_data[[s]]) samples[[s]] else prepare_karst_data(samples[[s]], dt = dt[[s]], beta = arguments$beta)
   })
   max_cn <- arguments$max_cn
   if (is.null(max_cn)) max_cn <- max(vapply(data, function(d) max(parse_karyotypes(rownames(d$counts))), numeric(1))) + 1L
@@ -581,7 +581,7 @@ sparse_joint_cohort_histories <- function(arguments) {
   fits <- lapply(data, function(d) {
     withCallingHandlers(
       do.call(fit_sparse_joint, c(list(counts = d, max_cn = max_cn, initial_state = "balance"), single)),
-      alfak2_convergence_warning = function(w) invokeRestart("muffleWarning")
+      karst_convergence_warning = function(w) invokeRestart("muffleWarning")
     )
   })
   list(history = vapply(fits, function(f) f$settings$history, numeric(1)),

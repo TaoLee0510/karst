@@ -35,7 +35,7 @@ the centre and much less accurate when it is near the lowest.}
 \item{fit_function}{\code{\link[=fit_sparse_joint]{fit_sparse_joint()}} or \code{\link[=fit_sparse_joint_cohort]{fit_sparse_joint_cohort()}}.}
 }
 \value{
-An \code{alfak2_sparse_joint_rate_fit} object: \code{rates}, the \code{fits} at
+An \code{karst_sparse_joint_rate_fit} object: \code{rates}, the \code{fits} at
 each of them, \code{parameter} (\code{"birth_rate"} or \code{"beta"}, the rate that
 varies), \code{point}, the index of the fit used for point predictions, and
 \code{central}, the index of the fit at the centre.

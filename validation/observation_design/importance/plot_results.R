@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-out<-normalizePath(Sys.getenv("ALFAK2_IS_OUTPUT"));m<-read.csv(file.path(out,"mechanism/overall_metrics.csv"))
+out<-normalizePath(Sys.getenv("KARST_IS_OUTPUT"));m<-read.csv(file.path(out,"mechanism/overall_metrics.csv"))
 m<-m[m$distance>=0,];arms<-c("A_finite_unknown","B_mean_unknown","C_finite_oracle","D_mean_oracle")
 labels<-c("Finite / unknown pi0","Mean / unknown pi0","Finite / oracle pi0","Mean / oracle pi0")
 colors<-c("#0072B2","#D55E00","#009E73","#CC79A7");types<-c(1,1,2,2)

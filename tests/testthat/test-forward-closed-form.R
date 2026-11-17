@@ -18,7 +18,7 @@ test_that("sparse kernel reproduces the exact single-daughter kernel on one-step
   karyotypes <- small_domain()
   beta <- 0.003
   kernel <- sparse_division_kernel(karyotypes, beta)
-  full <- alfak2_transition_operator_cpp(karyotypes, beta, "exact", division_process = TRUE)
+  full <- karst_transition_operator_cpp(karyotypes, beta, "exact", division_process = TRUE)
   full_matrix <- matrix(0, nrow(karyotypes), nrow(karyotypes))
   full_matrix[cbind(full$from0 + 1L, full$to0 + 1L)] <- full$weight
   expect_equal(exp(kernel$log_self), diag(full_matrix), tolerance = 1e-12)

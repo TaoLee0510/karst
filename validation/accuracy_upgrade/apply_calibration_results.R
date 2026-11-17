@@ -24,7 +24,7 @@ for (mi in seq_len(nrow(frozen))) {
   raw_metrics <- do.call(rbind, lapply(sub("_status\\.csv$", "_metrics.csv", files), utils::read.csv, stringsAsFactors = FALSE))
   raw_metrics <- raw_metrics[!duplicated(raw_metrics[, c("dataset_id", "model", "distance_group", "metric")]), , drop = FALSE]
   provenance <- lapply(sub("_status\\.csv$", "_provenance.rds", files), readRDS)
-  keys <- lapply(provenance, alfak2_calibration_model_key)
+  keys <- lapply(provenance, karst_calibration_model_key)
   if (!all(vapply(keys, identical, logical(1), calibration$model_key))) stop("Test/calibration model fingerprint mismatch")
   new_model <- paste0(model, "_calibrated")
   metrics <- nodes <- statuses <- list()
@@ -32,7 +32,7 @@ for (mi in seq_len(nrow(frozen))) {
     dataset <- readRDS(manifest$dataset_file[di])
     x <- raw_nodes[raw_nodes$dataset_id == dataset$dataset_id, , drop = FALSE]
     if (!nrow(x)) stop(paste("Missing raw prediction rows for", dataset$dataset_id))
-    applied <- apply_alfak2_interval_calibration(x, calibration, calibration$model_key, alfak2_calibration_scenario(dataset))
+    applied <- apply_karst_interval_calibration(x, calibration, calibration$model_key, karst_calibration_scenario(dataset))
     stopifnot(identical(applied$pred_relative, x$pred_relative), identical(applied$sd_relative, x$sd_relative))
     applied$model <- new_model
     scoring <- applied

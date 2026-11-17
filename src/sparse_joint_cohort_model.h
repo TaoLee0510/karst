@@ -1,5 +1,5 @@
-#ifndef ALFAK2_SPARSE_JOINT_COHORT_MODEL_H
-#define ALFAK2_SPARSE_JOINT_COHORT_MODEL_H
+#ifndef KARST_SPARSE_JOINT_COHORT_MODEL_H
+#define KARST_SPARSE_JOINT_COHORT_MODEL_H
 
 // Sparse joint count model for several two-time-point datasets on one
 // landscape.

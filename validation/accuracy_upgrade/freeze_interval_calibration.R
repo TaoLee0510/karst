@@ -11,8 +11,8 @@ if (length(list.files(output, "_calibration\\.rds$"))) stop("Calibration objects
 manifest <- utils::read.csv(file.path(data_dir, "dataset_manifest.csv"), stringsAsFactors = FALSE)
 stopifnot(nrow(manifest) > 0, all(manifest$split == "calibration"))
 datasets <- lapply(manifest$dataset_file, readRDS)
-scenario <- alfak2_calibration_scenario(datasets[[1L]])
-stopifnot(all(vapply(datasets, function(x) identical(alfak2_calibration_scenario(x), scenario), logical(1))))
+scenario <- karst_calibration_scenario(datasets[[1L]])
+stopifnot(all(vapply(datasets, function(x) identical(karst_calibration_scenario(x), scenario), logical(1))))
 node_files <- list.files(results_dir, "_nodes\\.csv$", full.names = TRUE)
 tables <- lapply(node_files, utils::read.csv, stringsAsFactors = FALSE)
 nodes <- do.call(rbind, tables)
@@ -32,9 +32,9 @@ for (model in unique(nodes$model)) {
   if (!setequal(unique(x$dataset_id), manifest$dataset_id)) stop(paste("Incomplete calibration datasets for", model))
   files <- node_files[vapply(tables, function(z) identical(unique(z$model), model), logical(1))]
   provenance <- lapply(sub("_nodes\\.csv$", "_provenance.rds", files), readRDS)
-  keys <- lapply(provenance, alfak2_calibration_model_key)
+  keys <- lapply(provenance, karst_calibration_model_key)
   if (!all(vapply(keys, identical, logical(1), keys[[1L]]))) stop("Different model implementations/arguments within calibration")
-  calibration <- fit_alfak2_interval_calibration(x, keys[[1L]], scenario)
+  calibration <- fit_karst_interval_calibration(x, keys[[1L]], scenario)
   calibration$freeze_provenance <- list(
     frozen_at_utc = format(Sys.time(), tz = "UTC", usetz = TRUE), test_manifest_present = FALSE,
     sealed_test_directory = test_data, calibration_manifest_md5 = tools::md5sum(file.path(data_dir, "dataset_manifest.csv")),

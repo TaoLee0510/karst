@@ -55,7 +55,7 @@ sparse_joint_series_method_base <- function(data, settings) {
   total <- rowSums(domain$y)
   centre <- colSums(domain$karyotypes * total) / sum(total)
   design <- sparse_joint_design(domain$karyotypes, centre, domain$major, settings$shell_power)
-  times <- alfak2_data_times(data)
+  times <- karst_data_times(data)
   tmb_data <- list(
     edge_from = kernel$from - 1L, edge_to = kernel$to - 1L,
     edge_log_prob = kernel$log_prob, log_self = kernel$log_self,
@@ -232,7 +232,7 @@ sparse_joint_first_sample_latent <- function(fit, solver) {
 
 # Coverage for the pairwise and state-space methods: each pair's own domain
 # must hold a cell at each of its two time points. An error of class
-# alfak2_domain_coverage_error names the pair otherwise.
+# karst_domain_coverage_error names the pair otherwise.
 sparse_joint_check_pair_coverage <- function(counts, major_frequency, major_count, max_states, min_cn, max_cn) {
   coverage <- sparse_joint_pair_coverage(counts, major_frequency, major_count, max_states, min_cn, max_cn)
   if (any(coverage$cells_in_domain <= 0)) {

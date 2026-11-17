@@ -28,10 +28,10 @@ results <- "benchmark/results/sparse_two_timepoint"
 
 methods <- c(
   "Null predictor" = "zero",
-  "Two-layer pipeline" = "alfak2_two_layer_fixed",
-  "alfakR (minobs = 20)" = "alfakR_minobs20",
-  "Sparse joint, independent" = "alfak2_sparse_joint",
-  "Sparse joint, balance (default)" = "alfak2_sparse_joint_balance"
+  "Two-layer pipeline" = "karst_two_layer_fixed",
+  "alfak (minobs = 20)" = "alfak_minobs20",
+  "Sparse joint, independent" = "karst_sparse_joint",
+  "Sparse joint, balance (default)" = "karst_sparse_joint_balance"
 )
 designs <- c(
   "very_sparse_50_50_180d" = "50/50, 180 d",
@@ -83,10 +83,10 @@ dev_cells <- summarise_cells(dev)
 # Categorical slots 1-4 of the reference palette, in fixed order; shapes are the
 # secondary encoding (the third and fourth hues are below 3:1 on white).
 palette <- c("Sparse joint, balance (default)" = "#2a78d6", "Sparse joint, independent" = "#eb6834",
-             "Two-layer pipeline" = "#1baf7a", "alfakR (minobs = 20)" = "#eda100")
+             "Two-layer pipeline" = "#1baf7a", "alfak (minobs = 20)" = "#eda100")
 shapes <- c("Sparse joint, balance (default)" = 16, "Sparse joint, independent" = 17,
-            "Two-layer pipeline" = 15, "alfakR (minobs = 20)" = 18)
-# The error axis stops at `cap`: alfakR reaches about 300 times the null
+            "Two-layer pipeline" = 15, "alfak (minobs = 20)" = 18)
+# The error axis stops at `cap`: alfak reaches about 300 times the null
 # predictor's error, which would compress every other series. Values above it
 # are drawn at the cap and labelled with their ratio.
 cap <- 8
@@ -212,7 +212,7 @@ writeLines(c(range_table(c("w0.4", "w0.8")), "", range_table(c("w1.2", "w1.6")))
 # Supplement: every method, by design, with short labels and a smaller font
 # for width.
 short <- c("Null predictor" = "Null predictor", "Two-layer pipeline" = "Two-layer",
-           "alfakR (minobs = 20)" = "\\texttt{alfakR}", "Sparse joint, independent" = "Sparse joint, independent",
+           "alfak (minobs = 20)" = "\\texttt{alfak}", "Sparse joint, independent" = "Sparse joint, independent",
            "Sparse joint, balance (default)" = "Sparse joint, balance")
 supp_table <- function(cells, column, labels, title) {
   rows <- unlist(lapply(seq_along(designs), function(k) {
@@ -262,8 +262,8 @@ print(round(range(held_cells$direction[held_cells$label == "Sparse joint, balanc
 d <- dev_cells$direction[dev_cells$label == "Sparse joint, balance (default)"]
 cat("== development direction, balance: above 1/2 in", sum(d > 0.5), "of", length(d), "; range", round(range(d), 2), "\n")
 cat("== development ratio, sparse joint balance\n"); show(dev_cells, "Sparse joint, balance (default)", "ratio")
-cat("== held-out ratio, alfakR: cells below 1\n")
-a <- held_cells[held_cells$label == "alfakR (minobs = 20)", ]
+cat("== held-out ratio, alfak: cells below 1\n")
+a <- held_cells[held_cells$label == "alfak (minobs = 20)", ]
 cat(sum(a$ratio < 1), "of", nrow(a), "; range", round(range(a$ratio), 2), "\n")
 cat("== ratio range over all plotted series\n"); print(round(range(c(plotted$ratio_low, plotted$ratio_high)), 2))
 cat("== held-out ratio range over landscapes, balance: max of ratio_high\n")

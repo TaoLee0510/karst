@@ -3,13 +3,13 @@
 #   1. At its defaults it gives the fits of bf86c85 (same_default.R).
 #   2. "auto" makes the choice of the rule in confirm.R and returns the fit
 #      that was chosen, as fitted in the study.
-#   3. as_alfakR() runs on an "auto" fit; more than two time points give an
+#   3. as_alfak() runs on an "auto" fit; more than two time points give an
 #      error.
 cl_script_dir <- "validation/sparse_joint/cloud_level"
 source(file.path(cl_script_dir, "setup.R"))
-.libPaths(c(file.path(cl_output, "lib", "alfak2_cl2"), .libPaths()))
-suppressPackageStartupMessages(library(alfak2))
-cat("alfak2 from", find.package("alfak2"), "\n")
+.libPaths(c(file.path(cl_output, "lib", "karst_cl2"), .libPaths()))
+suppressPackageStartupMessages(library(karst))
+cat("karst from", find.package("karst"), "\n")
 scores <- utils::read.csv(file.path(cl_output, "scores_confirm.csv"), stringsAsFactors = FALSE)
 level <- scores[scores$method == "level_dt", c("set", "dataset_id", "balance_level", "landscape_id", "role")]
 pick <- function(set, rule, n) {
@@ -43,8 +43,8 @@ stopifnot(all(out$chosen == ifelse(out$expected == "free", "free", "balance")))
 dataset <- readRDS(cl_dataset_path("diverse2", cases$dataset_id[nrow(cases)]))
 counts <- dataset$counts; storage.mode(counts) <- "integer"
 fit <- suppressWarnings(fit_sparse_joint(counts, dt = 15, initial_state = "auto", birth_rate = 1, min_cn = 1L, max_cn = 8L))
-compat <- as_alfakR(fit, minobs = 10, nboot = 4)
-cat("as_alfakR on an auto fit: landscape rows", nrow(compat$landscape), " R2R", compat$xval$R2R, "\n")
+compat <- as_alfak(fit, minobs = 10, nboot = 4)
+cat("as_alfak on an auto fit: landscape rows", nrow(compat$landscape), " R2R", compat$xval$R2R, "\n")
 three <- cbind(counts, counts[, 2L])
 colnames(three) <- c("0", "15", "30")
 message <- tryCatch({ fit_sparse_joint(three, times = c(0, 15, 30), initial_state = "auto"); "no error" },

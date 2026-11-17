@@ -61,13 +61,13 @@ si_stage_fit <- function(config, workers, method_names, datasets = NULL) {
   index <- utils::read.csv(si_index_path(config), stringsAsFactors = FALSE)
   if (!is.null(datasets)) index <- index[grepl(datasets, index$dataset_id), , drop = FALSE]
   builds <- unique(unlist(lapply(config$methods[method_names], function(m) m$build)))
-  if (length(builds) > 1L) stop("Methods of one run must share an alfak2 build.", call. = FALSE)
+  if (length(builds) > 1L) stop("Methods of one run must share an karst build.", call. = FALSE)
   if (length(builds)) {
     library_dir <- si_library(builds, if (is.null(config$library_root)) config$output_dir else config$library_root)
-    if (!dir.exists(file.path(library_dir, "alfak2"))) stop("No alfak2 build in ", library_dir, call. = FALSE)
+    if (!dir.exists(file.path(library_dir, "karst"))) stop("No karst build in ", library_dir, call. = FALSE)
     .libPaths(c(library_dir, .libPaths()))
-    loadNamespace("alfak2")
-    cat("alfak2 from", dirname(find.package("alfak2")), "\n")
+    loadNamespace("karst")
+    cat("karst from", dirname(find.package("karst")), "\n")
   }
   tasks <- list()
   for (dataset_id in index$dataset_id) for (method_name in method_names) {

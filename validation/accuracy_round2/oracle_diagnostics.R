@@ -88,10 +88,10 @@ oracle_main <- function(args = commandArgs(TRUE)) {
   data_dir <- oracle_read_argument(args, "data", file.path(run_root, "process-data"))
   output <- oracle_read_argument(args, "output", file.path(run_root, "oracle-results"))
   frozen <- oracle_read_argument(args, "v1-source", file.path(run_root, "v1-source"))
-  dll <- oracle_read_argument(args, "dll", file.path(run_root, "current-lib/alfak2/libs/alfak2.so"))
+  dll <- oracle_read_argument(args, "dll", file.path(run_root, "current-lib/karst/libs/karst.so"))
   limit <- as.integer(oracle_read_argument(args, "limit", "2147483647"))
   dir.create(output, recursive = TRUE, showWarnings = FALSE)
-  options(alfak2.warning_log_dir = file.path(output, "warnings"))
+  options(karst.warning_log_dir = file.path(output, "warnings"))
   requireNamespace("Rcpp"); requireNamespace("TMB")
   binary <- dyn.load(normalizePath(dll))
   package <- new.env(parent = globalenv())
@@ -137,7 +137,7 @@ oracle_main <- function(args = commandArgs(TRUE)) {
             main_sd = 0.07, curvature_sd = 0.04, interaction_sd = 0.04,
             residual_sd = 0.125, edge_sd = 0.25, collapse_gaussian = FALSE)), arms[[arm]])
         warnings <- character()
-        fit <- tryCatch(withCallingHandlers(do.call(package$fit_alfak2, call), warning = function(w) {
+        fit <- tryCatch(withCallingHandlers(do.call(package$fit_karst, call), warning = function(w) {
           warnings <<- c(warnings, conditionMessage(w)); invokeRestart("muffleWarning")
         }), error = function(e) e)
         runtime <- proc.time()[["elapsed"]] - started

@@ -42,7 +42,7 @@ for (n in c(4L, 8L)) {
 }
 writeLines("PASS: same Gaussian prior, mean-one birth prior and complete latent/birth covariance at n=4/8",
   file.path(output, "prior_validation.txt"))
-limit <- as.integer(Sys.getenv("ALFAK2_BASELINE_CASE_LIMIT", "16"))
+limit <- as.integer(Sys.getenv("KARST_BASELINE_CASE_LIMIT", "16"))
 statuses <- list()
 for (i in seq_len(min(limit, length(cases)))) {
   case <- cases[[i]]

@@ -18,9 +18,9 @@ runtime <- new.env(parent = globalenv())
 if (!all(models == "zero_point_predictor")) {
   requireNamespace("Rcpp"); requireNamespace("TMB")
   if (!is.null(library_dir)) {
-    library(alfak2, lib.loc = library_dir)
-    runtime$fit_alfak2 <- alfak2::fit_alfak2
-    implementation <- list(sha256 = round2_hash_object(round2_sha256(list.files(find.package("alfak2"), "[.](rdb|rdx|so)$", recursive = TRUE, full.names = TRUE))))
+    library(karst, lib.loc = library_dir)
+    runtime$fit_karst <- karst::fit_karst
+    implementation <- list(sha256 = round2_hash_object(round2_sha256(list.files(find.package("karst"), "[.](rdb|rdx|so)$", recursive = TRUE, full.names = TRUE))))
   } else {
     if (is.null(source_dir) || is.null(dll)) stop("Supply --source + --dll, or --library")
     implementation <- round2_source_fingerprint(source_dir, dll)
@@ -71,9 +71,9 @@ for (model in models) {
           min_cn = dataset$config$min_cn, max_cn = dataset$config$max_cn,
           max_nodes = length(dataset$target_labels), local_shell_depth = 1L,
           global_extra_shell = ncol(dataset$target_karyotypes) * (dataset$config$max_cn - dataset$config$min_cn))
-        if ("target_karyotypes" %in% names(formals(runtime$fit_alfak2))) fit_arguments$target_karyotypes <- dataset$target_karyotypes
+        if ("target_karyotypes" %in% names(formals(runtime$fit_karst))) fit_arguments$target_karyotypes <- dataset$target_karyotypes
         for (name in names(arguments)) fit_arguments[[name]] <- arguments[[name]]
-        fit <- tryCatch(withCallingHandlers(do.call(runtime$fit_alfak2, fit_arguments), warning = function(w) {
+        fit <- tryCatch(withCallingHandlers(do.call(runtime$fit_karst, fit_arguments), warning = function(w) {
           warnings <<- c(warnings, conditionMessage(w)); invokeRestart("muffleWarning")
         }), error = identity)
         unlink(slot, recursive = TRUE)

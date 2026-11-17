@@ -64,7 +64,7 @@ def main():
         "IS95变化%": f"{float(row['score95_percent_change']):+.2f}"}
         for row in diagnostic if float(row["distance"]) >= 0]
     columns = ["design", "attempted", "numerically_available", "raw_numerical_failures", "recovered", "budget_failures"]
-    text = ["# ALFAK2 固定预算观测设计：最终开发检查点", "",
+    text = ["# KARST 固定预算观测设计：最终开发检查点", "",
         f"60 个原定案例均已尝试，{60-len(missing)} 个数值可用，{len(missing)} 个不可用。完整五设计精度排名被预设规则阻止，尚不能判断哪种布局能同时改善所有距离的 fitness 与不确定性。", "",
         "这不是某种设计在统计精度上被证伪；当前的决定依据是数值／资源关卡未通过。不能删除失败案例后用剩余均值宣布胜出。", "",
         "## 已完成的比较设置", "",

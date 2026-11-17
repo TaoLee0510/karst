@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-out<-normalizePath(Sys.getenv("ALFAK2_CONSTRAINED_OUTPUT"));src<-normalizePath(Sys.getenv("ALFAK2_CONSTRAINED_SOURCE"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+out<-normalizePath(Sys.getenv("KARST_CONSTRAINED_OUTPUT"));src<-normalizePath(Sys.getenv("KARST_CONSTRAINED_SOURCE"))
 source(file.path(repo,"validation/accuracy_round2/common.R"))
 source(file.path(root,"results/computation_source_v4/score.R"))
 source(file.path(root,"results/adaptive_source_v1/quadrature.R"))

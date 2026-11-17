@@ -474,7 +474,7 @@ RMSE, with Spearman correlation in brackets, at distances 0 / 1 / 2:
   scales come from other landscapes.
 - With balance, a patient alone does as well on error (development 0.026 /
   0.044 / 0.066 over all scenarios).
-- Balance within a cohort (`alfak2_sparse_joint_cohort_balance`, trend
+- Balance within a cohort (`karst_sparse_joint_cohort_balance`, trend
   chosen, development, 2026-11-11): 2 of the 12 cohorts (L04, L07) fail
   because neither trend has a finite marginal likelihood; the scale
   optimisation fails already at the prior-centred scales. On the other 10,
@@ -497,11 +497,11 @@ datasets). The fit takes about an hour for 16 000 states.
 
 The two-layer pipeline's nine second-layer methods were compared on the 96
 development datasets of the core scenarios (2026-11-11), each with the same
-first layer and fixed graph hyperparameters as `alfak2_two_layer_fixed`
+first layer and fixed graph hyperparameters as `karst_two_layer_fixed`
 (`graph_gaussian_baseline`). `tabpfn_nearfield_feature_model` runs
 `delta_tree_ensemble` without its Python module and was not run separately.
 All 672 fits finished. By wavelength (`wavelength_tables.R`, as in Supplement
-S2.3 of `doc/alfak2_method.tex`):
+S2.3 of `doc/karst_method.tex`):
 
 - Error: every second-layer method is 0.89 to 1.00 times the error of the null
   predictor (`delta_tree_ensemble` 0.89 to 1.19), against 0.44 to 0.75 for the
@@ -528,7 +528,7 @@ Pooled over landscapes, errors are dominated by the rugged landscapes
 1.6. The method document therefore reports results per wavelength. On the
 held-out landscapes the sparse joint model with balance is below the null
 predictor at every wavelength and distance (0.47 to 0.74 of its error), the
-two-layer pipeline at 0.92 to 1.00, and `alfakR` above it everywhere (21% of
+two-layer pipeline at 0.92 to 1.00, and `alfak` above it everywhere (21% of
 its fits failed at wavelength 1.6). Coverage of the sparse joint model ranges
 from 0.89 (wavelength 0.8, distance 2) to 1.00 (wavelength 1.6): slightly
 narrow on intermediate, conservative on smooth landscapes. The pooled
@@ -549,7 +549,7 @@ the domain the sparse joint model ranks rare karyotypes better (0.65 against
 ## Results by sampling design
 
 `scenario_results.R` resolves the held-out results by sampling design and
-wavelength (Section 5.3 and Supplement S4 of `doc/alfak2_method.tex`; figures
+wavelength (Section 5.3 and Supplement S4 of `doc/karst_method.tex`; figures
 and tables in `doc/generated/`). Each cell holds three landscapes.
 
 - Sparsity, as cells per observed karyotype, ranges from 1.4 (50/50 cells,
@@ -565,11 +565,11 @@ and tables in `doc/generated/`). Each cell holds three landscapes.
   little. A 1080-day interval is worse than 360 days at wavelengths 0.8 and
   1.2 (0.62 to 0.75 against 0.49 to 0.61). 3000/100 is the weakest design at
   wavelength 1.6 (0.83 at distance 1).
-- The two-layer pipeline is at 0.85 to 1.08 everywhere; `alfakR` is below the
+- The two-layer pipeline is at 0.85 to 1.08 everywhere; `alfak` is below the
   null predictor in 4 of 96 combinations and up to 300 times above it (the
   error figure caps its ratios at 8 and labels the larger ones). The sparse
-  joint model has a lower error than `alfakR` in all 96 and ranks better in
-  87 of the 93 with an `alfakR` ranking; the exceptions are observed
+  joint model has a lower error than `alfak` in all 96 and ranks better in
+  87 of the 93 with an `alfak` ranking; the exceptions are observed
   karyotypes in four designs at wavelength 1.6 and two small ones at 0.4.
 - Rank correlation at distances 1 and 2 grows with depth on smooth landscapes
   (wavelength 1.6, distance 1: 0.28 at 50/50, 0.55 to 0.62 at 500/700) and
@@ -586,7 +586,7 @@ karyotypes at distance 3 and 2000 at distance 4 from the nearest observed
 karyotype (`stt_far_nodes()` in `benchmark/sparse_two_timepoint/score.R`) and
 fits all twelve methods again with them as targets: the null predictor, both
 sparse joint variants, the two-layer pipeline with each of its eight second
-layers, and `alfakR` (minobs 20). The shells cannot be enumerated at 22
+layers, and `alfak` (minobs 20). The shells cannot be enumerated at 22
 chromosomes, so they are sampled by random walks from observed karyotypes,
 each observed karyotype an equally likely start, keeping endpoints at exactly
 that distance; this is not uniform within a shell, unlike the scoreboard's
@@ -597,10 +597,10 @@ fits and the sparse joint fit objects are under
 the figures and tables of Section 5.4 and Supplement S5 to `doc/generated/`.
 The two-layer first layer and target graph are computed once per dataset and
 reused by its eight entries (`--memo=yes`); a check on two datasets gave
-identical predictions for all but `alfakR`, whose bootstrap is unseeded
+identical predictions for all but `alfak`, whose bootstrap is unseeded
 (correlation 0.996). The run took 3 h 20 min with three workers on a laptop.
 
-- Every method fitted every dataset except `alfakR`, which failed on the same
+- Every method fitted every dataset except `alfak`, which failed on the same
   7 development and 5 held-out datasets as in the scoreboard.
 - Every target at distance 3 or 4 is at least three steps from a major
   karyotype, outside the domain, so the sparse joint prediction is the trend
@@ -621,7 +621,7 @@ identical predictions for all but `alfakR`, whose bootstrap is unseeded
   the null predictor, Spearman -0.04 to 0.28, coverage 1.00 because its
   standard deviation grows to 0.6 to 1.2. The seven near-field second layers
   predict nothing beyond distance 2 and score as the null predictor.
-- `alfakR` (Kriging mean, no uncertainty): 2.35 / 1.32 / 1.50 / 18.2 at
+- `alfak` (Kriging mean, no uncertainty): 2.35 / 1.32 / 1.50 / 18.2 at
   distance 3, 2.28 / 1.26 / 1.42 / 15.3 at distance 4; Spearman 0.01 to 0.25.
 - Development landscapes: balance 0.42 to 0.59, Spearman 0.14 to 0.49.
 
@@ -629,7 +629,7 @@ identical predictions for all but `alfakR`, whose bootstrap is unseeded
 
 The method document now states two design goals, numerical and direction
 accuracy, and reports them together with the overall similarity of predicted
-and true fitness (Section 2.1 and 5.1 of `doc/alfak2_method.tex`):
+and true fitness (Section 2.1 and 5.1 of `doc/karst_method.tex`):
 
 - Numerical accuracy: RMSE relative to the null predictor (null = 1).
 - Direction accuracy: over pairs of scored karyotypes one copy of one
@@ -653,9 +653,9 @@ Held-out, means of 24 datasets per wavelength and distance:
 | sparse joint, balance | 0.47–0.74 | 0.64–0.96 | 0.76–0.81 | 96 / 96 |
 | sparse joint, independent | 0.53–0.96 | 0.66–0.96 | 0.76–0.81 | 96 / 96 |
 | two-layer (graph Gaussian) | 0.92–1.00 | 0.49–0.57 | 0.49–0.52 | 62 / 96 |
-| alfakR (minobs 20) | 1.39–41.6 | 0.36–0.52 | 0.45–0.53 | 28 / 96 |
+| alfak (minobs 20) | 1.39–41.6 | 0.36–0.52 | 0.45–0.53 | 28 / 96 |
 
-- alfakR is below one half in 10 of 12 wavelength × distance cells at
+- alfak is below one half in 10 of 12 wavelength × distance cells at
   distances 0–2: it predicts the wrong direction more often than the right
   one. Its failed fits score one half (all ties).
 - The default's lowest value, 0.64 for observed karyotypes at wavelength 1.6,
@@ -669,48 +669,48 @@ Held-out, means of 24 datasets per wavelength and distance:
 5.2); `scenario_results.R` and `far_results.R` add the direction figures and
 tables by design and at distances 3 and 4.
 
-## Outputs for alfakR pipelines
+## Outputs for alfak pipelines
 
 Analyses built on `alfakR::alfak()` (branch `dev`) read four files from its
 output directory. `alfak_compat()` writes them from a sparse joint fit, with
-the same arguments; `as_alfakR()` builds them from an existing fit. It is not
-called `alfak()`: an earlier decision keeps that name out of alfak2, and it
+the same arguments; `as_alfak()` builds them from an existing fit. It is not
+called `alfak()`: an earlier decision keeps that name out of KARST, and it
 would mask `alfakR::alfak()` wherever both packages are loaded.
 
-- Karyotypes are chosen as in alfakR: frequent (`minobs` cells over both
+- Karyotypes are chosen as in alfak: frequent (`minobs` cells over both
   time points), their one-step neighbours, and those neighbours' neighbours, in
-  alfakR's order. `minobs` does not change the fit.
-- alfakR's bootstrap replicates become joint posterior draws. Each karyotype's
+  alfak's order. `minobs` does not change the fit.
+- alfak's bootstrap replicates become joint posterior draws. Each karyotype's
   draws are widened by independent noise to its calibrated standard
   deviation, so differences between karyotypes keep the model's correlations.
   Draws come in mirrored pairs and each row is scaled to that standard
   deviation, so `landscape.Rds` is both the summary of the draws, as in
-  alfakR, and exactly the model's prediction and calibrated uncertainty.
-- The scale is alfakR's: the count-weighted mean of the majors is set to
+  alfak, and exactly the model's prediction and calibrated uncertainty.
+- The scale is alfak's: the count-weighted mean of the majors is set to
   `log(nb / n0) / dt`.
-- The cross-validation keeps alfakR's folds, each frequent karyotype with its
+- The cross-validation keeps alfak's folds, each frequent karyotype with its
   neighbours. A fold's counts leave the likelihood, its karyotypes get the
   prior of an unseen karyotype and stop being reference points of the trend,
   and the posterior mode is found again with the fitted scales. Karyotypes
   outside the domain, whose fitness never came from their own counts, are not
   tested, and a fold holding every major is skipped.
 
-Checks against alfakR dev (commit eddeb5e), run on the same three benchmark
+Checks against alfak dev (commit eddeb5e), run on the same three benchmark
 datasets: every file has the same classes, names, columns, dimensions and
 attributes, the landscape has the same karyotypes in the same order (868,
 13 157 and 20 126 rows), and the frequent karyotypes and neighbours agree. The
-one addition is `tmp` in `xval.Rds`, the paired matrix of earlier alfakR
+one addition is `tmp` in `xval.Rds`, the paired matrix of earlier alfak
 versions, which the PANcanKFLs scripts read before recomputing a Kriging
 cross-validation. On two GBM datasets the PANcanKFLs reader
 `make_parent_neighbor_matrix()` runs on the output unchanged.
 
-The cross-validation R-squared measures something else than alfakR's. On a
+The cross-validation R-squared measures something else than alfak's. On a
 development dataset with 27 frequent karyotypes (`dev_L12_P01_unbalanced_100_3000_360d`)
 the full fit correlates 0.44 with the true fitness of the tested karyotypes,
-the held-out predictions 0.07, and `R2R` is -0.78 (alfakR: -0.18): a karyotype
+the held-out predictions 0.07, and `R2R` is -0.78 (alfak: -0.18): a karyotype
 whose own and neighbours' counts are removed is barely predictable from the
 rest of the landscape. On `dev_L10_P01_unbalanced_3000_100_360d` it is 0.43
-(alfakR: -0.04). The cross-validation took 75 s for 27 folds.
+(alfak: -0.04). The cross-validation took 75 s for 27 folds.
 
 ## Convergence of the scale optimisation
 
@@ -849,7 +849,7 @@ not help.
   simulated passaged cultures (above). On the Salehi passages they helped: the
   anchored fit of every passage forecast later passages better than the fit
   of the first and the last (+0.36 per cell, interval 0.14 to 0.49;
-  `salehi_horizon/`), while alfakR's did not change. A model of clone chance
+  `salehi_horizon/`), while alfak's did not change. A model of clone chance
   and passaging drift is untried.
 - ALFA-K with minobs 5 has 75 of 96 development fits (the HPC run continues)
   and none on the held-out landscapes. On those 75 its RMSE is 0.169 / 0.225
@@ -884,8 +884,8 @@ per scenario. `calibration.R` and `calibration_fit.R` examine and fit the
 reported uncertainty. `rate_sensitivity.R` sweeps the two supplied rates.
 `forward_prediction.R` scores forecasts of the later composition.
 `depth_limit.R` compares the fit with deep resamples and a perfect stratum
-mean. `real_cohort.R` runs the checks on real datasets. `alfakR_compat.R`
-compares the output files with those of alfakR. `wavelength_tables.R` writes
+mean. `real_cohort.R` runs the checks on real datasets. `alfak_compat.R`
+compares the output files with those of alfak. `wavelength_tables.R` writes
 the tables by wavelength of the method document. `scenario_results.R` writes the figures and
 tables by sampling design to `doc/generated/`. `far_distance.R` fits and
 scores all methods at distances 3 and 4, and `far_results.R` writes its

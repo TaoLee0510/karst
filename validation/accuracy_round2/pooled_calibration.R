@@ -84,7 +84,7 @@ round2_fit_calibration_internal <- function(data, model_key, scenario, gamma_far
     n_invalid_rows = sum(!valid), point_estimates_changed = FALSE,
     posterior_standard_errors_changed = FALSE,
     interpretation = "empirical error intervals; no distribution-free finite-sample guarantee"),
-    class = "alfak2_round2_calibration")
+    class = "karst_round2_calibration")
 }
 
 fit_round2_pooled_calibration <- function(data, model_key, scenario, gamma_far = 1,
@@ -94,7 +94,7 @@ fit_round2_pooled_calibration <- function(data, model_key, scenario, gamma_far =
 }
 
 apply_round2_pooled_calibration <- function(data, calibration, model_key, scenario) {
-  if (!inherits(calibration, "alfak2_round2_calibration")) stop("Invalid calibration object")
+  if (!inherits(calibration, "karst_round2_calibration")) stop("Invalid calibration object")
   if (!identical(model_key, calibration$model_key)) stop("Model fingerprint mismatch")
   if (!identical(scenario, calibration$scenario)) stop("Scenario fingerprint mismatch")
   if (!all(c("pred_relative", "sd_relative", "distance") %in% names(data))) stop("Invalid predictions")

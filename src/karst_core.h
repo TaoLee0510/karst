@@ -1,5 +1,5 @@
-#ifndef ALFAK2_CORE_H
-#define ALFAK2_CORE_H
+#ifndef KARST_CORE_H
+#define KARST_CORE_H
 
 #include <RcppEigen.h>
 #include <algorithm>
@@ -15,7 +15,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace alfak2 {
+namespace karst {
 
 inline std::string make_key(const std::vector<int>& x) {
   std::string out;
@@ -234,6 +234,6 @@ inline double mean_copy_number_row(const Rcpp::IntegerMatrix& mat, int i) {
   return out / std::max(1, mat.ncol());
 }
 
-} // namespace alfak2
+} // namespace karst
 
 #endif

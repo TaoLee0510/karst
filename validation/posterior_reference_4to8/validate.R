@@ -3,7 +3,7 @@ repo <- normalizePath(".")
 source("validation/posterior_reference_4to8/reference.R")
 source("validation/accuracy_round2/oracle_posterior_reference.R")
 runtime <- reference_load(repo)
-out <- file.path(Sys.getenv("ALFAK2_REFERENCE_OUTPUT", "validation/posterior_reference_4to8/results"), "validation")
+out <- file.path(Sys.getenv("KARST_REFERENCE_OUTPUT", "validation/posterior_reference_4to8/results"), "validation")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 library(testthat)
 test_results <- list()
@@ -59,7 +59,7 @@ with_reporter(reporter, {
     test_results$prior <<- list(summary = d$summary, convergence = d$convergence)
   })
   test_that("MCMC agrees with independent two-node quadrature", {
-    old <- readRDS(Sys.getenv("ALFAK2_REFERENCE_TWONODE",
+    old <- readRDS(Sys.getenv("KARST_REFERENCE_TWONODE",
       "validation/posterior_reference_4to8/inputs/two_node_reference.rds"))
     for (growth in c(FALSE, TRUE)) {
       arm <- if (growth) "population_growth" else "count_only"

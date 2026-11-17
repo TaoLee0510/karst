@@ -1,6 +1,6 @@
 # Empirical uncertainty calibration. Fitness point estimates and SDs are never
 # modified. This is not a finite-sample conformal guarantee.
-alfak2_calibration_scenario <- function(dataset) {
+karst_calibration_scenario <- function(dataset) {
   config <- dataset$config
   list(beta = as.double(config$beta), dt = as.double(config$dt),
        depth_t0 = as.integer(config$n0), depth_t1 = as.integer(config$n1),
@@ -12,19 +12,19 @@ alfak2_calibration_scenario <- function(dataset) {
        reference_depth = if (is.null(config$depth_sensitivity)) NA_integer_ else as.integer(config$depth_sensitivity$reference_depth))
 }
 
-alfak2_calibration_model_key <- function(provenance) {
+karst_calibration_model_key <- function(provenance) {
   required <- c("model", "implementation_hash", "arguments_hash")
   if (!all(required %in% names(provenance))) stop("Model provenance is missing required fingerprints")
   provenance[required]
 }
 
-alfak2_weighted_quantile <- function(x, weight, probability) {
+karst_weighted_quantile <- function(x, weight, probability) {
   order <- order(x)
   x <- x[order]; weight <- weight[order] / sum(weight)
   x[which(cumsum(weight) + 1e-14 >= probability)[1L]]
 }
 
-fit_alfak2_interval_calibration <- function(calibration_table, model_key, scenario,
+fit_karst_interval_calibration <- function(calibration_table, model_key, scenario,
                                            levels = c(0.5, 0.8, 0.95), min_landscapes = 2L) {
   required <- c("landscape_id", "dataset_id", "split", "distance", "pred_relative", "sd_relative", "truth_relative")
   if (!all(required %in% names(calibration_table))) stop("Calibration table is missing required columns")
@@ -56,8 +56,8 @@ fit_alfak2_interval_calibration <- function(calibration_table, model_key, scenar
     for (level in levels) {
       lower <- upper <- NA_real_
       if (supported) {
-        lower <- alfak2_weighted_quantile(residual[valid], weight[valid], (1 - level) / 2)
-        upper <- alfak2_weighted_quantile(residual[valid], weight[valid], (1 + level) / 2)
+        lower <- karst_weighted_quantile(residual[valid], weight[valid], (1 - level) / 2)
+        upper <- karst_weighted_quantile(residual[valid], weight[valid], (1 + level) / 2)
       }
       table[[length(table) + 1L]] <- data.frame(distance = as.character(distance), level = level,
         q_lower = lower, q_upper = upper, n_landscapes = length(valid_landscapes),
@@ -73,11 +73,11 @@ fit_alfak2_interval_calibration <- function(calibration_table, model_key, scenar
                  weighting = "equal landscape; equal dataset within landscape; equal node within dataset/distance",
                  interpretation = "empirical signed standardized-error intervals; no finite-sample coverage guarantee",
                  point_estimates_changed = FALSE, standard_errors_changed = FALSE),
-            class = "alfak2_interval_calibration")
+            class = "karst_interval_calibration")
 }
 
-apply_alfak2_interval_calibration <- function(predictions, calibration, model_key, scenario) {
-  if (!inherits(calibration, "alfak2_interval_calibration")) stop("Invalid calibration object")
+apply_karst_interval_calibration <- function(predictions, calibration, model_key, scenario) {
+  if (!inherits(calibration, "karst_interval_calibration")) stop("Invalid calibration object")
   if (!identical(model_key, calibration$model_key)) stop("Calibration model fingerprint mismatch")
   if (!identical(scenario, calibration$scenario)) stop("Calibration scenario fingerprint mismatch (depth/beta/dt/chromosomes/CN/reference)")
   if (!all(c("distance", "pred_relative", "sd_relative") %in% names(predictions))) stop("Predictions are missing required columns")

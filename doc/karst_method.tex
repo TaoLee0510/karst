@@ -16,7 +16,7 @@
   citecolor=blue
 }
 
-\title{\texttt{alfak2}: Inference of Karyotype Fitness Landscapes from Sparse Counts at Two Time Points}
+\title{KARST: Karyotype Abundance-based Reconstruction from Sparse Time Points}
 \author{}
 \date{\today}
 
@@ -32,7 +32,7 @@
 \maketitle
 
 \begin{abstract}
-\texttt{alfak2} estimates fitness landscapes of aneuploid karyotypes from sparse
+\texttt{karst} estimates fitness landscapes of aneuploid karyotypes from sparse
 single-cell karyotype counts of a cell population at two time points. Its
 default model, the sparse joint count model, describes both time points with
 a single count likelihood
@@ -43,7 +43,7 @@ frequency, from the abundance at which mutation--selection balance maintains
 rare karyotypes, and from the absence of neighbouring karyotypes; karyotypes
 beyond the model domain are predicted from a fitted trend. This document
 specifies the model (Section~\ref{sec:sparse-joint}), relates it to
-\texttt{alfakR} (Section~\ref{sec:alfakR}), describes the default analysis
+\texttt{alfak} (Section~\ref{sec:alfak}), describes the default analysis
 workflow (Section~\ref{sec:workflow}) and summarises its validation
 (Section~\ref{sec:validation}). The earlier two-layer pipeline, its nine
 second-layer extrapolation methods and the joint-count pipeline are described
@@ -325,7 +325,7 @@ because a multinomial normalisation over the domain would couple every pair
 of states. The likelihood is formulated in counts rather than frequencies:
 frequencies of $1/500$ and $10/5000$ are equal, but the latter carries ten
 times the information, and a zero count among 3000 cells is more informative
-than one among 50. For held-out refits (Section~\ref{sec:sj-alfakR}), the two
+than one among 50. For held-out refits (Section~\ref{sec:sj-alfak}), the two
 terms of each state are multiplied by a weight $w_i\in\{0,1\}$; in a standard
 fit, all weights equal one.
 
@@ -385,7 +385,7 @@ This prior assumes that fitness before the first time point was similar to
 fitness between the time points. In simulations in which the landscape changed at
 the first time point, as under the onset of treatment, it nevertheless remained
 more accurate than independent initial abundances. With $h=T$, the default up
-to alfak2 8327282, it was less accurate when the time points were separated by
+to KARST 8327282, it was less accurate when the time points were separated by
 approximately 30 divisions or by a few weeks, because the mutational cloud
 then has too little time to form and the neighbours of the majors are held far
 below their observed abundance; the candidate histories address this case
@@ -428,7 +428,7 @@ intervals of 6--42 days 23\% of the datasets switched, with errors unchanged
 (ratio 0.99--1.00); on populations with a 2--8-fold higher missegregation rate
 or 1--2\% miscalled chromosomes all switched, the error fell to 0.73--0.81 of
 the balance prior's at distances 0--2, and one-copy direction accuracy rose
-from 0.37 to 0.66 at distance 1. It was made the default in alfak2 827c4b5
+from 0.37 to 0.66 at distance 1. It was made the default in KARST 827c4b5
 and returned to an option after the ALFA-K paper benchmark: with time points one
 passage apart the cloud is far larger than the balance over one interval even
 at the true missegregation rate, so \texttt{"auto"} switched in 54\% of the ABM
@@ -542,7 +542,7 @@ implausibly large standard deviations. The matrix $H_E$ is positive definite
 by construction, its likelihood component being a Gauss--Newton matrix. It is
 factorised once by sparse Cholesky decomposition, $H_E=P^\top LL^\top P$,
 from which variances, covariances and posterior draws are obtained
-(Section~\ref{sec:sj-alfakR}).
+(Section~\ref{sec:sj-alfak}).
 
 \subsection{Relative Fitness and Posterior Uncertainty}
 \label{sec:sj-relative}
@@ -968,11 +968,11 @@ Both other methods forecast the Salehi data less well than the anchored model.
 The rule is therefore not part of the package: the method is named in
 \texttt{series}, and \texttt{"anchored"} is the default.
 
-\subsection{Export in the \texttt{alfakR} Output Format}
-\label{sec:sj-alfakR}
+\subsection{Export in the \texttt{alfak} Output Format}
+\label{sec:sj-alfak}
 
-\texttt{as\_alfakR()} and \texttt{alfak\_compat()} generate the objects saved
-by \texttt{alfakR::alfak()} (Section~\ref{sec:alfakR}), with identical names,
+\texttt{as\_alfak()} and \texttt{alfak\_compat()} generate the objects saved
+by \texttt{alfakR::alfak()} (Section~\ref{sec:alfak}), with identical names,
 columns and karyotype sets.
 
 \paragraph{Karyotype sets and scale.}
@@ -982,21 +982,21 @@ landscape are defined as
   F=\{v:y_{0v}+y_{1v}\ge\texttt{minobs}\},\qquad
   N=\partial F\setminus F,\qquad
   K=F\cup N\cup\partial N,
-  \label{eq:alfakR-sets}
+  \label{eq:alfak-sets}
 \end{equation}
 where $\partial A$ denotes the set of one-step neighbours of $A$ with all copy
-numbers at least one, in the order used by \texttt{alfakR}. The value of
+numbers at least one, in the order used by \texttt{alfak}. The value of
 \texttt{minobs} affects these sets only, not the fit. Reported fitness is
 \begin{equation}
   f_v=\rho_v+\frac{\log(N_b/N_0^{\mathrm{pop}})}{T}
   \quad\text{or, with \texttt{correct\_efflux},}\quad
   f_v=\frac{\rho_v+\log(N_b/N_0^{\mathrm{pop}})/T}{2P_{vv}-1},
-  \label{eq:alfakR-scale}
+  \label{eq:alfak-scale}
 \end{equation}
 where $N_0^{\mathrm{pop}}$ and $N_b$ are the population sizes \texttt{n0} and
-\texttt{nb} of \texttt{alfakR}; the mean fitness of the major karyotypes is
-thereby set to the population growth rate assumed by \texttt{alfakR}. With
-more than two time points $T$ is the first interval $t_1$, as in \texttt{alfakR}.
+\texttt{nb} of \texttt{alfak}; the mean fitness of the major karyotypes is
+thereby set to the population growth rate assumed by \texttt{alfak}. With
+more than two time points $T$ is the first interval $t_1$, as in \texttt{alfak}.
 
 \paragraph{Posterior draws.}
 In place of bootstrap replicates, $B$ draws are generated for every
@@ -1025,7 +1025,7 @@ and $N$, together with initial frequencies of $F$ derived from the drawn
 $\zeta$.
 
 \paragraph{Cross-validation.}
-The folds follow \texttt{alfakR}: each frequent karyotype together with those
+The folds follow \texttt{alfak}: each frequent karyotype together with those
 of its one-step neighbours not assigned to an earlier fold. For a fold $Q$,
 the states of $Q$ within the domain are treated as unobserved: $w_i=0$ in
 (\ref{eq:poisson}); a $\zeta_i$ with prior (\ref{eq:free-prior}) takes its
@@ -1050,15 +1050,15 @@ domain, whose estimates do not derive from their own counts, are not
 evaluated. $R^2_{\mathrm{xv}}$ quantifies how accurately the model predicts
 karyotypes whose own counts and those of their neighbours were withheld; it
 does not quantify the accuracy of the full fit. It is not comparable with the
-corresponding statistic of \texttt{alfakR}, which quantifies how accurately
+corresponding statistic of \texttt{alfak}, which quantifies how accurately
 Kriging interpolates first-stage estimates.
 
-\section{Relation to \texttt{alfakR}}
-\label{sec:alfakR}
+\section{Relation to \texttt{alfak}}
+\label{sec:alfak}
 
-\subsection{The \texttt{alfakR} Model}
+\subsection{The \texttt{alfak} Model}
 
-\texttt{alfakR} (ALFA-K; branch \texttt{dev}, commit \texttt{eddeb5e})
+\texttt{alfak} (ALFA-K; branch \texttt{dev}, commit \texttt{eddeb5e})
 estimates the landscape in four stages.
 
 \paragraph{Frequent karyotypes.}
@@ -1067,7 +1067,7 @@ under selection without mutation among themselves,
 \begin{equation}
   x_i(t)=\frac{x_{0i}e^{f_it}}{\sum_{k\in F}x_{0k}e^{f_kt}},\qquad
   -\log L=-\sum_t\sum_{i\in F}y_{it}\log x_i(t),\qquad \sum_{i\in F}f_i=0,
-  \label{eq:alfakR-freq}
+  \label{eq:alfak-freq}
 \end{equation}
 that is, a multinomial likelihood for the counts of $F$ renormalised within
 $F$; cells of other karyotypes do not contribute. Initial values are obtained
@@ -1076,7 +1076,7 @@ shifted such that $\sum_ix_{0i}f_i=\log(N_b/N_0^{\mathrm{pop}})/\Delta t$.
 
 \paragraph{Neighbouring karyotypes.}
 Each $p\in F$ is assigned an emergence time $t_p$, at which the fitted
-trajectory (\ref{eq:alfakR-freq}), extrapolated backwards, attains frequency
+trajectory (\ref{eq:alfak-freq}), extrapolated backwards, attains frequency
 $1/N_0^{\mathrm{pop}}$. Each one-step neighbour $c\in N$ is then estimated
 separately, conditional on the point estimates of its parents:
 \begin{equation}
@@ -1084,7 +1084,7 @@ separately, conditional on the point estimates of its parents:
   \frac{e^{(f_c-f_p)(t-t_p)}-1}{f_c-f_p},
   \qquad
   y_{ct}\sim\operatorname{Binomial}\bigl(N_t,\,x_c(t)\bigr),
-  \label{eq:alfakR-nn}
+  \label{eq:alfak-nn}
 \end{equation}
 by one-dimensional optimisation over $f_c$. An unobserved neighbour
 additionally receives an empirical prior on $f_c-\bar f_{\mathrm{parents}}$
@@ -1094,7 +1094,7 @@ estimated from the observed neighbours.
 Both stages are repeated on multinomial resamples of the counts. Kriging
 (\texttt{fields::Krig}) on copy-number coordinates, fitted to the resampled
 fitness values of $F\cup N$, predicts the landscape on $K$ as defined in
-(\ref{eq:alfakR-sets}); the predictions across replicates constitute
+(\ref{eq:alfak-sets}); the predictions across replicates constitute
 \texttt{landscape\_posterior\_samples.Rds} and their summaries
 \texttt{landscape.Rds}. Cross-validation withholds each frequent karyotype and
 its neighbours from the Kriging and predicts them from the remainder.
@@ -1107,7 +1107,7 @@ the use of counts versus frequencies but in how the karyotypes are estimated.
 \begin{center}
 \begin{tabular}{L{0.2\textwidth}L{0.35\textwidth}L{0.35\textwidth}}
 \toprule
- & \texttt{alfakR} & \texttt{alfak2} sparse joint model \\
+ & \texttt{alfak} & \texttt{karst} sparse joint model \\
 \midrule
 Estimation & Sequential: frequent karyotypes, then each neighbour
 conditional on fixed parent estimates, then Kriging & A single likelihood for
@@ -1135,11 +1135,11 @@ Time points & Any number & Two or more (Section~\ref{sec:sj-series}) \\
 \end{tabular}
 \end{center}
 
-The neighbour model (\ref{eq:alfakR-nn}) of \texttt{alfakR} already relates
+The neighbour model (\ref{eq:alfak-nn}) of \texttt{alfak} already relates
 the abundance of a rare karyotype to that of its parent; the sparse joint
 model retains this principle and embeds it, together with all other states,
 in a single likelihood. On the simulated benchmark (Section~\ref{sec:validation}),
-\texttt{alfakR} with \texttt{minobs = 20} exceeded the error of the null
+\texttt{alfak} with \texttt{minobs = 20} exceeded the error of the null
 predictor that assumes no fitness differences at every wavelength and
 distance, largely because of a small number of poorly constrained fits,
 whereas the sparse joint model reduced it to 0.47--0.74 of that value.
@@ -1151,8 +1151,8 @@ The ALFA-K paper scores forecasts on the passages of the Salehi data by the
 rank correlation, across forecasts, between the predicted change, the
 Wasserstein distance from the parent passage to the forecast, and the observed
 change, from the parent to the daughter passage, both on the karyotypes of the
-fitted landscape (its Fig.~2d). On this test \texttt{alfakR} ranks better than
-\texttt{alfak2}. On the rows that every compared method has (paper benchmark
+fitted landscape (its Fig.~2d). On this test \texttt{alfak} ranks better than
+\texttt{karst}. On the rows that every compared method has (paper benchmark
 round 05a8855, without the paper's selection by cross-validation), the
 Spearman correlations were:
 
@@ -1161,11 +1161,11 @@ Spearman correlations were:
 \toprule
  & Two time points, one interval (147 rows, 44 trajectories) & All time points (324 rows, 99 trajectories) \\
 \midrule
-\texttt{alfakR} & 0.60 & 0.60 \\
-\texttt{alfak2}, balance prior (anchored) & 0.45 & 0.23 \\
-\texttt{alfak2}, independent initial abundances & 0.60 & 0.31 \\
-\texttt{alfak2}, \texttt{series = "pairwise"} & -- & 0.36 \\
-\texttt{alfak2}, \texttt{series = "state\_space"} & -- & 0.45 \\
+\texttt{alfak} & 0.60 & 0.60 \\
+\texttt{karst}, balance prior (anchored) & 0.45 & 0.23 \\
+\texttt{karst}, independent initial abundances & 0.60 & 0.31 \\
+\texttt{karst}, \texttt{series = "pairwise"} & -- & 0.36 \\
+\texttt{karst}, \texttt{series = "state\_space"} & -- & 0.45 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1178,21 +1178,21 @@ and the daughter ranks the observed change at Spearman 0.77 (one interval) and
 0.73 (all time points), above every forecast; the parent's alone at 0.74 and
 0.62. The observed change is a median 1.46 and 1.3 times this noise.
 
-\paragraph{What \texttt{alfakR}'s forecast follows.} With all time points, the
+\paragraph{What \texttt{alfak}'s forecast follows.} With all time points, the
 change from the passage before the parent to the parent ranks the observed
-change at 0.69, above \texttt{alfakR}'s forecast (0.60). The size of
-\texttt{alfakR}'s forecast follows that recent change (Spearman 0.61; anchored
-\texttt{alfak2} 0.24), and the recent change follows the noise of the parent
-passage (0.70). The size of \texttt{alfakR}'s forecast and that noise are
+change at 0.69, above \texttt{alfak}'s forecast (0.60). The size of
+\texttt{alfak}'s forecast follows that recent change (Spearman 0.61; anchored
+\texttt{karst} 0.24), and the recent change follows the noise of the parent
+passage (0.70). The size of \texttt{alfak}'s forecast and that noise are
 correlated directly at only 0.23. The evidence is correlational:
-\texttt{alfakR} forecasts a change about as large as the last one, which is
+\texttt{alfak} forecasts a change about as large as the last one, which is
 largely noise, and is scored against a change that is largely noise. It does
-not show by what mechanism \texttt{alfakR}'s fitness estimates come to follow
+not show by what mechanism \texttt{alfak}'s fitness estimates come to follow
 the recent change.
 
 \paragraph{With the noise held fixed.} Partial Spearman correlations of
 predicted and observed change, on ranks, with the mean noise of parent and
-daughter as covariate, differ from those of \texttt{alfakR} by (95\%
+daughter as covariate, differ from those of \texttt{alfak} by (95\%
 intervals from a bootstrap over the six lineage types):
 
 \begin{center}
@@ -1218,10 +1218,10 @@ diversity (Section~\ref{sec:sj-initial}), the change that selection alone
 predicts from the true landscape over one interval of 15 days ranked the
 observed change at Spearman 0.15, against 0.93 on the development landscapes.
 Where the truth is known, on the ALFA-K paper's simulations with two time
-points, \texttt{alfak2}'s predicted change ranked the observed change at
-0.82--0.87 and \texttt{alfakR}'s at 0.75--0.76, with the true landscape at
+points, \texttt{karst}'s predicted change ranked the observed change at
+0.82--0.87 and \texttt{alfak}'s at 0.75--0.76, with the true landscape at
 0.89. A forecast whose size follows the recent change would raise the score on
-the Salehi passages by reading noise as selection; \texttt{alfak2} does not
+the Salehi passages by reading noise as selection; \texttt{karst} does not
 pursue it. The analyses are in validation/sparse\_joint/cloud\_level
 (\texttt{salehi/noise\_check.R}, \texttt{salehi/noise\_analysis.R},
 \texttt{salehi/noise\_one\_interval.R} and
@@ -1264,7 +1264,7 @@ twelve samples).
 \begin{center}
 \begin{tabular}{L{0.16\textwidth}L{0.17\textwidth}L{0.17\textwidth}L{0.2\textwidth}L{0.13\textwidth}}
 \toprule
-Passages ahead & \texttt{alfak2} & \texttt{alfakR} & \texttt{alfak2} $-$ \texttt{alfakR} & Rows \texttt{alfak2} better \\
+Passages ahead & \texttt{karst} & \texttt{alfak} & \texttt{karst} $-$ \texttt{alfak} & Rows \texttt{karst} better \\
 \midrule
 1 & $+0.47$ ($0.17$, $0.67$) & $-0.16$ ($-0.76$, $0.22$) & $+0.63$ ($0.35$, $0.99$) & 65\% \\
 2 & $+0.27$ ($-0.44$, $0.79$) & $-1.10$ ($-2.17$, $-0.20$) & $+1.37$ ($0.90$, $2.04$) & 70\% \\
@@ -1274,15 +1274,15 @@ All & & & $+1.01$ ($0.67$, $1.40$) & 68\% \\
 \end{tabular}
 \end{center}
 
-\texttt{alfak2} scored higher at every minobs (5, 10 and 20: $+1.53$, $+1.02$
+\texttt{karst} scored higher at every minobs (5, 10 and 20: $+1.53$, $+1.02$
 and $+0.26$, every interval above zero), whether or not the treatment changed
 between the parent and the later passage, and for inputs of one interval and
 of more. One passage ahead its forecast beat persistence and
-\texttt{alfakR}'s did not; two or more passages ahead neither beat
-persistence, and \texttt{alfakR} fell below it. The same fits with
+\texttt{alfak}'s did not; two or more passages ahead neither beat
+persistence, and \texttt{alfak} fell below it. The same fits with
 independent initial abundances scored no higher than with the balance prior
 ($-0.06$ per cell, interval $-0.16$ to $0.09$). Much of the difference is the
-size of \texttt{alfakR}'s forecasts, which move the population further than
+size of \texttt{alfak}'s forecasts, which move the population further than
 it moves (its fitness differences are larger;
 Section~\ref{sec:salehi-noise}).
 
@@ -1293,30 +1293,30 @@ way, on 677 rows from 99 trajectories that every compared method shares:
 \begin{center}
 \begin{tabular}{L{0.14\textwidth}L{0.16\textwidth}L{0.16\textwidth}L{0.16\textwidth}L{0.16\textwidth}}
 \toprule
-Passages ahead & Anchored & Pairwise & State space & \texttt{alfakR} \\
+Passages ahead & Anchored & Pairwise & State space & \texttt{alfak} \\
 \midrule
 1 & $+0.78$ ($0.35$, $1.01$) & $+0.78$ ($0.31$, $1.02$) & $+0.77$ ($0.26$, $1.01$) & $+0.25$ ($-0.15$, $0.61$) \\
 2 & $+0.74$ ($-0.24$, $1.38$) & $+0.69$ ($-0.35$, $1.37$) & $+0.63$ ($-0.37$, $1.28$) & $-0.66$ ($-1.35$, $-0.25$) \\
 3--4 & $-0.01$ ($-1.86$, $1.39$) & $-0.22$ ($-2.05$, $1.22$) & $-0.55$ ($-2.08$, $0.70$) & $-2.18$ ($-2.79$, $-1.80$) \\
 \midrule
-Minus \texttt{alfakR} & $+1.12$ ($0.55$, $1.47$) & $+1.06$ ($0.47$, $1.44$) & $+0.96$ ($0.40$, $1.31$) & \\
+Minus \texttt{alfak} & $+1.12$ ($0.55$, $1.47$) & $+1.06$ ($0.47$, $1.44$) & $+0.96$ ($0.40$, $1.31$) & \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Each method of \texttt{alfak2} scored higher than \texttt{alfakR} at every
+Each method of \texttt{karst} scored higher than \texttt{alfak} at every
 horizon (one passage ahead $+0.51$ to $+0.53$, two $+1.29$ to $+1.41$, three
 or four $+1.63$ to $+2.17$, every interval above zero) and in 69\% of the
 rows. The anchored method, the default, scored highest; the state-space
 method $0.15$ lower (interval $-0.20$ to $-0.05$), the pairwise method $0.06$
 lower ($-0.10$ to $-0.03$), and independent initial abundances $0.15$ lower
 ($-0.24$ to $-0.01$). This reverses the ranking of the paper's Fig.~2d with
-all time points (Section~\ref{sec:salehi-noise}), in which \texttt{alfakR}
+all time points (Section~\ref{sec:salehi-noise}), in which \texttt{alfak}
 ranked the size of the change at 0.55 and the anchored method at 0.23.
 
 Fitting every passage instead of the first and the last raised the anchored
 method's score by $0.36$ per cell (interval $0.14$ to $0.49$; higher in 90\%
-of the rows, at every horizon), and did not change \texttt{alfakR}'s ($+0.01$,
+of the rows, at every horizon), and did not change \texttt{alfak}'s ($+0.01$,
 interval $-0.71$ to $0.91$). The two designs choose the landscape's
 karyotypes from different time points, so these comparisons are of each
 fit's score over persistence on its own karyotypes.
@@ -1334,22 +1334,22 @@ The analyses are in validation/sparse\_joint/salehi\_horizon.
 \toprule
 Function & Purpose & Value \\
 \midrule
-\texttt{fit\_alfak2()} & Principal interface; the sparse joint pipeline is
+\texttt{fit\_karst()} & Principal interface; the sparse joint pipeline is
 the default & Sparse joint fit \\
 \texttt{fit\_sparse\_joint()} & Direct interface to the same model & Sparse
 joint fit \\
 \texttt{alfak\_compat()} & Interface with the arguments of
-\texttt{alfakR::alfak()}; writes the \texttt{alfakR} output files &
+\texttt{alfakR::alfak()}; writes the \texttt{alfak} output files &
 $R^2_{\mathrm{xv}}$ (invisible) \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\texttt{fit\_alfak2()} passes \texttt{counts}, \texttt{dt}, \texttt{beta} and
+\texttt{fit\_karst()} passes \texttt{counts}, \texttt{dt}, \texttt{beta} and
 the list \texttt{sparse\_joint\_control} to \texttt{fit\_sparse\_joint()}.
 Arguments specific to the earlier pipelines raise an error unless the
 corresponding pipeline is specified. A plain-text version of this section is
-provided in \texttt{doc/alfak2\_workflow.md}.
+provided in \texttt{doc/karst\_workflow.md}.
 
 \subsection{Procedure}
 \label{sec:procedure}
@@ -1402,24 +1402,24 @@ can be reconstructed; and diagnostics.
 (\ref{eq:predict-level}) for observed karyotypes outside the domain, and
 (\ref{eq:predict-trend}) otherwise, each with $\rho$, $\tilde s$ and $s$.
 
-\paragraph{Export in the \texttt{alfakR} format.}
+\paragraph{Export in the \texttt{alfak} format.}
 \begin{enumerate}
 \setcounter{enumi}{10}
-\item \textbf{Input in the \texttt{alfakR} convention}: \texttt{yi\$x} with
+\item \textbf{Input in the \texttt{alfak} convention}: \texttt{yi\$x} with
 two columns; $T$ from \texttt{passage\_times} or from the column names
 multiplied by \texttt{yi\$dt}; $\beta=\texttt{pm}$. Steps 1--10 are then
 performed.
-\item \textbf{Karyotype sets}, (\ref{eq:alfakR-sets}).
-\item \textbf{Scale}, (\ref{eq:alfakR-scale}).
+\item \textbf{Karyotype sets}, (\ref{eq:alfak-sets}).
+\item \textbf{Scale}, (\ref{eq:alfak-scale}).
 \item \textbf{Posterior draws} in place of bootstrap replicates
-(Section~\ref{sec:sj-alfakR}).
+(Section~\ref{sec:sj-alfak}).
 \item \textbf{Output objects}: the posterior draws
 (\texttt{landscape\_posterior\_samples.Rds}), the landscape summary
 (\texttt{landscape.Rds}) and the replicate estimates
 (\texttt{bootstrap\_res.Rds}).
 \item \textbf{Cross-validation}, (\ref{eq:xval-align})--(\ref{eq:r2r}),
 stored in \texttt{xval.Rds}.
-\item \textbf{Output}: the files and the fit object (\texttt{alfak2\_fit.Rds})
+\item \textbf{Output}: the files and the fit object (\texttt{karst\_fit.Rds})
 are written to \texttt{outdir}, and $R^2_{\mathrm{xv}}$ is returned
 invisibly.
 \end{enumerate}
@@ -1463,14 +1463,14 @@ by the anchored model \\
 \texttt{beta\_range} and uses three rates by default. \texttt{fit\_sparse\_joint\_cohort()} defaults to
 \texttt{initial\_state = "free"}, \texttt{sharing = "partial"} and
 \texttt{trend = "select"}. \texttt{alfak\_compat()} adopts the defaults of
-\texttt{alfakR}: \texttt{minobs = 20}, \texttt{nboot = 45},
+\texttt{alfak}: \texttt{minobs = 20}, \texttt{nboot = 45},
 \texttt{n0 = 1e5}, \texttt{nb = 1e7} and \texttt{pm = 5e-5}.
 \end{sloppypar}
 
 \subsection{Software Implementation}
 \label{sec:structure}
 
-\texttt{fit\_alfak2()} provides three pipelines:
+\texttt{fit\_karst()} provides three pipelines:
 
 \begin{center}
 \begin{tabular}{L{0.2\textwidth}L{0.4\textwidth}L{0.3\textwidth}}
@@ -1497,7 +1497,7 @@ derivatives by automatic differentiation and the Laplace approximation
 (\ref{eq:laplace}), comprising an inner Newton optimisation over the latent
 variables at given hyperparameters and the log determinant of the sparse
 Hessian. TMB is thus a computational framework rather than a statistical
-method. \texttt{alfak2} compiles a single library whose entry point selects
+method. \texttt{karst} compiles a single library whose entry point selects
 \texttt{local\_model}, \texttt{sparse\_joint} or \texttt{sparse\_joint\_cohort}
 by name. Graph construction, the kernel (\ref{eq:pij}), the graph Gaussian
 posterior of the two-layer pipeline and the simulators are implemented
@@ -1673,7 +1673,7 @@ true relative fitness, that is, the typical magnitude of the fitness
 differences to be estimated at each distance. A method that does not attain a
 lower error than this predictor extracts no usable information on fitness
 differences. It serves as the benchmark for error in preference to
-\texttt{alfakR}, whose error is dominated by a small number of poorly
+\texttt{alfak}, whose error is dominated by a small number of poorly
 constrained fits. Its error ratio is one by definition and its direction
 accuracy one half, since every pair is a tie; it provides no ordering, and its
 rank correlation is taken as zero.
@@ -1692,7 +1692,7 @@ within the nominal 95\% interval of a method, the prediction plus or minus
 1.96 standard deviations; a calibrated method attains 0.95, and lower values
 indicate overconfident, higher values overly wide intervals. The null
 predictor provides neither a ranking nor intervals. The intervals of
-\texttt{alfakR} derive from the standard deviation of its Kriging predictions
+\texttt{alfak} derive from the standard deviation of its Kriging predictions
 over bootstrap replicates; karyotypes outside its landscape have none and are
 omitted from its coverage.
 
@@ -1704,7 +1704,7 @@ scale), direction accuracy (middle) and overall similarity (bottom: Spearman
 correlation with the reference values) against distance from the nearest
 observed karyotype, held-out landscapes. Each point is the mean of 24
 datasets, three landscapes by eight sampling designs. Dashed lines mark the
-null predictor (1, one half and 0). Ratios of \texttt{alfakR} above 8 are
+null predictor (1, one half and 0). Ratios of \texttt{alfak} above 8 are
 drawn at the upper edge and labelled with their value.}
 \label{fig:wavelength}
 \end{figure}
@@ -1721,7 +1721,7 @@ drawn at the upper edge and labelled with their value.}
 \midrule
 Null predictor & 0.107 & 0.230 & 0.344 & 0.033 & 0.069 & 0.107 & 0.020 & 0.037 & 0.057 & 0.014 & 0.023 & 0.034 \\
 Two-layer pipeline & 0.106 & 0.230 & 0.343 & 0.033 & 0.069 & 0.107 & 0.019 & 0.037 & 0.056 & 0.013 & 0.023 & 0.034 \\
-\texttt{alfakR} (\texttt{minobs = 20}) & 0.393 & 0.641 & 0.852 & 0.079 & 0.113 & 0.149 & 0.050 & 0.072 & 0.095 & 0.586 & 0.659 & 0.720 \\
+\texttt{alfak} (\texttt{minobs = 20}) & 0.393 & 0.641 & 0.852 & 0.079 & 0.113 & 0.149 & 0.050 & 0.072 & 0.095 & 0.586 & 0.659 & 0.720 \\
 Sparse joint, independent & 0.071 & 0.131 & 0.183 & 0.032 & 0.062 & 0.091 & 0.015 & 0.023 & 0.036 & 0.011 & 0.014 & 0.020 \\
 Sparse joint, balance & 0.055 & 0.110 & 0.161 & 0.020 & 0.039 & 0.062 & 0.014 & 0.021 & 0.031 & 0.010 & 0.015 & 0.019 \\
 \bottomrule
@@ -1742,7 +1742,7 @@ Sparse joint, balance & 0.055 & 0.110 & 0.161 & 0.020 & 0.039 & 0.062 & 0.014 & 
  & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ \\
 \midrule
 Two-layer pipeline & -0.035 & -0.045 & -0.038 & 0.075 & 0.035 & 0.022 & 0.363 & 0.284 & 0.191 & 0.482 & 0.381 & 0.185 \\
-\texttt{alfakR} (\texttt{minobs = 20}) & 0.031 & 0.023 & 0.026 & 0.033 & 0.013 & 0.015 & 0.242 & 0.201 & 0.168 & 0.334 & 0.294 & 0.277 \\
+\texttt{alfak} (\texttt{minobs = 20}) & 0.031 & 0.023 & 0.026 & 0.033 & 0.013 & 0.015 & 0.242 & 0.201 & 0.168 & 0.334 & 0.294 & 0.277 \\
 Sparse joint, independent & 0.392 & 0.193 & 0.145 & 0.388 & 0.276 & 0.199 & 0.523 & 0.465 & 0.381 & 0.351 & 0.511 & 0.462 \\
 Sparse joint, balance & 0.469 & 0.234 & 0.172 & 0.416 & 0.287 & 0.209 & 0.529 & 0.472 & 0.389 & 0.340 & 0.504 & 0.460 \\
 \bottomrule
@@ -1760,7 +1760,7 @@ Sparse joint, balance & 0.469 & 0.234 & 0.172 & 0.416 & 0.287 & 0.209 & 0.529 & 
  & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ \\
 \midrule
 Two-layer pipeline & 0.514 & 0.995 & 1.000 & 0.994 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
-\texttt{alfakR} (\texttt{minobs = 20}) & 0.387 & 0.319 & 0.259 & 0.249 & 0.188 & 0.174 & 0.403 & 0.260 & 0.229 & 0.678 & 0.565 & 0.484 \\
+\texttt{alfak} (\texttt{minobs = 20}) & 0.387 & 0.319 & 0.259 & 0.249 & 0.188 & 0.174 & 0.403 & 0.260 & 0.229 & 0.678 & 0.565 & 0.484 \\
 Sparse joint, independent & 0.954 & 0.935 & 0.912 & 0.954 & 0.896 & 0.826 & 0.983 & 0.977 & 0.962 & 1.000 & 1.000 & 0.999 \\
 Sparse joint, balance & 0.954 & 0.931 & 0.905 & 0.966 & 0.934 & 0.887 & 0.986 & 0.991 & 0.984 & 1.000 & 1.000 & 1.000 \\
 \bottomrule
@@ -1771,8 +1771,8 @@ With the balance prior, the sparse joint model attained a lower error than the
 null predictor at every wavelength and distance, at 0.47 to 0.74 times its
 value, with the largest reductions on the most rugged landscapes. The
 two-layer pipeline attained 0.92 to 1.00 times the error of the null
-predictor, and \texttt{alfakR} exceeded it everywhere; 21\% of the
-\texttt{alfakR} fits failed at $\lambda=1.6$.
+predictor, and \texttt{alfak} exceeded it everywhere; 21\% of the
+\texttt{alfak} fits failed at $\lambda=1.6$.
 
 Direction accuracy of the sparse joint model with the balance prior was 0.64
 to 0.96. It was highest for observed karyotypes on the most rugged landscapes
@@ -1785,7 +1785,7 @@ missegregation term, which depends on copy number rather than on the data.
 Independent initial abundances gave similar values (0.66 to 0.96); the
 balance prior improves mainly the numerical accuracy. The two-layer pipeline
 attained 0.49 to 0.57, close to the one half of a method without directional
-information, and \texttt{alfakR} 0.36 to 0.52, below one half in 10 of the 12
+information, and \texttt{alfak} 0.36 to 0.52, below one half in 10 of the 12
 combinations of wavelength and distance: it predicted the wrong direction
 more often than the right one. The sparse joint model was thus the only
 method better than the null predictor in both numerical and direction
@@ -1795,7 +1795,7 @@ direction accuracy was 0.67 to 0.93.
 Rank correlations, which measure the overall similarity of predicted and true
 fitness rather than the direction of individual changes, were higher for the
 sparse joint model than for the two-layer pipeline and
-\texttt{alfakR} at every wavelength and distance, with one exception: for
+\texttt{alfak} at every wavelength and distance, with one exception: for
 observed karyotypes on the smoothest landscapes ($\lambda=1.6$, $d=0$), the
 two-layer pipeline ranked them better (0.48 versus 0.34). The exception
 arises from observed karyotypes with fewer than five cells. For karyotypes
@@ -1812,13 +1812,13 @@ better (0.65 versus 0.53). Rank correlations at distances 1 and 2 decreased
 with ruggedness. Coverage of the sparse joint model
 ranged from 0.89 to 1.00: intervals were slightly too narrow at two steps on
 intermediate landscapes ($\lambda=0.8$) and conservative on the smoothest.
-The intervals of \texttt{alfakR} covered 17--68\% of reference values and
+The intervals of \texttt{alfak} covered 17--68\% of reference values and
 were thus overconfident; those of the two-layer pipeline were close to one
 except for observed karyotypes on the most rugged landscapes. The acceptance
 criteria, specified before the held-out landscapes were evaluated, were
 applied to values averaged over all twelve landscapes and were all met: lower
 error than both the null predictor and the two-layer pipeline, higher rank
-correlation than both the two-layer pipeline and \texttt{alfakR}, and no
+correlation than both the two-layer pipeline and \texttt{alfak}, and no
 scenario with an error more than 10\% above that of the two-layer pipeline.
 On the development landscapes, none of the eight
 available second-layer methods of the two-layer pipeline reduced the error
@@ -1834,11 +1834,11 @@ and~\ref{fig:design-rank} resolve the held-out results by sampling design.
 For each wavelength and distance they show the error relative to the null
 predictor, the direction accuracy and the rank correlation of the sparse
 joint model, with and without the balance prior, of the two-layer pipeline
-and of \texttt{alfakR}; points are means over the three landscapes of a
+and of \texttt{alfak}; points are means over the three landscapes of a
 wavelength and bars the range over those landscapes. Designs are ordered by the number of cells at fixed
 interval (50/50 cells at 180 days, 200/200 at 180 and 360 days, 500/700 at 360
 days), followed by a longer interval, a bottleneck and the two unbalanced
-designs. Because the errors of \texttt{alfakR} reach about 300 times those of
+designs. Because the errors of \texttt{alfak} reach about 300 times those of
 the null predictor, error ratios above 8 are drawn at the upper edge of
 Figure~\ref{fig:design-error} and labelled with their value; all values are
 given in Supplement~\ref{sec:s-designs}.
@@ -1858,7 +1858,7 @@ landscapes. Rows are wavelengths, columns distances from the observed
 karyotypes; the dashed line marks the null predictor. Points are the mean
 error over the three landscapes of a wavelength divided by that of the null
 predictor, and bars the range of this ratio over the landscapes. Ratios of
-\texttt{alfakR} above 8 are drawn at the upper edge, with bars truncated
+\texttt{alfak} above 8 are drawn at the upper edge, with bars truncated
 there, and labelled with their value. Vertical lines separate the series in the number
 of cells, the longer interval, the bottleneck and the unbalanced designs.}
 \label{fig:design-error}
@@ -1898,10 +1898,10 @@ ruggedness ($\lambda=0.8$ and 1.2, ratios of 0.62 to 0.75 against 0.49 to 0.61
 at 360 days). Of the unbalanced designs, 3000 cells at the first and 100 at the second
 time point gave the weakest result on the smoothest landscapes (0.83 at distance
 1). The two-layer pipeline attained 0.85 to 1.08 times the error of the null
-predictor in every design. \texttt{alfakR} exceeded the error of the null
+predictor in every design. \texttt{alfak} exceeded the error of the null
 predictor in 92 of the 96 combinations, by more than a factor of eight in 10
 of them, and the sparse joint model attained a lower error than
-\texttt{alfakR} in all 96. On the development landscapes the sparse joint
+\texttt{alfak} in all 96. On the development landscapes the sparse joint
 model was below the null predictor in all 96 combinations (ratios 0.39 to
 0.88; Supplement~\ref{sec:s-designs}).
 
@@ -1911,7 +1911,7 @@ Figure~\ref{fig:design-direction}). At distance 1 it was 0.76 to 0.90 in
 every design, so that even 50 cells per time point identified the direction of
 most changes between neighbouring karyotypes; unlike the error, it changed
 little with the number of cells. The two-layer pipeline exceeded one half in 62 and
-\texttt{alfakR} in 28 of the 96 combinations (0.33 to 0.72 and 0.12 to 0.72).
+\texttt{alfak} in 28 of the 96 combinations (0.33 to 0.72 and 0.12 to 0.72).
 On the development landscapes the sparse joint model exceeded one half in all
 96 combinations (0.60 to 1.00).
 
@@ -1923,7 +1923,7 @@ pipeline ranked observed karyotypes better in 7 of the 8 designs at
 $\lambda=1.6$ and in 2 of 8 at $\lambda=1.2$, for the reason given in
 Section~\ref{sec:val-wavelength}; it ranked them worse in every design at
 $\lambda\le0.8$. The sparse joint model ranked karyotypes better than
-\texttt{alfakR} in 87 of the 93 combinations in which \texttt{alfakR} produced
+\texttt{alfak} in 87 of the 93 combinations in which \texttt{alfak} produced
 a ranking; the exceptions were observed karyotypes in four designs at
 $\lambda=1.6$ and two small differences at $\lambda=0.4$. Coverage of the
 sparse joint model ranged from 0.77 to 1.00;
@@ -1964,7 +1964,7 @@ closer to the observed karyotypes; it is computed for the four main methods.
 \caption{Error relative to the null predictor (top), direction accuracy
 (middle) and Spearman correlation with the reference values (bottom) against
 distance from the nearest observed karyotype, held-out landscapes. Distances 0 to 2 are those of the scoreboard;
-the shaded region marks distances 3 and 4. Ratios of \texttt{alfakR} above 8
+the shaded region marks distances 3 and 4. Ratios of \texttt{alfak} above 8
 are drawn at the upper edge and labelled with their value. Graph Gaussian
 denotes the two-layer pipeline with its default second layer.}
 \label{fig:far}
@@ -1973,7 +1973,7 @@ denotes the two-layer pipeline with its default second layer.}
 \input{generated/far_main.tex}
 
 Each of the 192 datasets contributed 2000 karyotypes at each distance. All
-methods produced predictions for every dataset except \texttt{alfakR}, which
+methods produced predictions for every dataset except \texttt{alfak}, which
 failed on the same seven development and five held-out datasets as in the
 scoreboard. Every karyotype at distance 3 or 4 lies at least three steps from
 the nearest major karyotype and therefore outside the domain of the sparse
@@ -2019,7 +2019,7 @@ that its intervals contained 99.9 to 100\% of the reference values; such
 intervals carry little information. The seven near-field
 second-layer methods produced no prediction beyond distance 2 and are
 therefore equivalent to the null predictor there
-(Supplement~\ref{sec:s-far}). \texttt{alfakR} predicts these karyotypes from
+(Supplement~\ref{sec:s-far}). \texttt{alfak} predicts these karyotypes from
 its Kriging mean surface, without an uncertainty. Its error was 2.35, 1.32,
 1.50 and 18.2 times that of the null predictor at distance 3 and 2.28, 1.26,
 1.42 and 15.3 times at distance 4, its direction accuracy was 0.45 to 0.53,
@@ -2078,7 +2078,7 @@ reference values exist.
 
 \section{Summary}
 
-The default pipeline of \texttt{alfak2} can be summarised as
+The default pipeline of \texttt{karst} can be summarised as
 \[
 \begin{aligned}
 &\text{counts at two time points}
@@ -2090,10 +2090,10 @@ The default pipeline of \texttt{alfak2} can be summarised as
 \text{trend-based prediction beyond them},
 \end{aligned}
 \]
-with calibrated uncertainty and, optionally, output in the \texttt{alfakR}
+with calibrated uncertainty and, optionally, output in the \texttt{alfak}
 format. On held-out simulated landscapes it was better than the null
 predictor in both numerical and direction accuracy at every wavelength and
-distance, which neither the earlier two-layer pipeline nor \texttt{alfakR}
+distance, which neither the earlier two-layer pipeline nor \texttt{alfak}
 achieved (Section~\ref{sec:validation}). The earlier pipelines are described
 in the Supplement.
 
@@ -2110,7 +2110,7 @@ in the Supplement.
 \section{The Two-Layer Pipeline}
 \label{sec:s-two-layer}
 
-The two-layer pipeline, \texttt{fit\_alfak2(..., pipeline = "two\_layer")},
+The two-layer pipeline, \texttt{fit\_karst(..., pipeline = "two\_layer")},
 was the default before November 2026 and remains available. It first fits a
 local hierarchical count model around the observed karyotypes and then treats
 the resulting local fitness estimates as noisy anchors, from which a
@@ -2151,8 +2151,8 @@ set of target karyotypes.
 Supplement~\ref{sec:s-extrapolation}, by default
 \texttt{graph\_gaussian\_baseline}, with hyperparameters selected by
 leave-one-anchor-out cross-validation when grids are supplied.
-\item \textbf{Output}, optionally on the \texttt{alfakR} scale
-(Sections~\ref{sec:s-output}--\ref{sec:s-alfakR-scale}).
+\item \textbf{Output}, optionally on the \texttt{alfak} scale
+(Sections~\ref{sec:s-output}--\ref{sec:s-alfak-scale}).
 \end{enumerate}
 
 \subsection{Notation}
@@ -2172,7 +2172,7 @@ $\Delta t$ & Time interval between the two count observations \\
 $T_{uv}$ & Row-stochastic transition probability from parent node $u$ to child node $v$ \\
 $\eta_v$ & Initial log-abundance parameter for node $v$ \\
 $\pi_{0v}, \pi_{1v}$ & Model frequencies at the two timepoints \\
-$f_v$ & Native \texttt{alfak2} fitness for node $v$ \\
+$f_v$ & Native \texttt{karst} fitness for node $v$ \\
 $z_a$ & Local fitness estimate used as a global anchor \\
 $s_a^2$ & Local fitness variance estimate for anchor $a$ \\
 \bottomrule
@@ -2220,7 +2220,7 @@ information content should be treated as comparable.
 \subsection{Bounded Karyotype Graph}
 \label{sec:s-graph}
 
-\texttt{alfak2} builds a finite graph
+\texttt{karst} builds a finite graph
 $\mathcal{G}=(\mathcal{V},\mathcal{E})$ around the observed karyotypes.
 Two nodes are connected by a one-step edge if they differ by one copy on one
 chromosome:
@@ -2580,14 +2580,14 @@ posterior, nodes far from direct support can be labeled graph-borrowed or
 prior-dominated, indicating that their estimates are driven mostly by prior
 structure rather than direct data.
 
-\subsection{Optional \texttt{alfakR}-Scale Transformation}
-\label{sec:s-alfakR-scale}
+\subsection{Optional \texttt{alfak}-Scale Transformation}
+\label{sec:s-alfak-scale}
 
 This option belongs to the two-layer pipeline; the default pipeline produces
-\texttt{alfakR}'s outputs as described in Section~\ref{sec:sj-alfakR}.
-Native \texttt{alfak2} fitness is on a relative scale. If
-\texttt{alfakR\_scale = TRUE}, the package appends legacy-scale columns for
-compatibility with \texttt{alfakR}. Let
+\texttt{alfak}'s outputs as described in Section~\ref{sec:sj-alfak}.
+Native \texttt{karst} fitness is on a relative scale. If
+\texttt{alfak\_scale = TRUE}, the package appends legacy-scale columns for
+compatibility with \texttt{alfak}. Let
 \[
   g_0=\frac{\log(n_b/n_0)}{\Delta t}
 \]
@@ -2598,31 +2598,31 @@ and define the efflux viability approximation
 
 Without efflux correction,
 \[
-  f^{\mathrm{alfakR}}(x)
+  f^{\mathrm{alfak}}(x)
   =
-  f^{\mathrm{alfak2}}(x)
+  f^{\mathrm{KARST}}(x)
   +
   g_0
   -
-  \sum_x w_x f^{\mathrm{alfak2}}(x).
+  \sum_x w_x f^{\mathrm{KARST}}(x).
 \]
 With efflux correction,
 \[
   o
   =
   \frac{
-    \sum_x w_x f^{\mathrm{alfak2}}(x)/V(x)-g_0
+    \sum_x w_x f^{\mathrm{KARST}}(x)/V(x)-g_0
   }{
     \sum_x w_x/V(x)
   },
 \]
 \[
-  f^{\mathrm{alfakR}}(x)
+  f^{\mathrm{alfak}}(x)
   =
-  \frac{f^{\mathrm{alfak2}}(x)-o}{V(x)}.
+  \frac{f^{\mathrm{KARST}}(x)-o}{V(x)}.
 \]
 This is a post-processing scale conversion. It does not change the native
-\texttt{alfak2} posterior estimates.
+\texttt{karst} posterior estimates.
 
 \subsection{Design Considerations}
 
@@ -2683,7 +2683,7 @@ the subgraph within distance 2 \\
 The second layer does not revisit the raw counts. Instead, it treats local
 fitness estimates as noisy anchors and predicts fitness on a larger bounded
 graph $\mathcal{G}_{\mathrm{global}}$. The public entry point is
-\texttt{fit\_extrapolation\_layer()}, and \texttt{fit\_alfak2()} passes
+\texttt{fit\_extrapolation\_layer()}, and \texttt{fit\_karst()} passes
 \texttt{extrapolation\_method} to this function.
 
 All second-layer methods return the same global-fit schema:
@@ -2933,7 +2933,7 @@ The global layer has three main hyperparameters:
   \lambda_l,\qquad \lambda_e,\qquad \sigma_{\mathrm{obs}}.
 \]
 If each grid contains a single value, these are treated as fixed. If multiple
-values are supplied, \texttt{alfak2} uses leave-one-anchor-out cross-validation.
+values are supplied, \texttt{karst} uses leave-one-anchor-out cross-validation.
 For each anchor $a$, the model removes $a$, predicts its fitness from the
 remaining anchors, and obtains $\mu_{-a,a}$. The score is
 \[
@@ -3345,7 +3345,7 @@ sparse joint model ranged from 0.90 to 1.00.
 \section{The Joint-Count Pipeline}
 \label{sec:s-joint-count}
 
-\texttt{fit\_alfak2(..., pipeline = "joint\_count")} fits the local count
+\texttt{fit\_karst(..., pipeline = "joint\_count")} fits the local count
 model of Supplement~\ref{sec:s-local}, the TMB model \texttt{local\_model},
 once on the entire bounded target graph rather than on a local graph, with a
 structured landscape prior in place of the independent fitness prior. Fitness
@@ -3397,7 +3397,7 @@ the prediction zero, and a method that fails on a dataset is scored as the
 null predictor on it. The seven near-field second-layer methods report
 predictions only within distance 2 of the observed karyotypes and are
 therefore scored as the null predictor at distances 3 and 4. The fraction of
-karyotypes predicted by \texttt{alfakR} is below one where it failed: on 5 of
+karyotypes predicted by \texttt{alfak} is below one where it failed: on 5 of
 the 24 held-out datasets at $\lambda=1.6$, and on 3, 1 and 3 of the 24
 development datasets at $\lambda=0.4$, 1.2 and 1.6. It has no coverage at
 these distances because its Kriging predictions carry no uncertainty.

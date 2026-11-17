@@ -40,7 +40,7 @@ sm_main <- function() {
     sweeps = {
       sm_link(config)
       .libPaths(c(si_library(config$build, config$library_root), .libPaths()))
-      loadNamespace("alfak2")
+      loadNamespace("karst")
       table <- sm_sweep_table(config)
       utils::write.csv(table, file.path(config$output_dir, "sweeps.csv"), row.names = FALSE)
       multi <- table[table$samples > 2L, ]

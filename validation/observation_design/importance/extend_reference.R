@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-repo<-normalizePath(Sys.getenv("ALFAK2_REPO","."));root<-file.path(repo,"validation/observation_design")
-out<-normalizePath(Sys.getenv("ALFAK2_IS_OUTPUT"));i<-as.integer(Sys.getenv("ALFAK2_IS_INDEX"))
+repo<-normalizePath(Sys.getenv("KARST_REPO","."));root<-file.path(repo,"validation/observation_design")
+out<-normalizePath(Sys.getenv("KARST_IS_OUTPUT"));i<-as.integer(Sys.getenv("KARST_IS_INDEX"))
 src<-file.path(root,"results/mechanism_reference_source_v2")
 source(file.path(src,"common.R"));runtime<-mechanism_load(repo,src)
 cases<-readRDS(file.path(root,"results/mechanism_v2/frozen_cases.rds"));case<-cases[[i]]

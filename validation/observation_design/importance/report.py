@@ -5,8 +5,8 @@ from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-repo=Path(os.environ['ALFAK2_REPO']);root=repo/'validation/observation_design';out=Path(os.environ['ALFAK2_IS_OUTPUT'])
-source=Path(os.environ['ALFAK2_IS_SOURCE']);version=source.name.rsplit('_',1)[1]
+repo=Path(os.environ['KARST_REPO']);root=repo/'validation/observation_design';out=Path(os.environ['KARST_IS_OUTPUT'])
+source=Path(os.environ['KARST_IS_SOURCE']);version=source.name.rsplit('_',1)[1]
 def read(p):
  with Path(p).open() as h:return list(csv.DictReader(h))
 def number(r,k):return float(r[k])
@@ -44,7 +44,7 @@ flags['all_distance_promising']=all(flags.values());write(out/'mechanism/numeric
 
 small=read(out/f'small_cases_{version}_analysis/importance_reference_gate.csv');assert all(r['gate_pass']=='TRUE' for r in small)
 pre=read(out/f'preflight_{version}_gate.csv');masses=read(out/f'small_cases_{version}_analysis/interval_comparison.csv')
-lines=['# alfak2 联合后验校正与固定布局机制实验',
+lines=['# karst 联合后验校正与固定布局机制实验',
  '本轮本地目标已完成：原模型下的联合后验校正、两个高精度小图核对、两个 27 节点预检以及 48 例机制实验均已完成。所有最终案例通过事先规定的数值与资源门槛，历史失败尝试完整保留。',
  '数值校正对同一 opt_single 数据的所有距离改善开发门槛'+('已通过。仍需独立验证。' if flags['all_distance_promising'] else '未全部通过；不能据此宣称所有距离的 fitness 与不确定性都已提高。'),
  '生产默认值未改变；没有提交 HPC、commit 或 push，也没有打开预留校准/正式测试数据。当前计算源为 `'+source.name+'`，机制数据与计分源为 `importance_analysis_source_v2`。',

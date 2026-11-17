@@ -47,13 +47,13 @@ stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_tw
   landscapes <- rbind(make_split("dev", 71000L), make_split("heldout", 82000L))
   # The two-layer pipeline with one of its second-layer methods.
   two_layer_method <- function(extrapolation_method) {
-    list(type = "alfak2_two_layer", local_shell_depth = 0L, max_nodes = 60000L,
+    list(type = "karst_two_layer", local_shell_depth = 0L, max_nodes = 60000L,
          graph_hyperparameters = c(lambda_l = 1, lambda_e = 0.25, sigma_obs = 0.05),
          extrapolation_method = extrapolation_method)
   }
   # What a cohort method needs to find the other datasets of its cohort.
   cohort_method <- function(members, ...) {
-    list(type = "alfak2_sparse_joint_cohort", birth_rate = 1, min_cn = 1L, max_cn = 8L, members = members,
+    list(type = "karst_sparse_joint_cohort", birth_rate = 1, min_cn = 1L, max_cn = 8L, members = members,
          dataset_dir = file.path(output_dir, "datasets"), landscapes = landscapes[c("landscape_id", "split")],
          cohort_size = 8L, arguments = utils::modifyList(list(initial_state = "free"), list(...)))
   }
@@ -105,73 +105,73 @@ stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_tw
     # uniformly sampled one- and two-step neighbours.
     scoring = list(min_cn = 1L, max_cn = 8L, d1_cap = 2000L, d2_cap = 2000L, reference_min_count = 5),
     # Roles in the acceptance rule (report.R).
-    acceptance = list(zero = "zero", current = "alfak2_two_layer_fixed",
-                      original = c("alfakR_minobs5", "alfakR_minobs20"),
-                      candidates = c("alfak2_sparse_joint", "alfak2_sparse_joint_balance"),
+    acceptance = list(zero = "zero", current = "karst_two_layer_fixed",
+                      original = c("alfak_minobs5", "alfak_minobs20"),
+                      candidates = c("karst_sparse_joint", "karst_sparse_joint_balance"),
                       # Cohort methods exist for the cohort scenario only and are
                       # compared there with the single-dataset model.
-                      cohort = c("alfak2_sparse_joint_cohort", "alfak2_sparse_joint_cohort_unrelated",
-                                 "alfak2_sparse_joint_cohort_shared_trend",
-                                 "alfak2_sparse_joint_cohort_unrelated_shared_trend",
-                                 "alfak2_sparse_joint_cohort_balance"),
-                      cohort_baseline = "alfak2_sparse_joint"),
+                      cohort = c("karst_sparse_joint_cohort", "karst_sparse_joint_cohort_unrelated",
+                                 "karst_sparse_joint_cohort_shared_trend",
+                                 "karst_sparse_joint_cohort_unrelated_shared_trend",
+                                 "karst_sparse_joint_cohort_balance"),
+                      cohort_baseline = "karst_sparse_joint"),
     methods = list(
       zero = list(type = "zero"),
-      alfakR_minobs5 = list(type = "alfakR", minobs = 5L, nboot = 45L, n0 = 5e4, nb = 2e6,
+      alfak_minobs5 = list(type = "alfak", minobs = 5L, nboot = 45L, n0 = 5e4, nb = 2e6,
                             nn_prior = "empirical"),
-      alfakR_minobs20 = list(type = "alfakR", minobs = 20L, nboot = 45L, n0 = 5e4, nb = 2e6,
+      alfak_minobs20 = list(type = "alfak", minobs = 20L, nboot = 45L, n0 = 5e4, nb = 2e6,
                              nn_prior = "empirical"),
       # Graph hyperparameters fixed at the centre of the package's default grid.
-      alfak2_two_layer_fixed = list(type = "alfak2_two_layer", local_shell_depth = 0L, max_nodes = 60000L,
+      karst_two_layer_fixed = list(type = "karst_two_layer", local_shell_depth = 0L, max_nodes = 60000L,
                                     graph_hyperparameters = c(lambda_l = 1, lambda_e = 0.25, sigma_obs = 0.05)),
       # The other second-layer methods of the two-layer pipeline, on the same
       # first layer and the same fixed graph hyperparameters. The TabPFN
       # method falls back to delta_tree_ensemble without the Python module
       # and is not listed separately.
-      alfak2_two_layer_edge_effect = two_layer_method("edge_effect_empirical_bayes"),
-      alfak2_two_layer_path_ensemble = two_layer_method("edge_effect_interaction_path_ensemble"),
-      alfak2_two_layer_polynomial = two_layer_method("local_polynomial_stencil"),
-      alfak2_two_layer_nngp = two_layer_method("local_NNGP_or_GPnn"),
-      alfak2_two_layer_delta_tree = two_layer_method("delta_tree_ensemble"),
-      alfak2_two_layer_trend_filtering = two_layer_method("kronecker_or_graph_trend_filtering"),
-      alfak2_two_layer_nearfield_gmrf = two_layer_method("truncated_nearfield_gmrf"),
+      karst_two_layer_edge_effect = two_layer_method("edge_effect_empirical_bayes"),
+      karst_two_layer_path_ensemble = two_layer_method("edge_effect_interaction_path_ensemble"),
+      karst_two_layer_polynomial = two_layer_method("local_polynomial_stencil"),
+      karst_two_layer_nngp = two_layer_method("local_NNGP_or_GPnn"),
+      karst_two_layer_delta_tree = two_layer_method("delta_tree_ensemble"),
+      karst_two_layer_trend_filtering = two_layer_method("kronecker_or_graph_trend_filtering"),
+      karst_two_layer_nearfield_gmrf = two_layer_method("truncated_nearfield_gmrf"),
       # Package default: hyperparameters by leave-one-anchor-out selection.
-      alfak2_two_layer_cv = list(type = "alfak2_two_layer", local_shell_depth = 0L, max_nodes = 60000L),
+      karst_two_layer_cv = list(type = "karst_two_layer", local_shell_depth = 0L, max_nodes = 60000L),
       # Candidate. One division per day is assumed for every dataset; the
       # simulated populations divide about 0.9 times per day.
       # `initial_state = "free"` was the package default when these were
       # benchmarked; "balance" is the default now and has its own entry.
-      alfak2_sparse_joint = list(type = "alfak2_sparse_joint", birth_rate = 1, min_cn = 1L, max_cn = 8L,
+      karst_sparse_joint = list(type = "karst_sparse_joint", birth_rate = 1, min_cn = 1L, max_cn = 8L,
                                  arguments = list(initial_state = "free")),
       # Sensitivity to the assumed baseline birth rate: half and double.
-      alfak2_sparse_joint_slow = list(type = "alfak2_sparse_joint", birth_rate = 0.5, min_cn = 1L, max_cn = 8L,
+      karst_sparse_joint_slow = list(type = "karst_sparse_joint", birth_rate = 0.5, min_cn = 1L, max_cn = 8L,
                                       arguments = list(initial_state = "free")),
-      alfak2_sparse_joint_fast = list(type = "alfak2_sparse_joint", birth_rate = 2, min_cn = 1L, max_cn = 8L,
+      karst_sparse_joint_fast = list(type = "karst_sparse_joint", birth_rate = 2, min_cn = 1L, max_cn = 8L,
                                       arguments = list(initial_state = "free")),
       # Initial abundances of non-major karyotypes tied to mutation-selection
       # balance, which reads the levels at the first time point as well.
-      alfak2_sparse_joint_balance = list(type = "alfak2_sparse_joint", birth_rate = 1, min_cn = 1L, max_cn = 8L,
+      karst_sparse_joint_balance = list(type = "karst_sparse_joint", birth_rate = 1, min_cn = 1L, max_cn = 8L,
                                          arguments = list(initial_state = "balance")),
       # Baseline birth rate known only within a factor of 16. The simulated
       # rate, about 0.9, is near the centre, the top or the bottom of the range.
-      alfak2_sparse_joint_range = list(type = "alfak2_sparse_joint_rates", birth_rate_range = c(0.25, 4),
+      karst_sparse_joint_range = list(type = "karst_sparse_joint_rates", birth_rate_range = c(0.25, 4),
                                        min_cn = 1L, max_cn = 8L, arguments = list(initial_state = "free")),
-      alfak2_sparse_joint_range_low = list(type = "alfak2_sparse_joint_rates", birth_rate_range = c(0.0625, 1),
+      karst_sparse_joint_range_low = list(type = "karst_sparse_joint_rates", birth_rate_range = c(0.0625, 1),
                                            min_cn = 1L, max_cn = 8L, arguments = list(initial_state = "free")),
-      alfak2_sparse_joint_range_high = list(type = "alfak2_sparse_joint_rates", birth_rate_range = c(1, 16),
+      karst_sparse_joint_range_high = list(type = "karst_sparse_joint_rates", birth_rate_range = c(1, 16),
                                             min_cn = 1L, max_cn = 8L, arguments = list(initial_state = "free")),
       # Cohort fit of the eight patients of a landscape, scored on patient 1.
       # The trend is shared or per dataset, whichever has the higher marginal
       # likelihood.
-      alfak2_sparse_joint_cohort = cohort_method("landscape", trend = "select"),
+      karst_sparse_joint_cohort = cohort_method("landscape", trend = "select"),
       # Control: the same patient with patients of seven other landscapes,
       # which share the statistics of a landscape but not the landscape.
-      alfak2_sparse_joint_cohort_unrelated = cohort_method("other_landscapes", trend = "select"),
+      karst_sparse_joint_cohort_unrelated = cohort_method("other_landscapes", trend = "select"),
       # The same two with one trend for the whole cohort, always.
-      alfak2_sparse_joint_cohort_shared_trend = cohort_method("landscape", trend = "shared"),
-      alfak2_sparse_joint_cohort_unrelated_shared_trend = cohort_method("other_landscapes", trend = "shared"),
+      karst_sparse_joint_cohort_shared_trend = cohort_method("landscape", trend = "shared"),
+      karst_sparse_joint_cohort_unrelated_shared_trend = cohort_method("other_landscapes", trend = "shared"),
       # The cohort fit with initial abundances at mutation-selection balance.
-      alfak2_sparse_joint_cohort_balance = cohort_method("landscape", trend = "select", initial_state = "balance")
+      karst_sparse_joint_cohort_balance = cohort_method("landscape", trend = "select", initial_state = "balance")
     )
   )
 }

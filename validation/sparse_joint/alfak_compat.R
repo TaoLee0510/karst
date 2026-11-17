@@ -1,12 +1,12 @@
-# Do the files of alfak2::alfak_compat() have the structure of alfakR::alfak()'s?
+# Do the files of karst::alfak_compat() have the structure of alfakR::alfak()'s?
 #
-#   Rscript validation/sparse_joint/alfakR_compat.R DATASET_ID [OUT_DIR]
+#   Rscript validation/sparse_joint/alfak_compat.R DATASET_ID [OUT_DIR]
 #
 # Runs both on one benchmark dataset with the same arguments and compares
 # every saved object: classes, names, columns, dimensions and attributes,
 # then the karyotypes of the landscape and the frequent and neighbour sets.
-# Set STT_R_LIB to a library with the alfak2 build under test and
-# ALFAKR_LIB to one with alfakR (branch dev).
+# Set STT_R_LIB to a library with the karst build under test and
+# ALFAKR_LIB to one with alfak (branch dev).
 
 for (variable in c("STT_R_LIB", "ALFAKR_LIB")) {
   library_dir <- Sys.getenv(variable, unset = "")
@@ -15,21 +15,21 @@ for (variable in c("STT_R_LIB", "ALFAKR_LIB")) {
 args <- commandArgs(TRUE)
 if (!length(args)) stop("Give a dataset id, e.g. dev_L10_P01_unbalanced_3000_100_360d.", call. = FALSE)
 id <- args[[1L]]
-out_dir <- if (length(args) > 1L) args[[2L]] else file.path(tempdir(), "alfakR_compat")
+out_dir <- if (length(args) > 1L) args[[2L]] else file.path(tempdir(), "alfak_compat")
 dataset <- readRDS(file.path("benchmark/results/sparse_two_timepoint/datasets", paste0(id, ".rds")))
 counts <- dataset$counts
 colnames(counts) <- c("0", "1")
 yi <- list(x = counts, dt = dataset$interval)
-paths <- file.path(out_dir, id, c("alfak2", "alfakR"))
+paths <- file.path(out_dir, id, c("karst", "alfak"))
 unlink(paths, recursive = TRUE)
-cat(sprintf("%s: %d karyotypes, %s cells, %g days; alfakR %s\n", id, nrow(counts),
+cat(sprintf("%s: %d karyotypes, %s cells, %g days; alfak %s\n", id, nrow(counts),
             paste(colSums(counts), collapse = "/"), dataset$interval, packageVersion("alfakR")))
 
 set.seed(1)
 started <- proc.time()[["elapsed"]]
-r2r <- alfak2::alfak_compat(yi, paths[[1L]], minobs = 20, nboot = 45, n0 = 5e4, nb = 2e6, pm = dataset$beta,
+r2r <- karst::alfak_compat(yi, paths[[1L]], minobs = 20, nboot = 45, n0 = 5e4, nb = 2e6, pm = dataset$beta,
                             birth_rate = 1, min_cn = 1, max_cn = 8)
-cat(sprintf("alfak2::alfak_compat %.0f s, R2R %.3f\n", proc.time()[["elapsed"]] - started, r2r))
+cat(sprintf("karst::alfak_compat %.0f s, R2R %.3f\n", proc.time()[["elapsed"]] - started, r2r))
 set.seed(1)
 started <- proc.time()[["elapsed"]]
 r2r <- suppressWarnings(alfakR::alfak(yi, paths[[2L]], minobs = 20, nboot = 45, n0 = 5e4, nb = 2e6, pm = dataset$beta))
@@ -55,8 +55,8 @@ for (file in files) {
   b <- describe(readRDS(file.path(paths[[2L]], file)), file)
   cat(sprintf("\n%s: %s\n", file, if (identical(a, b)) "same structure" else "differs"))
   if (!identical(a, b)) {
-    cat("  alfak2 only:", setdiff(a, b), sep = "\n    ")
-    cat("  alfakR only:", setdiff(b, a), sep = "\n    ")
+    cat("  karst only:", setdiff(a, b), sep = "\n    ")
+    cat("  alfak only:", setdiff(b, a), sep = "\n    ")
   }
 }
 landscape <- lapply(paths, function(p) readRDS(file.path(p, "landscape.Rds")))

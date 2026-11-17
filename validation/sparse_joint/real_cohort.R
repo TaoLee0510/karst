@@ -16,11 +16,11 @@
 #   4. two halves of the cells of a dataset give the same answer, within the
 #      reported uncertainty;
 #   5. the cohort fit, and how far it moves each dataset.
-# Set STT_R_LIB to the library holding the alfak2 build under test.
+# Set STT_R_LIB to the library holding the karst build under test.
 
 library_dir <- Sys.getenv("STT_R_LIB", unset = "")
 if (nzchar(library_dir)) .libPaths(c(library_dir, .libPaths()))
-suppressPackageStartupMessages(library(alfak2))
+suppressPackageStartupMessages(library(karst))
 args <- commandArgs(TRUE)
 option <- function(name, default = NULL) {
   hit <- grep(paste0("^--", name, "(=|$)"), args, value = TRUE)
@@ -48,7 +48,7 @@ samples <- lapply(files, function(file) {
 names(samples) <- sub("[.][Rr]ds$", "", basename(files))
 cat("Datasets:", length(samples), " birth rates:", signif(rate_range[1L], 3), "to", signif(rate_range[2L], 3),
     "per day, centre", signif(central_rate, 3), "\n")
-copy_numbers <- unlist(lapply(samples, function(s) range(alfak2:::parse_karyotypes(rownames(s$counts)))))
+copy_numbers <- unlist(lapply(samples, function(s) range(karst:::parse_karyotypes(rownames(s$counts)))))
 min_cn <- min(1L, min(copy_numbers))
 max_cn <- max(copy_numbers) + 1L
 

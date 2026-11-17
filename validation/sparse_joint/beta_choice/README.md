@@ -3,19 +3,19 @@
 The user approved this plan on 2026-11-15.
 
 The paper benchmark gives every dataset one missegregation rate, β = 5e-5.
-alfak2 infers a neighbour's fitness partly from how many cells
+KARST infers a neighbour's fitness partly from how many cells
 missegregation should have put there, so the rate matters for karyotypes
 that are rare or unseen. The Fig. 4d check (`../fig4d_check`) found that
 the paper's Salehi PDX trajectories prefer a rate 4–16 times higher than
 the in vitro ones. Step 2 below shows that part of this can be a bias at
 short intervals.
 
-The plan is to let alfak2 pick β per dataset by marginal likelihood, the
+The plan is to let KARST pick β per dataset by marginal likelihood, the
 same way it picks the history:
 - step 0: test whether that picks the right rate where it is known;
 - step 1: implement it;
 - step 2: check that the simulated sets do not regress;
-- step 3: run a new paper benchmark round. Only alfak2 is refitted; alfakR
+- step 3: run a new paper benchmark round. Only KARST is refitted; alfak
   keeps the paper's `pm`.
 
 An earlier check (`../README.md`, rate sensitivity, before history
@@ -138,7 +138,7 @@ is why the bias did not show there.
 ## Decision
 
 The gate failed, so step 3 (the paper benchmark round) was not run. Only
-the alfak2 build for it had been made. The option was removed, and the rate
+the KARST build for it had been made. The option was removed, and the rate
 stays fixed.
 
 This also qualifies the Fig. 4d check. There the PDX trajectories preferred
@@ -390,7 +390,7 @@ Information on β has to come from outside the counts:
   - 21954264, 4200 tasks;
   - 21958549, the 450 reruns;
   - 21966818 (2 test tasks) and 21966820 (the other 1726), the e4 fits,
-    under `alfak2/validation/sparse_joint/series_methods/results/cv10/e4` in
+    under `karst/validation/sparse_joint/series_methods/results/cv10/e4` in
     the HPC project folder.
 - **Results (git-ignored):** `results/sim_report.md`,
   `results/sim_choice.rds`, `results/series_report.md`,

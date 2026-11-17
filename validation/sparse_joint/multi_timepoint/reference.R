@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Reference fits of an alfak2 build, and their comparison between builds
+# Reference fits of an karst build, and their comparison between builds
 # (stage 0 and the regression check of stage 1 of the multi-timepoint work;
 # README.md in this directory).
 #
@@ -12,7 +12,7 @@
 # item of that list (one task of a job array, see hpc/), `count` prints its
 # length.
 #
-# A build is the library results/lib/alfak2_<build>. Fits go to
+# A build is the library results/lib/karst_<build>. Fits go to
 # results/reference/<build>/ for simulated data and to
 # ~/Documents/alfak2_private/multi_timepoint/reference/<build>/ for the GBM
 # inputs, which are patient data and stay outside the repository. The GBM
@@ -22,12 +22,12 @@
 #   dev      fit_sparse_joint() at its defaults (birth rate 1, copy numbers
 #            1-8) on patient 1 of the 12 development landscapes in the
 #            benchmark's 8 core and 2 short-interval scenarios;
-#   entry    fit_alfak2() on two of them;
+#   entry    fit_karst() on two of them;
 #   free     initial_state = "free" on twelve of them;
 #   rates    fit_sparse_joint_rates() over 0.25-4 on two of them;
 #   cohort   fit_sparse_joint_cohort() of the 8 patients of two landscapes
 #            (typical scenario), free and balance;
-#   compat   as_alfakR() and alfak_compat() on four of them;
+#   compat   as_alfak() and alfak_compat() on four of them;
 #   gbm      fit_sparse_joint() on the 20 GBM inputs at birth rate
 #            sqrt(0.02 * 1) per day, the centre of the range real_cohort.R used.
 # Each item keeps the fit's numbers and its predictions at fixed karyotypes,
@@ -46,7 +46,7 @@ mt_benchmark <- file.path(mt_repo, "benchmark", "results", "sparse_two_timepoint
 mt_gbm_inputs <- "/Users/4482173/Documents/GitHub/PANcanKFLs/Results/data/processed/ALFA_K/GBM/ALFA-K_inputs"
 mt_private <- file.path(path.expand("~"), "Documents", "alfak2_private", "multi_timepoint", "reference")
 
-mt_library <- function(build) file.path(mt_results, "lib", paste0("alfak2_", build))
+mt_library <- function(build) file.path(mt_results, "lib", paste0("karst_", build))
 
 mt_reference_dir <- function(build, part) {
   if (part == "gbm") file.path(mt_private, build, "gbm") else file.path(mt_results, "reference", build, part)
@@ -117,7 +117,7 @@ mt_tasks <- function() {
 
 mt_run_task <- function(task) {
   fit_dev <- function(dataset, ...) {
-    alfak2::fit_sparse_joint(mt_counts(dataset), dt = dataset$interval, beta = dataset$beta, birth_rate = 1,
+    karst::fit_sparse_joint(mt_counts(dataset), dt = dataset$interval, beta = dataset$beta, birth_rate = 1,
                              min_cn = 1L, max_cn = 8L, ...)
   }
   switch(task$part,
@@ -128,13 +128,13 @@ mt_run_task <- function(task) {
     },
     entry = {
       dataset <- mt_dataset(task$id)
-      fit <- alfak2::fit_alfak2(mt_counts(dataset), dt = dataset$interval, beta = dataset$beta,
+      fit <- karst::fit_karst(mt_counts(dataset), dt = dataset$interval, beta = dataset$beta,
                                 sparse_joint_control = list(birth_rate = 1, min_cn = 1L, max_cn = 8L))
       mt_fit_record(fit, mt_nodes(task$id)$karyotype)
     },
     rates = {
       dataset <- mt_dataset(task$id)
-      fit <- alfak2::fit_sparse_joint_rates(mt_counts(dataset), dt = dataset$interval, beta = dataset$beta,
+      fit <- karst::fit_sparse_joint_rates(mt_counts(dataset), dt = dataset$interval, beta = dataset$beta,
                                             min_cn = 1L, max_cn = 8L, birth_rate_range = c(0.25, 4))
       prediction <- stats::predict(fit, mt_nodes(task$id)$karyotype)
       list(rates = fit$rates, prediction = prediction, rank_agreement = attr(prediction, "rank_agreement"),
@@ -144,7 +144,7 @@ mt_run_task <- function(task) {
       ids <- sprintf("%s_P%02d_typical_500_700_360d", task$landscape, 1:8)
       members <- lapply(ids, mt_dataset)
       samples <- stats::setNames(lapply(members, mt_counts), ids)
-      fit <- alfak2::fit_sparse_joint_cohort(samples, dt = vapply(members, `[[`, numeric(1), "interval"),
+      fit <- karst::fit_sparse_joint_cohort(samples, dt = vapply(members, `[[`, numeric(1), "interval"),
                                              beta = members[[1L]]$beta, birth_rate = 1, min_cn = 1L, max_cn = 8L,
                                              initial_state = task$initial_state)
       mt_cohort_record(fit, mt_nodes(ids[[1L]])$karyotype)
@@ -153,17 +153,17 @@ mt_run_task <- function(task) {
       dataset <- mt_dataset(task$id)
       fit <- fit_dev(dataset)
       set.seed(1)
-      compat <- alfak2::as_alfakR(fit, minobs = 10, nboot = 20, n0 = 5e4, nb = 2e6, correct_efflux = TRUE)
+      compat <- karst::as_alfak(fit, minobs = 10, nboot = 20, n0 = 5e4, nb = 2e6, correct_efflux = TRUE)
       yi <- list(x = mt_counts(dataset), dt = 1)
       colnames(yi$x) <- c("0", as.character(dataset$interval))
       outdir <- tempfile("alfak_compat_")
       set.seed(1)
-      r2r <- alfak2::alfak_compat(yi, outdir, minobs = 10, nboot = 20, n0 = 5e4, nb = 2e6, pm = dataset$beta,
+      r2r <- karst::alfak_compat(yi, outdir, minobs = 10, nboot = 20, n0 = 5e4, nb = 2e6, pm = dataset$beta,
                                   correct_efflux = TRUE, birth_rate = 1, min_cn = 1L, max_cn = 8L)
       files <- c("bootstrap_res.Rds", "landscape.Rds", "landscape_posterior_samples.Rds", "xval.Rds")
       written <- stats::setNames(lapply(files, function(f) readRDS(file.path(outdir, f))), files)
       unlink(outdir, recursive = TRUE)
-      list(as_alfakR = compat[c("bootstrap_res", "landscape", "landscape_posterior_samples", "xval")],
+      list(as_alfak = compat[c("bootstrap_res", "landscape", "landscape_posterior_samples", "xval")],
            alfak_compat = list(r2r = r2r, files = written))
     },
     gbm = {
@@ -172,10 +172,10 @@ mt_run_task <- function(task) {
       storage.mode(counts) <- "integer"
       counts <- counts[rowSums(counts) > 0, , drop = FALSE]
       interval <- diff(as.numeric(colnames(counts))) * (if (is.null(input$dt)) 1 else input$dt)
-      cn <- alfak2:::parse_karyotypes(rownames(counts))
+      cn <- karst:::parse_karyotypes(rownames(counts))
       min_cn <- min(1L, min(cn))
       max_cn <- max(cn) + 1L
-      fit <- alfak2::fit_sparse_joint(counts, dt = interval, beta = 5e-5, birth_rate = sqrt(0.02), min_cn = min_cn,
+      fit <- karst::fit_sparse_joint(counts, dt = interval, beta = 5e-5, birth_rate = sqrt(0.02), min_cn = min_cn,
                                       max_cn = max_cn)
       nodes <- stt_scoring_nodes(counts, min_cn, max_cn, d1_cap = 500L, d2_cap = 500L, seed = 1L)
       mt_fit_record(fit, nodes$karyotype)
@@ -193,10 +193,10 @@ mt_selected_tasks <- function(parts = NULL) {
 
 mt_stage_fit <- function(build, workers, parts = NULL, task = NULL) {
   library_dir <- mt_library(build)
-  if (!dir.exists(file.path(library_dir, "alfak2"))) stop("No alfak2 build in ", library_dir, call. = FALSE)
+  if (!dir.exists(file.path(library_dir, "karst"))) stop("No karst build in ", library_dir, call. = FALSE)
   .libPaths(c(library_dir, .libPaths()))
-  loadNamespace("alfak2")
-  cat("alfak2 from", dirname(find.package("alfak2")), "\n")
+  loadNamespace("karst")
+  cat("karst from", dirname(find.package("karst")), "\n")
   tasks <- mt_selected_tasks(parts)
   if (!is.null(task)) {
     task <- as.integer(task)

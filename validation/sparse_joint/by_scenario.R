@@ -3,7 +3,7 @@ for (f in c("config.R")) source(file.path("benchmark/sparse_two_timepoint", f))
 args <- commandArgs(TRUE); candidate <- args[1]; config <- stt_config()
 rows <- readRDS(file.path(config$output_dir, "report", paste0("compare_", candidate, ".rds")))
 main <- rows[rows$stratum %in% c("d0", "d1", "d2"), ]
-cand <- main[main$method == candidate, ]; zero <- main[main$method == "zero", ]; two <- main[main$method == "alfak2_two_layer_fixed", ]
+cand <- main[main$method == candidate, ]; zero <- main[main$method == "zero", ]; two <- main[main$method == "karst_two_layer_fixed", ]
 key <- function(x) paste(x$dataset_id, x$stratum)
 cand$ratio_zero <- cand$rmse / zero$rmse[match(key(cand), key(zero))]
 cand$ratio_two <- cand$rmse / two$rmse[match(key(cand), key(two))]
