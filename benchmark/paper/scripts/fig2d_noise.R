@@ -128,6 +128,12 @@ if (stage == "analyse") {
     rows$key <- paste(design, rows$fi, rows$min_obs, rows$dj)
     arms <- intersect(designs[[design]], unique(rows$method))
     ok_keys <- Reduce(intersect, lapply(arms, function(m) rows$key[rows$method == m & is.finite(rows$pred0)]))
+    # One row per trajectory, minobs and daughter passage: a daughter is the
+    # evaluation passage of every trajectory ending at its parent and of each
+    # minobs, so the same daughter gives many rows (README, "Fig. 2d and
+    # sampling noise"). The rows are not independent; the lineage-type
+    # bootstrap below resamples whole types and widens the interval
+    # accordingly, but the row counts overstate the information.
     ref <- rows[rows$method == "alfak" & rows$key %in% ok_keys, ]
     w <- data.frame(key = ref$key, fi = ref$fi, type = ref$type, base = ref$base, stringsAsFactors = FALSE)
     w$passages <- as.integer(sub("^.*_l_([0-9]+)_.*$", "\\1", w$fi))

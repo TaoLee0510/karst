@@ -1,3 +1,7 @@
+# Obsolete (2026-11-18): the "auto" arm failed its criterion in round
+# 05a8855 and karst_auto is no method of the current code (R/fit.R,
+# R/labels.R); kept for the record of the alfak2 era, with compose_auto.R.
+#
 # The multi-timepoint session's criterion for karst's "auto" arm, registered
 # before any E4 result, checked on BENCH_RESULTS/analysis/summary/
 # summary_accuracy.tsv (scripts/summary_comparison.R: every method on the same

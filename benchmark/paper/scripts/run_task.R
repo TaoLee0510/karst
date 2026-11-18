@@ -6,7 +6,13 @@
 # minobs_<m>/: alfak's files, run.Rds (fit status and time), abm_preds/
 # (forecast replicates), forecast.Rds (forecast time) and, for the ABM data,
 # score.Rds (the list of S04's abm_preds_summary.Rds). Steps already done are
-# skipped, so a task can be run again after a failure.
+# skipped, so a task can be run again after a failure: a karst task refits
+# only the minobs without run.Rds (the others keep their files), a forecast
+# that did not finish is resumed, and a fit whose forecast is (re)run is
+# scored again. These files are written whole or not at all
+# (save_rds_atomic(), R/fit.R). A score that cannot be computed ends the
+# task with exit status 1 (after the peak memory is recorded), so that
+# Slurm shows it as FAILED.
 #
 # A task table with a `beta_label` column (scripts/make_beta_tasks.R) holds
 # candidate missegregation rates of karst (pm = the candidate): the fit and
@@ -68,7 +74,9 @@ if (length(todo)) {
     extra <- if (task$source == "salehi") bench_settings$salehi$karst_args else list()
     if (task$method %in% names(karst_series_methods)) extra$series <- karst_series_methods[[task$method]]
     if (task$method %in% names(karst_variant_methods)) extra <- c(extra, karst_variant_methods[[task$method]])
-    do.call(fit_karst, c(list(yi, outdir, minobs, task$n0, task$nb, task$pm), extra))
+    # the minobs not done only: the finished ones keep their outputs (new
+    # bootstrap draws would no longer match their forecasts and scores)
+    do.call(fit_karst, c(list(yi, outdir, todo, task$n0, task$nb, task$pm), extra))
   }
 }
 for (m in minobs) {
@@ -77,17 +85,22 @@ for (m in minobs) {
 }
 
 ## Forecast and score -------------------------------------------------------
-# A forecast that cannot run is recorded in forecast.Rds (status "failed")
-# and leaves no replicates, as in the paper; the task goes on.
+# A forecast that cannot run is recorded in forecast.Rds (status "failed"),
+# as the paper leaves no forecast there, and the task goes on. Replicates
+# written before a failure stay for a rerun but are never scored (only
+# forecasts with status "ok" are: forecast_complete(), R/forecast.R). A
+# score.Rds from an earlier attempt is removed, so that the fit is scored on
+# the new forecast.
 forecast <- function(dir, run, extra = list()) {
+  unlink(file.path(dir, "score.Rds"))
   start <- proc.time()[["elapsed"]]
   msg <- tryCatch({
     run()
     NA_character_
   }, error = function(e) conditionMessage(e))
   seconds <- proc.time()[["elapsed"]] - start
-  saveRDS(c(list(status = if (is.na(msg)) "ok" else "failed", seconds = seconds, message = msg), extra),
-          file.path(dir, "forecast.Rds"))
+  save_rds_atomic(c(list(status = if (is.na(msg)) "ok" else "failed", seconds = seconds, message = msg), extra),
+                  file.path(dir, "forecast.Rds"))
   cat(sprintf("Forecast %s: %s (%.0f s) %s\n", basename(dir), if (is.na(msg)) "ok" else "failed", seconds,
               ifelse(is.na(msg), "", msg)))
 }
@@ -96,10 +109,7 @@ if (task$source == "salehi") {
   meta <- utils::read.csv(paths$salehi_meta)
   sim_time <- salehi_forecast_time(task$dataset, lineages, meta)
 }
-forecast_ok <- function(dir) {
-  path <- file.path(dir, "forecast.Rds")
-  file.exists(path) && identical(readRDS(path)$status, "ok")
-}
+scoring_failed <- 0L
 for (m in minobs[vapply(minobs, fit_ok, logical(1))]) {
   dir <- minobs_dir(m)
   if (candidate) {
@@ -112,12 +122,12 @@ for (m in minobs[vapply(minobs, fit_ok, logical(1))]) {
           cat("Scoring failed for", dir, ":", conditionMessage(e), "\n")
           NULL
         })
-        if (!is.null(score)) saveRDS(score, file.path(dir, name))
+        if (is.null(score)) scoring_failed <- scoring_failed + 1L else save_rds_atomic(score, file.path(dir, name))
       }
     }
     next
   }
-  if (!forecast_ok(dir)) {
+  if (!forecast_complete(dir)) {
     if (task$source == "abm") {
       forecast(dir, function() forecast_abm_dir(dir, sim$abm_output$x, task$pm))
     } else if (task$source == "salehi" && !is.null(sim_time)) {
@@ -127,13 +137,13 @@ for (m in minobs[vapply(minobs, fit_ok, logical(1))]) {
   # ABM scores; without forecasts (failed) only the landscape is scored.
   if (task$source %in% c("abm", "misseg") && !file.exists(file.path(dir, "score.Rds"))) {
     info <- cbind(abm_sim_info(task$dataset), design = task$design, method = task$method, minobs = m)
-    with_forecast <- task$source == "abm" && forecast_ok(dir)
+    with_forecast <- task$source == "abm" && forecast_complete(dir)
     score <- tryCatch(abm_fit_summary(dir, sim, info, with_forecast = with_forecast),
                       error = function(e) {
                         cat("Scoring failed for", dir, ":", conditionMessage(e), "\n")
                         NULL
                       })
-    if (!is.null(score)) saveRDS(score, file.path(dir, "score.Rds"))
+    if (is.null(score)) scoring_failed <- scoring_failed + 1L else save_rds_atomic(score, file.path(dir, "score.Rds"))
   }
 }
 
@@ -148,7 +158,11 @@ for (m in minobs) {
   path <- file.path(minobs_dir(m), "task_peak.Rds")
   if (!dir.exists(minobs_dir(m)) || is.na(peak)) next
   old <- if (file.exists(path)) readRDS(path)$peak_mb else NA_real_
-  if (is.na(old) || peak > old) saveRDS(list(peak_mb = peak, recorded = Sys.time()), path)
+  if (is.na(old) || peak > old) save_rds_atomic(list(peak_mb = peak, recorded = Sys.time()), path)
 }
 cat(sprintf("Peak memory of the task: %.0f MB\n", peak))
+if (scoring_failed > 0L) {
+  cat("Scoring failed for", scoring_failed, "fit folder(s); rerun the task after fixing the cause.\n")
+  quit(save = "no", status = 1L)
+}
 cat("Done.\n")

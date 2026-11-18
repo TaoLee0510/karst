@@ -21,6 +21,12 @@
 #                         (R/coverage.R; needs karst on the library path)
 #   salehi_runs.Rds       status, message and error class of every fit
 # Uses SLURM_CPUS_PER_TASK cores for the regressions.
+# First every fit of the round's task tables is checked (R/tasks.R): run.Rds,
+# and for a fit that ran forecast.Rds where the trajectory has a daughter
+# passage; then every fit folder with run.Rds must have its rows in the
+# scores (scripts/score_salehi.R run after the last fit). Anything missing
+# stops the step (tables/missing_salehi.tsv) unless ALLOW_MISSING=1, which
+# records a fit without run.Rds as status "missing".
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 paths <- bench_paths()
@@ -38,6 +44,13 @@ read_input <- local({
   }
 })
 
+## The round's tasks ------------------------------------------------------------
+allow_missing <- Sys.getenv("ALLOW_MISSING", "0") == "1"
+not_run <- check_round_outputs(round_expected_fits("salehi", paths), "salehi", function(row, run) {
+  if (!identical(run$status, "ok") || is.null(salehi_forecast_time(row$dataset, lineages, meta))) return(character())
+  if (file.exists(file.path(row$dir, "forecast.Rds"))) character() else "forecast.Rds"
+}, paths)
+
 ## Inputs and fit status --------------------------------------------------------
 inputs <- salehi_input_coverage(paths)
 saveRDS(inputs, file.path(out, "salehi_inputs.Rds"))
@@ -45,8 +58,12 @@ cat("trajectories:", sum(inputs$design == "ends"), " not analysable (ends):",
     sum(inputs$analysable[inputs$design == "ends"] %in% FALSE), " (all):",
     sum(inputs$analysable[inputs$design == "all"] %in% FALSE), " not judged (all):",
     sum(is.na(inputs$analysable[inputs$design == "all"])), "\n")
-runs <- do.call(rbind, lapply(Sys.glob(file.path(paths$results, "fits", "salehi", "*", "*", "*", "minobs_*")),
-                              function(d) {
+# A fit folder without run.Rds: the task was killed (memory, time); a task
+# killed before karst's fit ended leaves no folder (listed from the task
+# tables, ALLOW_MISSING=1).
+expected_dirs <- if (is.null(not_run)) character() else not_run$dir[!dir.exists(not_run$dir)]
+runs <- do.call(rbind, lapply(c(Sys.glob(file.path(paths$results, "fits", "salehi", "*", "*", "*", "minobs_*")),
+                                expected_dirs), function(d) {
   p <- rev(strsplit(d, "/", fixed = TRUE)[[1]])
   run <- file.path(d, "run.Rds")
   r <- if (file.exists(run)) readRDS(run) else list(status = "missing", message = NA_character_)
@@ -77,6 +94,15 @@ paper <- do.call(rbind, lapply(list.files(file.path(paths$data, "processed", "sa
 cols <- setdiff(names(scores), c("design", "method"))
 # Columns beyond 03 (denoised baseline, entropies) are not in the paper's rows.
 for (n in setdiff(cols, names(paper))) paper[[n]] <- NA_real_
+# Every fit that ran must have been scored (score_salehi.R reads the fit
+# folders present when it runs).
+run_keys <- with(runs[runs$status != "missing", ], paste(fi, design, method, min_obs))
+unscored <- setdiff(run_keys, unique(paste(scores$fi, scores$design, scores$method, scores$min_obs)))
+if (length(unscored)) {
+  cat(length(unscored), "fits with run.Rds have no scores, e.g.:\n")
+  print(utils::head(unscored, 20))
+  if (!allow_missing) stop("Fits without scores: rerun scripts/score_salehi.R for their trajectories (or ALLOW_MISSING=1).")
+}
 scores <- rbind(scores, cbind(design = "all", method = "alfak_paper", paper[cols], stringsAsFactors = FALSE))
 saveRDS(scores, file.path(out, "salehi_scores.Rds"))
 cat("score rows:", nrow(scores), "\n")

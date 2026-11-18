@@ -83,6 +83,8 @@ forecast_scores <- function(lscape, preds, sim_x, last_time = 120) {
 }
 
 # Everything S04 saves for one fit directory. `info` identifies the fit.
+# `with_forecast`: the forecasts are complete (run_task.R passes
+# forecast_complete(), R/forecast.R).
 abm_fit_summary <- function(fit_dir, sim, info, last_time = 120, with_forecast = TRUE) {
   lscape <- readRDS(file.path(fit_dir, "landscape.Rds"))
   xval <- readRDS(file.path(fit_dir, "xval.Rds"))

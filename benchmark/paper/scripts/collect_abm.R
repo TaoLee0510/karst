@@ -21,6 +21,10 @@
 #                                analysable (R/coverage.R)
 # The paper's own tables are added as method "alfak_paper" (ntp 2, 4, 8 as
 # designs w2_ends, w4_all, w8_all).
+# First every fit of the round's task tables is checked (R/tasks.R): run.Rds,
+# and for a fit that ran score.Rds and, ABM, forecast.Rds. Anything missing
+# stops the step (tables/missing_abm.tsv) unless ALLOW_MISSING=1, which
+# records a fit without run.Rds as status "missing".
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 paths <- bench_paths()
@@ -34,10 +38,20 @@ dir_info <- function(d) {
              stringsAsFactors = FALSE)
 }
 
+## The round's tasks ------------------------------------------------------------
+not_run <- check_round_outputs(round_expected_fits(c("abm", "misseg"), paths), "abm", function(row, run) {
+  if (!identical(run$status, "ok")) return(character())
+  c(if (!file.exists(file.path(row$dir, "score.Rds"))) "score.Rds",
+    if (row$source == "abm" && !file.exists(file.path(row$dir, "forecast.Rds"))) "forecast.Rds")
+}, paths)
+
 ## Status and time ------------------------------------------------------------
-runs <- do.call(rbind, lapply(c(fit_dirs("abm"), fit_dirs("misseg")), function(d) {
+# A fit folder without run.Rds: the task was killed (memory, time); a task
+# killed before karst's fit ended leaves no folder (listed from the task
+# tables, ALLOW_MISSING=1).
+expected_dirs <- if (is.null(not_run)) character() else not_run$dir[!dir.exists(not_run$dir)]
+runs <- do.call(rbind, lapply(c(fit_dirs("abm"), fit_dirs("misseg"), expected_dirs), function(d) {
   run <- file.path(d, "run.Rds")
-  # A task that was killed (memory, time) leaves no run.Rds.
   r <- if (file.exists(run)) readRDS(run) else list(status = "missing", seconds = NA_real_, message = NA_character_)
   fc <- file.path(d, "forecast.Rds")
   cbind(dir_info(d), status = r$status, fit_seconds = r$seconds,

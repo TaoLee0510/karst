@@ -9,6 +9,12 @@
 #   4f  lmer of the similarity (atanh of the correlation) of two frequent
 #       karyotypes' delta f profiles ~ log1p(distance) * pair type +
 #       treatment pair + (1|fi1) + (1|fi2)
+# The variance of delta f per frequent karyotype is taken without na.rm, as
+# 06 does (line 336): a frequent karyotype with a neighbour missing from the
+# landscape (delta f NA) gets no variance and drops out of the variance
+# models. Each draw records how many drop out (kvar_frequent, kvar_na) and
+# the two variance models with na.rm = TRUE (PDX_kv_narm, cisplatin_kv_narm),
+# as a sensitivity check beside the paper's.
 # Fits as the paper selects them: xv > 0, per trajectory the minobs with the
 # highest xv (of a tie the lowest minobs), lineages of at least 3 passages.
 #
@@ -165,7 +171,8 @@ one_boot <- function(b) {
   df <- deltaf_table()
   if (is.null(df)) {
     return(list(df1 = data.frame(rep = b, PDX_v = NA_real_, cisplatin_v = NA_real_, PDX_kv = NA_real_,
-                                 cisplatin_kv = NA_real_, fits = 0L, frequent = 0L, pairs = 0L), df2 = NULL))
+                                 cisplatin_kv = NA_real_, fits = 0L, frequent = 0L, pairs = 0L, kvar_frequent = 0L,
+                                 kvar_na = 0L, PDX_kv_narm = NA_real_, cisplatin_kv_narm = NA_real_), df2 = NULL))
   }
   df$absdf <- abs(df$deltaf) + 1e-6
   df$absdf <- df$absdf / stats::sd(df$absdf, na.rm = TRUE)
@@ -173,12 +180,20 @@ one_boot <- function(b) {
   fit_var_context <- try_fit(glmmTMB(absdf ~ context + (1 | pdx / fi / k_id), family = Gamma("log"), data = df))
   fit_var_treat <- try_fit(glmmTMB(absdf ~ treat + (1 | pdx / fi / k_id), family = Gamma("log"),
                                    data = subset(df, context == "PDX")))
+  # 06 line 336 as it is (no na.rm; see the header)
   kvar <- df %>% group_by(pdx, fi, k_id, context, treat) %>%
     summarise(v = stats::var(deltaf), .groups = "drop") %>%
     mutate(logv = scale(log(v + 1e-6)))
   fit_kvar_context <- try_fit(glmmTMB(logv ~ context + (1 | pdx / fi), family = gaussian(), data = kvar))
   fit_kvar_treat <- try_fit(glmmTMB(logv ~ treat + (1 | pdx / fi), family = gaussian(),
                                     data = subset(kvar, context == "PDX")))
+  # sensitivity: the variance over the neighbours present
+  kvar_narm <- df %>% group_by(pdx, fi, k_id, context, treat) %>%
+    summarise(v = stats::var(deltaf, na.rm = TRUE), .groups = "drop") %>%
+    mutate(logv = scale(log(v + 1e-6)))
+  fit_kvar_context_narm <- try_fit(glmmTMB(logv ~ context + (1 | pdx / fi), family = gaussian(), data = kvar_narm))
+  fit_kvar_treat_narm <- try_fit(glmmTMB(logv ~ treat + (1 | pdx / fi), family = gaussian(),
+                                         data = subset(kvar_narm, context == "PDX")))
   pair <- compute_pairwise(df)
   pair$treat_pair[pair$treat_pair %in% c(1, 2)] <- "same"
   pair$z <- atanh(pair$sim)
@@ -193,7 +208,9 @@ one_boot <- function(b) {
                     PDX_kv = coef_or_na(fit_kvar_context, "contextPDX"),
                     cisplatin_kv = coef_or_na(fit_kvar_treat, "treatcisplatin"),
                     fits = length(unique(df$fi)), frequent = length(unique(paste(df$fi, df$k_id))),
-                    pairs = nrow(pair))
+                    pairs = nrow(pair), kvar_frequent = nrow(kvar), kvar_na = sum(is.na(kvar$v)),
+                    PDX_kv_narm = coef_or_na(fit_kvar_context_narm, "contextPDX"),
+                    cisplatin_kv_narm = coef_or_na(fit_kvar_treat_narm, "treatcisplatin"))
   list(df1 = df1, df2 = df2)
 }
 

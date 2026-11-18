@@ -1,3 +1,7 @@
+# Obsolete (2026-11-18): the "auto" arm failed its criterion in round
+# 05a8855 and karst_auto is no method of the current code (R/fit.R,
+# R/labels.R); kept for the record of the alfak2 era, with compose_auto.R.
+#
 # karst's "auto" arm: per input with more than two time points, which of the
 # round's "all" fits (anchored, pairwise, state space) a rule picks. Nothing
 # is refitted; scripts/compose_auto.R links the picked fit as method

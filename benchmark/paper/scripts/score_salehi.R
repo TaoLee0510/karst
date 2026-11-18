@@ -6,9 +6,9 @@
 # trajectory). For every fit directory of the trajectory (each method,
 # design and minobs) the rows of 03 are computed and saved together, with
 # the method and design added, to BENCH_RESULTS/scores/salehi/<traj>.Rds.
-# SCORE_METHODS (comma-separated, e.g. karst_auto) scores the folders of those
-# methods only and merges them into the trajectory's existing file, replacing
-# that method's rows (e.g. karst's "auto" arm, linked in after the rest was
+# SCORE_METHODS (comma-separated, e.g. karst_beta_auto) scores the folders of
+# those methods only and merges them into the trajectory's existing file,
+# replacing that method's rows (e.g. an arm linked in after the rest was
 # scored).
 
 for (f in list.files("R", full.names = TRUE)) source(f)

@@ -75,12 +75,23 @@ angle <- function(a, b) {
   if (!is.finite(m) || m == 0) return(NaN)
   180 * acos(max(-1, min(1, sum(a * b) / m))) / pi
 }
+# The mean forecast of a fit's replicates; NULL unless the forecast is
+# complete (forecast.Rds "ok", R/forecast.R).
 mean_preds <- function(dir) {
   paths <- sort(list.files(file.path(dir, "abm_preds"), full.names = TRUE))
-  if (!length(paths)) return(NULL)
+  if (!length(paths) || !forecast_complete(dir)) return(NULL)
   preds <- lapply(paths, readRDS)
   mat <- Reduce(`+`, lapply(preds, function(x) as.matrix(x[, -1]))) / length(preds)
   list(time = preds[[1]]$time, mat = mat)
+}
+# Items `index` of a list cut into chunks of `size`; an error past the last
+# chunk.
+chunk_of <- function(x, index, size) {
+  from <- (index - 1L) * size + 1L
+  if (is.na(index) || index < 1L || from > length(x)) {
+    stop("--index=", index, " is past the last chunk (", ceiling(length(x) / size), " chunks of ", size, ")")
+  }
+  x[from:min(length(x), index * size)]
 }
 fit_ok <- function(dir) {
   run <- file.path(dir, "run.Rds")
@@ -160,7 +171,7 @@ if (stage == "salehi") {
   treat_lut <- stats::setNames(meta$on_treatment, paste0("u", meta$uid))
   inputs <- list.files(paths$salehi_inputs)
   all_traj <- sort(salehi_trajectories(paths)$traj_id)
-  chunk <- all_traj[seq((index - 1L) * 10L + 1L, min(length(all_traj), index * 10L))]
+  chunk <- chunk_of(all_traj, index, 10L)
   rows <- list()
   for (id in chunk) {
     li <- lineages[[id]]
@@ -222,7 +233,7 @@ if (stage == "salehi") {
 
 if (stage == "abm") {
   sims <- sort(sub("\\.Rds$", "", list.files(paths$abm_raw, pattern = "\\.Rds$")))
-  chunk <- sims[seq((index - 1L) * 4L + 1L, min(length(sims), index * 4L))]
+  chunk <- chunk_of(sims, index, 4L)
   rows <- list()
   for (sim_id in chunk) {
     info <- abm_sim_info(sim_id)

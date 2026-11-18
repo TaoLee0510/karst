@@ -18,7 +18,10 @@
 # The paper's rule selects, for each fit, the minobs and the trajectory length
 # with the best CV score, so each fit is tested on different trajectories.
 # The paired comparison takes every trajectory and minobs on which both
-# fits have a forecast, without selection (pairs: `comparisons`).
+# fits have a forecast, without selection (pairs: `comparisons`). A fit
+# failed when its run did (run.Rds, R/metrics_salehi.R salehi_fit_ok()), the
+# definition of summary_comparison.R too; a fit that ran but has no CV score
+# is left out only where the paper selects by CV score.
 # Inputs that karst cannot fit, decided from the data before any fit for
 # each design on the passages it fits (tables/salehi_inputs.Rds,
 # R/coverage.R), are left out of every method's analysis on that design;
@@ -43,7 +46,7 @@ comparisons <- list(c("KARST 2 time points", "alfak dev2@f93b2d2 2 time points")
                     c("KARST all time points", "alfak dev2@f93b2d2 all time points"), c("KARST all time points", "KARST 2 time points"))
 # karst's other multi-time-point methods (c7f809c on; no rows in rounds without
 # them): against alfak and against the default, "anchored".
-for (f in c("KARST pairwise all time points", "KARST state space all time points", "KARST auto all time points")) {
+for (f in c("KARST pairwise all time points", "KARST state space all time points")) {
   comparisons <- c(comparisons, list(c(f, "alfak dev2@f93b2d2 all time points"), c(f, "KARST all time points")))
 }
 # karst with its missegregation rate picked per input (ac36fd1 round; no rows
@@ -74,7 +77,18 @@ by_fit <- function(d, fun) {
 }
 
 meta <- utils::read.csv(paths$salehi_meta)
-scores <- label_fits(readRDS(file.path(tab, "salehi_scores.Rds")))
+runs <- readRDS(file.path(tab, "salehi_runs.Rds"))
+scores <- readRDS(file.path(tab, "salehi_scores.Rds"))
+scores$fit_ok <- salehi_fit_ok(scores, runs)  # before label_fits(), which copies rows under other methods
+# A fit of the run table without scores (a task killed before its fit ended,
+# collected with ALLOW_MISSING=1, R/tasks.R) counts as failed.
+run_key <- function(d) paste(d$fi, d$design, d$method, d$min_obs)
+gone <- runs[!run_key(runs) %in% run_key(scores), c("fi", "design", "method", "min_obs")]
+if (nrow(gone)) {
+  scores <- bind_rows_fill(list(scores, data.frame(gone, xv = NaN, fit_ok = FALSE, metric = "NaN", test_treat = "NaN",
+                                                   stringsAsFactors = FALSE)))
+}
+scores <- label_fits(scores)
 ref <- readRDS(file.path(tab, "salehi_reference.Rds"))
 novel <- label_fits(readRDS(file.path(tab, "salehi_novel.Rds")))
 scores$type <- salehi_lineage_fig2(scores$fi, meta)
@@ -100,7 +114,6 @@ for (n in c("denoised", "entropy_pred", "entropy_base", "entropy_true")) {
 inputs_all <- readRDS(file.path(tab, "salehi_inputs.Rds"))
 if (is.null(inputs_all$design)) inputs_all$design <- "ends"  # tables of earlier rounds
 inputs <- inputs_all[inputs_all$design == "ends", ]  # one row per trajectory
-runs <- readRDS(file.path(tab, "salehi_runs.Rds"))
 excluded_keys <- not_analysable_keys(inputs_all, c("fi", "design"))
 excluded_row <- function(d) input_key(d$fi, d$design) %in% excluded_keys
 excluded_ids <- inputs$fi[inputs$analysable %in% FALSE]  # by the "ends" rule
@@ -156,7 +169,8 @@ scores$sample <- sub("_X[0-9]+_l_.*$", "", scores$fi)
 fail_table <- function(s) {
   f <- s[!duplicated(s[c("fit", "fi", "min_obs")]), ]
   by_fit(f, function(x) do.call(rbind, lapply(split(x, x$min_obs), function(y) data.frame(
-    min_obs = y$min_obs[1], fits = nrow(y), failed = sum(is.na(y$xv)), share_failed = round(mean(is.na(y$xv)), 3)))))
+    min_obs = y$min_obs[1], fits = nrow(y), failed = sum(!y$fit_ok), share_failed = round(mean(!y$fit_ok), 3),
+    no_cv_score = sum(y$fit_ok & is.na(y$xv))))))
 }
 # Failures over all inputs, as before the exclusion, and by cause.
 fail_all <- fail_table(scores)
@@ -178,13 +192,14 @@ excluded_summary <- function(s) {
   s <- s[excluded_row(s), ]
   f <- s[!duplicated(s[c("fit", "fi", "min_obs")]), ]
   head <- by_fit(f, function(x) {
-    ok <- x[!is.na(x$xv), ]
-    data.frame(trajectories = length(unique(x$fi)), fits = nrow(x), failed = sum(is.na(x$xv)),
+    ok <- x[x$fit_ok, ]
+    xv <- ok$xv[!is.na(ok$xv)]
+    data.frame(trajectories = length(unique(x$fi)), fits = nrow(x), failed = sum(!x$fit_ok),
                fitted_trajectories = length(unique(ok$fi)),
-               xv_median = if (nrow(ok)) round(stats::median(ok$xv), 3) else NA_real_,
-               xv_share_pos = if (nrow(ok)) round(mean(ok$xv > 0), 3) else NA_real_)
+               xv_median = if (length(xv)) round(stats::median(xv), 3) else NA_real_,
+               xv_share_pos = if (length(xv)) round(mean(xv > 0), 3) else NA_real_)
   })
-  ev <- s[!is.na(s$xv) & !is.na(s$test_treat) & s$test_treat != "NaN", ]
+  ev <- s[s$fit_ok & !is.na(s$test_treat) & s$test_treat != "NaN", ]
   wins <- if (nrow(ev)) by_fit(ev, function(x) {
     e <- eval_rows(x)
     e <- e[e$eval_tp, ]
@@ -206,8 +221,9 @@ fail <- fail_table(scores)
 write_tab(fail, "fit_failures")
 
 ## Fig. 2b: CV score against training length ----------------------------------------
-# 04: one row per fit and minobs that did not fail, best minobs per trajectory
-x0 <- fits[!is.na(fits$xv), ]
+# 04: one row per fit and minobs that did not fail and has a CV score, best
+# minobs per trajectory
+x0 <- fits[fits$fit_ok & !is.na(fits$xv), ]
 x0 <- select_by_cv(x0, c("fit", "fi"), "min_obs", "xv")
 f2b <- by_fit(x0, function(x) do.call(rbind, lapply(split(x, x$ntrain), function(y) data.frame(
   ntrain = y$ntrain[1], gap = y$gap[1], trajectories = nrow(y), xv_median = round(stats::median(y$xv), 3),
@@ -323,9 +339,13 @@ write_tab(f2g, "fig2g_sister_reference")
 
 ## Paired comparison: same trajectory and minobs, no selection ----------------------
 # Per fit: the share of daughter passages beaten at the evaluation passage,
-# averaged over the daughters.
-all_eval <- by_fit(scores[!is.na(scores$xv) & !is.na(scores$test_treat) & scores$test_treat != "NaN", ], eval_rows)
+# averaged over the daughters. Every fit that ran (run status) and has a
+# forecast, whether or not it has a CV score (no selection here).
+all_eval <- by_fit(scores[scores$fit_ok & !is.na(scores$test_treat) & scores$test_treat != "NaN", ], eval_rows)
 all_eval <- all_eval[all_eval$eval_tp, ]
+# Trajectories of time points outside the first 12 lineages of Fig. 2 (04)
+# have no lineage type; aggregate() would drop them from the pairs.
+all_eval$type[is.na(all_eval$type)] <- "none (not in Fig. 2)"
 # The parent restricted to its frequent karyotypes (R/metrics_salehi.R):
 # does it beat the parent, and does the forecast beat it?
 up <- all_eval$metric %in% c("overlap", "cosine")

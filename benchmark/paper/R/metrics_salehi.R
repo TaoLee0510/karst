@@ -17,7 +17,7 @@ salehi_prediction_scores <- function(preds, dj, meta, inputs, inputs_dir, treat_
   preds <- preds[-1, ]
   yt <- 0 * preds[1, ]
   yb <- 0 * preds[1, ]
-  tru <- tru[rownames(tru) %in% colnames(preds), (ncol(tru) - 1):ncol(tru)]
+  tru <- tru[rownames(tru) %in% colnames(preds), (ncol(tru) - 1):ncol(tru), drop = FALSE]
   if (ncol(tru) != 2) stop("expected 2 columns here")
   yb[rownames(tru)] <- tru[, 1] / sum(tru[, 1])
   yt[rownames(tru)] <- tru[, 2] / sum(tru[, 2])
@@ -201,16 +201,31 @@ salehi_novel_data <- function(lscape, x) {
   df
 }
 
+# Whether the fit of each row of the scores table ran (status "ok"), one
+# definition for every table: run.Rds of this benchmark's fits (`runs`,
+# tables/salehi_runs.Rds; a fit missing there did not run), and for the
+# paper's own rows (method "alfak_paper", 03's) a CV score that is not NaN:
+# 03 gives a fit without xval.Rds xv NaN. A fit that ran but has no CV score
+# (xv NA, mostly alfak) did not fail.
+salehi_fit_ok <- function(scores, runs) {
+  key <- function(d) paste(d$fi, d$design, d$method, d$min_obs)
+  ok <- runs$status[match(key(scores), key(runs))] %in% "ok"
+  paper <- scores$method == "alfak_paper"
+  ok[paper] <- !is.nan(scores$xv[paper])
+  ok
+}
+
 # All rows of 03 for one fit directory (one trajectory, design, method and
 # minobs): the fit's CV score and the forecast scores of every daughter.
 salehi_fit_scores <- function(fit_dir, traj_id, lineages, meta, inputs_dir) {
   treat_lut <- stats::setNames(meta$on_treatment, paste0("u", meta$uid))
   li <- lineages[[traj_id]]
   # This benchmark's fits have run.Rds; for the paper's, a fit without
-  # xval.Rds failed (as in 03).
+  # xval.Rds failed (as in 03). This benchmark's forecasts are scored only
+  # when complete (forecast.Rds "ok", R/forecast.R); the paper's as 03 does.
   run_path <- file.path(fit_dir, "run.Rds")
-  ok <- if (file.exists(run_path)) identical(readRDS(run_path)$status, "ok") else
-    file.exists(file.path(fit_dir, "xval.Rds"))
+  ours <- file.exists(run_path)
+  ok <- if (ours) identical(readRDS(run_path)$status, "ok") else file.exists(file.path(fit_dir, "xval.Rds"))
   xv <- if (ok) xval_score(readRDS(file.path(fit_dir, "xval.Rds"))) else NaN
   head <- data.frame(fi = traj_id, min_obs = sub("minobs_", "", basename(fit_dir)), ntrain = length(li$ids),
                      t_train = meta$timepoint[meta$uid == utils::tail(li$ids, 1)],
@@ -219,7 +234,7 @@ salehi_fit_scores <- function(fit_dir, traj_id, lineages, meta, inputs_dir) {
   empty <- data.frame(pred0 = NaN, pred = NaN, base = NaN, metric = NaN, tt = NaN, angle = NaN, denoised = NaN,
                       entropy_pred = NaN, test_treat = NaN, entropy_base = NaN, entropy_true = NaN)
   paths <- list.files(file.path(fit_dir, "abm_preds"), full.names = TRUE)
-  if (!ok || !length(paths)) return(cbind(head, empty))
+  if (!ok || !length(paths) || (ours && !forecast_complete(fit_dir))) return(cbind(head, empty))
   preds <- lapply(paths, readRDS)
   inputs <- list.files(inputs_dir)
   xp <- lapply(li$dec1, salehi_prediction_scores, preds = preds, meta = meta, inputs = inputs,

@@ -17,10 +17,17 @@
 #   by      columns of the groups (one choice per group)
 #   choice  column naming the option (e.g. "minobs", "fi")
 #   rank    column ordering the options; numeric where it parses as a number
+# An option without a score (NA) is never chosen; a group with no scored
+# option gives no row. A missing value in a `by` column is an error: such a
+# row belongs to no group (split() would drop it without a word).
 select_by_cv <- function(d, by, choice, score, tol = 1e-8, rank = choice) {
   if (is.null(d) || !nrow(d)) return(d)
+  na_by <- !stats::complete.cases(d[by])
+  if (any(na_by)) stop("select_by_cv: ", sum(na_by), " rows with a missing value in ", paste(by, collapse = ", "))
   groups <- split(seq_len(nrow(d)), d[by], drop = TRUE)
   keep <- unlist(lapply(groups, function(i) {
+    i <- i[!is.na(d[[score]][i])]
+    if (!length(i)) return(integer())
     s <- d[[score]][i]
     tied <- i[s >= max(s) - tol]
     r <- d[[rank]][tied]

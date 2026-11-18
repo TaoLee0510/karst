@@ -5,12 +5,28 @@
 # <outdir>/minobs_<m>/, plus run.Rds: status ("ok" or "failed"), the error
 # message and the time taken. karst is fitted once and its outputs are
 # derived for each minobs, which gives the same files as calling
-# karst::alfak_compat() once per minobs.
+# karst::alfak_compat() once per minobs. karst's minobs folders appear only
+# after its fit, so a task killed during the fit leaves none; the collect
+# steps find such fits from the round's task tables (R/tasks.R).
+
+# saveRDS() to a temporary name next to `path`, then renamed: a task killed
+# while writing leaves no truncated file under the final name (run_task.R
+# skips a step whose file exists). The temporary name starts with a dot, so
+# that list.files() does not list it.
+save_rds_atomic <- function(object, path) {
+  tmp <- file.path(dirname(path), paste0(".", basename(path), ".", Sys.getpid(), ".tmp"))
+  saveRDS(object, tmp)
+  if (!file.rename(tmp, path)) {
+    unlink(tmp)
+    stop("Could not write ", path)
+  }
+  invisible(path)
+}
 
 write_run <- function(dir, status, seconds, message = NA_character_, extra = list()) {
   dir.create(dir, recursive = TRUE, showWarnings = FALSE)
-  saveRDS(c(list(status = status, seconds = seconds, message = message, finished = Sys.time()), extra),
-          file.path(dir, "run.Rds"))
+  save_rds_atomic(c(list(status = status, seconds = seconds, message = message, finished = Sys.time()), extra),
+                  file.path(dir, "run.Rds"))
 }
 
 # Sampling times of an input, as alfak and karst read them (passage_times
@@ -48,11 +64,12 @@ fit_alfak <- function(yi, outdir, minobs, n0, nb, pm, settings = bench_settings)
 # are methods of their own, fitted to the designs with more than two time points
 # only (with two time points all three give the same fit, bit for bit).
 karst_series_methods <- c(karst_pairwise = "pairwise", karst_state_space = "state_space")
-# "auto": per input, one of the three "all" fits picked by a rule
-# (scripts/auto_picks.R) and linked in (scripts/compose_auto.R); not fitted.
-karst_composed_methods <- c(karst_auto = "auto")
-# methods compared with the default ("anchored") as well as with alfak
-karst_other_methods <- c(names(karst_series_methods), names(karst_composed_methods))
+# methods compared with the default ("anchored") as well as with alfak. (The
+# alfak2 era's "auto" arm, karst_auto, one of the three "all" fits picked per
+# input by a rule, failed its criterion in round 05a8855 and is not a method
+# here any more; scripts/auto_picks.R, compose_auto.R and auto_criterion.R
+# are kept for the record only.)
+karst_other_methods <- names(karst_series_methods)
 # karst's choice of the missegregation rate (fit_sparse_joint(beta = "auto"),
 # ac36fd1 on: the fit of lowest objective over 5e-5 times each multiple).
 # Each candidate rate is a task of its own, written to

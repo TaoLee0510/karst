@@ -20,6 +20,10 @@
 # (COMPARE_PATTERN, a pattern of the designs compared, default "ends$"; "."
 # compares every design of method karst, e.g. the default "anchored" fits of
 # a round that should equal the earlier one).
+# collect_abm and collect_salehi first check every fit of the round's task
+# tables (R/tasks.R; BENCH_TASKS, default tasks/<commit>) and stop when an
+# output is missing; ALLOW_MISSING=1 collects a fit without run.Rds as
+# failed.
 set -euo pipefail
 cd "${BENCH_DIR:-$PWD}"
 source hpc/env.sh
@@ -28,8 +32,8 @@ steps=("$@")
 if [[ ${#steps[@]} -eq 0 ]]; then
   steps=(sacct collect_abm analyse_abm example_abm check_ksets collect_salehi analyse_salehi cv_score_analysis
          collect_resources summary_comparison)
-  # karst's "auto" arm (scripts/auto_picks.R, compose_auto.R): its criterion
-  [[ ! -s "${BENCH_RESULTS}/tables/auto_picks.tsv" ]] || steps+=(auto_criterion)
+  # (the alfak2 era's "auto" arm, scripts/auto_criterion.R, is not a method
+  # any more and has no step here)
   # karst's missegregation rate picked per input (scripts/beta_picks.R,
   # compose_beta.R; ac36fd1 round): its criterion
   [[ ! -s "${BENCH_RESULTS}/tables/beta_picks.tsv" ]] || steps+=(beta_criterion)

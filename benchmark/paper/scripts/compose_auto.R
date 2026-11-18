@@ -1,3 +1,8 @@
+# Obsolete (2026-11-18): the "auto" arm failed its criterion in round
+# 05a8855 and karst_auto is no method of the current code (R/fit.R,
+# R/labels.R); kept for the record of the alfak2 era, with auto_picks.R and
+# auto_criterion.R.
+#
 # Compose karst's "auto" arm from BENCH_RESULTS/tables/auto_picks.tsv
 # (scripts/auto_picks.R): for each input, fits/<source>/<dataset>/<design>/
 # karst_auto becomes a relative symbolic link to the picked method's folder
@@ -24,8 +29,11 @@ for (i in seq_len(nrow(picks))) {
     next
   }
   link <- file.path(base, "karst_auto")
-  if (file.exists(link) || nzchar(Sys.readlink(link))) {
-    if (!nzchar(Sys.readlink(link))) stop("Not a link, refusing to replace: ", link)
+  # Sys.readlink() gives "" for no link and NA on an error (nzchar(NA) is TRUE)
+  target <- Sys.readlink(link)
+  is_link <- !is.na(target) && nzchar(target)
+  if (file.exists(link) || is_link) {
+    if (!is_link) stop("Not a link, refusing to replace: ", link)
     file.remove(link)
   }
   stopifnot(file.symlink(picks$pick[i], link))

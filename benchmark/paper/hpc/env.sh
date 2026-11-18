@@ -61,6 +61,8 @@ container_rscript() {
     --env "BENCH_SIF=${BENCH_SIF}" \
     --env "SLURM_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK:-1}" \
     --env "FIG456_EXCLUDE=${FIG456_EXCLUDE:-1}" \
+    --env "BENCH_TASKS=${BENCH_TASKS:-}" \
+    --env "ALLOW_MISSING=${ALLOW_MISSING:-0}" \
     --env "SCORE_METHODS=${SCORE_METHODS:-}" \
     --env "COMPARE_METHOD=${COMPARE_METHOD:-karst}" \
     --env "COMPARE_OLD_METHOD=${COMPARE_OLD_METHOD:-${COMPARE_METHOD:-karst}}" \

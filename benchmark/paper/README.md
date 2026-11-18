@@ -62,10 +62,14 @@ two time points only (with two time points all three give the same fit; methods
 Two arms of the alfak2 era are not run any more: "auto" (one of the three
 "all" fits picked per input by a rule; it failed its criterion in round
 05a8855 and KARST has no `series = "auto"`) and the missegregation rate
-picked per input (`beta = "auto"`, removed after round ac36fd1). Their
-scripts are kept (`scripts/auto_*.R`, `compose_auto.R`, `beta_*.R`,
-`compose_beta.R`, `make_beta_tasks.R`, `prune_beta_candidates.R`); the steps
-that use them run only when their tables exist (`hpc/collect_analyse.sh`).
+picked per input (`beta = "auto"`, removed after round ac36fd1). The "auto"
+arm is no method of the current code any more (`karst_auto` has no entry in
+`R/fit.R` or `R/labels.R`, and `hpc/collect_analyse.sh` no step for it); its
+scripts (`scripts/auto_picks.R`, `compose_auto.R`, `auto_criterion.R`) are
+kept for the record only and do not run with the current code. The scripts
+of the missegregation-rate arm are kept (`beta_*.R`, `compose_beta.R`,
+`make_beta_tasks.R`, `prune_beta_candidates.R`); its steps run only when
+their tables exist (`hpc/collect_analyse.sh`).
 
 Each method is compared with the other on the same time points (two time points;
 all time points). `scripts/summary_comparison.R` puts both groups in one figure
@@ -109,7 +113,7 @@ stability of each method.
 | Fig. 3e–f: logistic regression of novel karyotype emergence | f from each fit |
 
 | Fig. 4c, d, f: fitness effects of CNAs, mixed models over 200 bootstrap draws of non-overlapping lineages | each fit's landscapes, paper's selection (`scripts/fig4_cna_effects.R`) |
-| Fig. 5b–c: WGD, landscape shape and fitness effects (SA906) | same (`scripts/fig5_wgd.R`) |
+| Fig. 5b–c: WGD, landscape shape and fitness effects (SA906) | same; KARST one minobs per trajectory (`scripts/fig5_wgd.R`) |
 | Fig. 6: steady states under missegregation rates 4e-5 to 5.1e-3 | same (`scripts/fig6_steady_states.R`) |
 
 Fig. 4–6 are not tests of accuracy: they ask whether each method's fits lead
@@ -123,9 +127,53 @@ the analytic scenarios of Fig. 6. Fig. 4 needs glmmTMB, which the image
 lacks: version 1.1.11 is installed into `lib/extra_r`
 (`hpc/build_extra_r.sh`).
 
+Since 2026-11-18 (`fig456_conclusions()` in `R/paper_fig456.R`):
+
+* A statement agrees with the reference when both have the same
+  significance and, where both are significant, the same sign. Two results
+  that are not significant agree whatever the signs of their estimates.
+  (Before, the signs had to agree too, so that a non-significant estimate
+  near 0 could flip the verdict from one round to the next.)
+* Intercepts (4f, 5b) are not statements: the paper draws no conclusion
+  from them, and the 5b intercept depends on each method's absolute fitness
+  level. Each arm has 16 statements: 4d (4), 4f (6), 5b (5), 5c (1).
+* Fig. 6 is descriptive (`agrees` NA): the share of landscapes whose
+  dominant karyotype changes with the missegregation rate, beside the
+  reference's. The former check, whether any landscape switches, holds for
+  every arm by construction.
+* Fig. 5: the paper's 07 keeps one fit per trajectory and minobs. alfak and
+  the paper's fits keep that rule; KARST derives every minobs from one fit,
+  so its minobs repeat a trajectory's karyotypes with the same fitness
+  (round e7e32f8: KARST 2 time points, 19866 rows of which 10723 distinct
+  trajectory-karyotype pairs). KARST keeps one minobs per trajectory, as in
+  Fig. 4: the highest CV score, of a tie the lowest minobs
+  (`fig5_select_fits()`; `fig5_tests.tsv`, column `minobs_rule`).
+* Fig. 4d: the variance of delta f per frequent karyotype is taken without
+  `na.rm`, as the paper's 06 does (line 336), so a frequent karyotype with a
+  neighbour missing from the landscape drops out of the variance models
+  (`PDX_kv`, `cisplatin_kv`). The paper's line is kept to reproduce its
+  numbers; each draw records the share dropped
+  (`analysis/fig456/fig4_kvar_dropped.tsv`) and the two models with
+  `na.rm = TRUE` (`PDX_kv_narm`, `cisplatin_kv_narm` in
+  `fig4_estimates.tsv`; no reference, so not a statement). The shares have
+  not been computed with the current code yet (the bootstrap runs on the
+  HPC; next round).
+
 Two ways of reporting: the paper's rule (failed fits dropped, test
 instances selected by each method's own CV score) and a paired comparison
 on the inputs where both methods have a fit, without selection.
+
+A fit failed when its run did (`run.Rds` status not "ok"; for the paper's
+own Salehi rows, 03's NaN CV score of a fit without `xval.Rds`), in every
+table: `fit_failures*.tsv`, `excluded_inputs.tsv` and
+`summary_performance.tsv` (`salehi_fit_ok()`, `R/metrics_salehi.R`). A fit
+that ran but has no CV score (CV score NA; on the Salehi data of round
+e7e32f8, 65 alfak fits and 1 KARST fit, 28 of them with a forecast; on the
+analysable inputs 53 and 26) is not a failure: it is left out only where a
+fit is selected by its CV score, and both Salehi panels of
+`summary_comparison` (forecasts; novel karyotypes) pair every fit that
+ran. Until 2026-11-18 the Salehi tables counted a missing CV score as a
+failure and dropped these fits from the paired forecasts.
 
 The paper's rule keeps every minobs that ties for an input's highest CV
 score (S05: `Rxv == max(Rxv)`). alfak's scores never tie; KARST derives every
@@ -136,6 +184,19 @@ depending on the rounding. Since 2026-11-18 scores within 1e-8 of the best
 count as tied and the lowest minobs of a tie is kept (`R/select.R`), in every
 analysis that selects by CV score (Supp. Fig. 4c and 5, Fig. 1g, 2b-2f, 3e-f,
 4 and 6). For alfak and the paper's own fits the selection is the paper's.
+
+## Fig. 2d and sampling noise
+
+`scripts/fig2d_noise.R` takes one row per trajectory, minobs and daughter
+passage, on the rows every arm of a design has. A daughter passage is the
+evaluation passage of every trajectory that ends at its parent, for each
+minobs, so the same daughter gives many rows. Round e7e32f8: two time
+points, every trajectory, 471 rows from 57 daughters (up to 24 rows per
+daughter); one interval, 147 rows from 53 daughters (up to 3, the minobs);
+all time points, 3–10 passages, 346 rows from 46 daughters (up to 21). The
+rows are not independent. The lineage-type bootstrap (6 types) resamples
+whole types and so widens the intervals accordingly, but the row counts
+overstate the information.
 
 ## Settings
 
@@ -204,7 +265,10 @@ of 8327282's points to its task tables by absolute path).
 `scripts/compare_rounds.R` compares KARST's fits with an earlier round's
 (`COMPARE_WITH=<results folder> hpc/collect_analyse.sh`); for a round of
 the alfak2 era, whose KARST folders are named `alfak2`, `alfak2_pairwise`
-and `alfak2_state_space`, set `COMPARE_OLD_METHOD` to that name.
+and `alfak2_state_space`, set `COMPARE_OLD_METHOD` to that name. A fit that
+only one of the two rounds has is listed with status "missing" on the other
+side. `hpc/link_alfak.sh` stops when the reference has no `fits` folder or
+no folder of the method to link.
 
 | KARST | Results | Report |
 |---|---|---|
@@ -275,9 +339,38 @@ Fig. 4 and Fig. 6 read `tables/salehi_scores.Rds`, so they run after
 `collect_analyse`. Slurm requeues a task after NODE_FAIL by itself (check
 `sacct -D`); do not resubmit it.
 
+Before they collect anything, `collect_abm.R` and `collect_salehi.R` check
+every fit of the round's task tables (`R/tasks.R`; `BENCH_TASKS`, default
+`tasks/<commit>`, `none` to skip; `karst_free`'s tasks are checked in
+`results_<commit>_free`, the others in `results_<commit>`): `run.Rds` in every
+minobs folder, for a fit that ran `score.Rds` and (ABM) `forecast.Rds`, for
+a Salehi fit that ran `forecast.Rds` where the trajectory has a daughter
+passage, and Salehi scores for every fit folder with `run.Rds`
+(`score_salehi` must run after the last fit). A task killed for time or
+memory before KARST's fit ended leaves no folder at all (KARST writes its
+minobs folders after the fit), so without this check it would vanish from
+the tables, while alfak's killed fits count as failed. Anything missing
+stops the step and is listed in `tables/missing_{abm,salehi}.tsv`: rerun
+those tasks. `ALLOW_MISSING=1 hpc/collect_analyse.sh` collects anyway, a fit
+without `run.Rds` counting as failed (status "missing").
+
+`run_task.R` can be run again on a task after any failure. Its files
+(`run.Rds`, forecast replicates, `forecast.Rds`, `score.Rds`) are written
+under a temporary name and renamed, so that a killed task leaves no
+truncated file that a rerun would take as done. A rerun of a KARST task
+fits only the minobs without `run.Rds`, so that finished minobs keep their
+bootstrap draws, forecasts and scores; it resumes a forecast that did not
+finish (replicates already written are kept), and scores a fit again when
+its forecast is rerun. Only forecasts with status "ok" in `forecast.Rds` are
+scored (ABM and Salehi); replicates of a failed or unfinished forecast are
+never scored. A fit whose score cannot be computed makes the task exit with
+status 1 (Slurm: FAILED) after the other steps.
+
 KARST's tiers: 4 GB and 6 h for two time points of the ABM and
 missegregation data; 8 GB and 12 h for the Salehi data and the anchored fits
 of all time points; 16 GB for pairwise and 32 GB for state space (12 h).
+`karst_free` takes the tiers of the default (before 2026-11-18,
+`split_tasks.R` gave it alfak's).
 
 Each array task fits one method to one input, then forecasts and scores
 (`scripts/run_task.R`); finished steps are skipped when a task is rerun.
@@ -299,6 +392,10 @@ benchmark of simulated tumours (`hpc/submit.sh dev TASK_FILE ...`,
 * `R/fit.R` fitting with alfak or KARST
 * `R/labels.R` names and colours of the fits compared
 * `R/select.R` selection by CV score, the paper's rule with ties resolved
+  (an option without a score is never chosen; a missing value in a
+  grouping column is an error)
+* `R/tasks.R` the round's task tables and the check of their outputs before
+  collecting
 * `R/forecast.R` ABM forecasts
 * `R/metrics_abm.R` scores of S04 (`abm_preds_summary.Rds`)
 * `R/metrics_salehi.R` scores of 03, references of 04, regression data of 05
@@ -320,10 +417,12 @@ benchmark of simulated tumours (`hpc/submit.sh dev TASK_FILE ...`,
   round 827c4b5): share switched to "free", and the switched fits against
   the reference round's, each against the truth
 * `scripts/fig2d_noise.R` the paper's Fig. 2d on the Salehi passages, raw and
-  with the passages' sampling noise held fixed (uses `scripts/fig2d_check.R`)
+  with the passages' sampling noise held fixed (uses `scripts/fig2d_check.R`;
+  see "Fig. 2d and sampling noise")
 * `scripts/example_abm.R` the paper's Supp. Fig. 2c–e for every fit
 * `scripts/auto_picks.R`, `scripts/compose_auto.R`, `scripts/auto_criterion.R`
-  the "auto" arm of the alfak2 era: picks, links, criterion; `scripts/beta_*.R`,
+  the "auto" arm of the alfak2 era: picks, links, criterion (obsolete, kept
+  for the record); `scripts/beta_*.R`,
   `compose_beta.R`, `make_beta_tasks.R`, `prune_beta_candidates.R` its
   missegregation rate picked per input
 * `R/paper_fig456.R`, `scripts/fig4_cna_effects.R`, `scripts/fig5_wgd.R`,

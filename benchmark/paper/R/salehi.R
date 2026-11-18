@@ -32,13 +32,14 @@ salehi_forecast_time <- function(traj_id, lineages, meta) {
 }
 
 # Forecast replicates for one fit directory, from the last passage of the
-# input (02_run_alfak.R, with seed r for replicate r).
+# input (02_run_alfak.R, with seed r for replicate r). A replicate already
+# written is kept; each is written whole or not at all (save_rds_atomic()).
 forecast_salehi_dir <- function(fit_dir, yi, sim_time, pm, nb, settings = bench_settings$forecast_salehi) {
   lscape <- readRDS(file.path(fit_dir, "landscape.Rds"))
   x0 <- rep(0, nrow(lscape))
   names(x0) <- lscape$k
-  last <- yi$x[rownames(yi$x) %in% lscape$k, ncol(yi$x)]
-  x0[names(last)] <- last
+  last <- yi$x[rownames(yi$x) %in% lscape$k, ncol(yi$x), drop = FALSE]
+  x0[rownames(last)] <- last[, 1]
   # No cell of the last passage in the landscape: nothing to start from (the
   # paper's 02_run_alfak.R stops here and leaves no forecast).
   if (sum(x0) <= 0) stop("no cell of the last passage is in the landscape")
@@ -54,7 +55,7 @@ forecast_salehi_dir <- function(fit_dir, yi, sim_time, pm, nb, settings = bench_
                              abm_delta_t = settings$abm_delta_t, abm_max_pop = nb,
                              abm_record_interval = settings$abm_record_interval,
                              abm_culling_survival = settings$abm_culling_survival, abm_seed = rep)
-    saveRDS(y, path)
+    save_rds_atomic(y, path)
   }
   proc.time()[["elapsed"]] - start
 }

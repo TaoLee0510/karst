@@ -38,7 +38,7 @@ comparisons <- list(c("KARST 2 time points", "alfak dev2@f93b2d2 2 time points")
                     c("KARST all time points", "alfak dev2@f93b2d2 all time points"), c("KARST all time points", "KARST 2 time points"))
 # karst's other multi-time-point methods (c7f809c on; no rows in rounds without
 # them): against alfak and against the default, "anchored".
-for (f in c("KARST pairwise all time points", "KARST state space all time points", "KARST auto all time points")) {
+for (f in c("KARST pairwise all time points", "KARST state space all time points")) {
   comparisons <- c(comparisons, list(c(f, "alfak dev2@f93b2d2 all time points"), c(f, "KARST all time points")))
 }
 # karst with its missegregation rate picked per input (ac36fd1 round; no rows

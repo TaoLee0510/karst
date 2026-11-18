@@ -26,6 +26,8 @@
 # state space up to 10.5 GB and 11x, over 6 h for some 8-time-point fits):
 #   karst_pairwise                                       ->  16 GB, 12 h
 #   karst_state_space                                    ->  32 GB, 12 h
+# karst's variants of the default (karst_free, R/fit.R) take karst's tiers,
+# not alfak's.
 # 12 h is qos xxlarge's limit; the add-hours monitor extends running tasks.
 
 memory_tier <- function(tasks) {
@@ -34,8 +36,12 @@ memory_tier <- function(tasks) {
     (tasks$design == "all" & tasks$minobs == "5")
   heavy <- (tasks$source == "abm" & tasks$design == "w4_all" & tasks$minobs == "5") |
     (tasks$source == "abm" & tasks$design == "w8_all" & tasks$minobs == "10")
+  series <- tasks$method %in% c("karst_pairwise", "karst_state_space")
+  karst_default <- grepl("^karst", tasks$method) & !series
+  known <- karst_default | series | tasks$method == "alfak"
+  if (!all(known)) stop("No memory tier for method ", paste(unique(tasks$method[!known]), collapse = ", "))
   ifelse(tasks$method == "karst_pairwise", "16G", ifelse(tasks$method == "karst_state_space", "32G",
-  ifelse(tasks$method == "karst", ifelse(all | tasks$source == "salehi", "8G", "4G"),
+  ifelse(karst_default, ifelse(all | tasks$source == "salehi", "8G", "4G"),
          ifelse(!all, "16G", ifelse(heaviest, "128G", ifelse(heavy, "64G", "32G"))))))
 }
 time_limit <- c("4G" = "06:00:00", "8G" = "12:00:00", "16G" = "12:00:00", "32G" = "12:00:00",

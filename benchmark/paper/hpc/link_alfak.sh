@@ -29,6 +29,11 @@ method="${2:-alfak}"
 source_name="${SOURCE_NAME:-$([[ "${method}" == alfak ]] && echo "alfak""R" || echo "${method}")}"
 target="${BENCH_RESULTS}"
 [[ "${reference}" != "$(realpath -m "${target}")" ]] || { echo "REFERENCE is BENCH_RESULTS" >&2; exit 1; }
+[[ -d "${reference}/fits" ]] || { echo "No fits folder in ${reference}" >&2; exit 1; }
+# find runs on its own (not in a process substitution), so that set -e sees
+# it fail; finding nothing is an error too
+dirs="$(find "${reference}/fits" -mindepth 4 -maxdepth 4 -type d -name "${source_name}" | sort)"
+[[ -n "${dirs}" ]] || { echo "No ${source_name} fit folders under ${reference}/fits" >&2; exit 1; }
 linked=0
 skipped=0
 while IFS= read -r dir; do
@@ -42,5 +47,5 @@ while IFS= read -r dir; do
   mkdir -p "$(dirname "${dest}")"
   ln -s "${dir}" "${dest}"
   linked=$((linked + 1))
-done < <(find "${reference}/fits" -mindepth 4 -maxdepth 4 -type d -name "${source_name}" | sort)
+done <<<"${dirs}"
 echo "Linked ${linked} ${method} fit folders from ${reference} into ${target} (existing, left as they are: ${skipped})"

@@ -23,7 +23,9 @@ forecast_abm <- function(lscape, sim_x, pm, rep, last_time = 120, settings = ben
   y[c(1L, ix), ]
 }
 
-# All replicates for one fit directory, saved as abm_preds/rep_XX.Rds.
+# All replicates for one fit directory, saved as abm_preds/rep_XX.Rds. A
+# replicate already written is kept (a task can be rerun after it was
+# killed); each is written whole or not at all (save_rds_atomic(), R/fit.R).
 forecast_abm_dir <- function(fit_dir, sim_x, pm, last_time = 120, settings = bench_settings$forecast_abm) {
   lscape <- readRDS(file.path(fit_dir, "landscape.Rds"))
   out <- file.path(fit_dir, "abm_preds")
@@ -32,7 +34,17 @@ forecast_abm_dir <- function(fit_dir, sim_x, pm, last_time = 120, settings = ben
   for (rep in seq_len(settings$reps)) {
     path <- file.path(out, sprintf("rep_%02d.Rds", rep))
     if (file.exists(path)) next
-    saveRDS(forecast_abm(lscape, sim_x, pm, rep, last_time, settings), path)
+    save_rds_atomic(forecast_abm(lscape, sim_x, pm, rep, last_time, settings), path)
   }
   proc.time()[["elapsed"]] - start
+}
+
+# Whether the forecasts of this benchmark's fit folder are complete:
+# run_task.R writes forecast.Rds once the last replicate is written, with
+# status "ok", or "failed" when the forecast stopped. Replicates written
+# before a failure (or before the task was killed) stay for a rerun, which
+# skips them, but are never scored.
+forecast_complete <- function(fit_dir) {
+  path <- file.path(fit_dir, "forecast.Rds")
+  file.exists(path) && identical(readRDS(path)$status, "ok")
 }

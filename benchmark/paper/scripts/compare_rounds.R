@@ -11,7 +11,9 @@
 #   [COMPARE_METHOD=karst_pairwise] Rscript scripts/compare_rounds.R OLD_RESULTS [PATTERN]
 #
 # COMPARE_METHOD: the method folder compared (default karst). Fit folders
-# that are links (fits taken over from another round) are skipped.
+# that are links (fits taken over from another round) are skipped. Fits of
+# OLD_RESULTS that this round does not have are listed too (status_new
+# "missing").
 #
 # Writes to BENCH_RESULTS/analysis/compare_rounds/:
 #   <old>[_<method>]_fits.tsv     one row per fit (source, input, design, minobs)
@@ -42,13 +44,22 @@ linked <- vapply(dirname(new_dirs), function(d) {
   l <- Sys.readlink(d)
   !is.na(l) && nzchar(l)
 }, logical(1))
-new_dirs <- new_dirs[!linked]
-rel <- substring(new_dirs, nchar(file.path(paths$results, "fits")) + 2L)
+rel_all <- substring(new_dirs, nchar(file.path(paths$results, "fits")) + 2L)
+rel <- rel_all[!linked]
+# fits of the old round missing from this one (under this round's method name)
+old_dirs <- Sys.glob(file.path(old_root, "fits", "*", "*", "*", old_method, "minobs_*"))
+old_rel_new <- sub(paste0("/", old_method, "/"), paste0("/", method, "/"),
+                   substring(old_dirs, nchar(file.path(old_root, "fits")) + 2L), fixed = TRUE)
+only_old <- setdiff(old_rel_new, rel_all)
+rel <- c(rel, only_old)
+if (!length(rel)) stop("No ", method, " fits in either round")
 parts <- do.call(rbind, strsplit(rel, "/", fixed = TRUE))
 keep <- grepl(pattern, parts[, 3])
 rel <- rel[keep]
 parts <- parts[keep, , drop = FALSE]
-cat(method, "fits of this round matching", pattern, ":", length(rel), " (links skipped:", sum(linked), ")\n")
+only_old <- intersect(only_old, rel)
+cat(method, "fits of this round matching", pattern, ":", length(rel) - length(only_old), " (links skipped:",
+    sum(linked), "); fits of the old round only:", length(only_old), "\n")
 
 read_or_null <- function(p) if (file.exists(p)) readRDS(p) else NULL
 same <- function(a, b) if (is.null(a) || is.null(b)) NA else isTRUE(all.equal(a, b, tolerance = 0))
@@ -133,6 +144,6 @@ print(summary, row.names = FALSE)
 changed <- fits[fits$status_old != fits$status_new, c("source", "input", "design", "minobs", "status_old",
                                                      "status_new")]
 if (nrow(changed)) {
-  cat("Fits whose status changed:\n")
+  cat("Fits whose status changed (\"missing\": no fit folder or run.Rds in that round):\n")
   print(utils::head(changed, 30), row.names = FALSE)
 }

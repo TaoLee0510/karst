@@ -12,6 +12,10 @@
 # frequent karyotypes, Pearson r of true and estimated fitness),
 # supp2de_example.tsv (per fit: mean absolute error of the median projection
 # at the observed times) and figures/supp2c_example.png, supp2de_example.png.
+# In the 2-passage window the "all time points" fits are the two-time-point
+# fits (R/labels.R): the tables list them, the figures do not repeat them.
+# A fit folder that does not exist stops the script; a failed fit (no
+# landscape) is reported and left out.
 
 for (f in list.files("R", full.names = TRUE)) source(f)
 suppressPackageStartupMessages(library(ggplot2))
@@ -26,47 +30,81 @@ sim <- read_abm_sim(id, paths$abm_raw)
 w <- abm_sim_info(id)$w
 
 # The fits: label, window, folder of minobs m.
+# `folder`: the method whose folder holds the fit (in the 2-passage window
+# karst's for every KARST "all time points" fit); `repeat_of_2tp`: the fit is
+# the window's two-time-point fit under another name.
+other <- karst_other_methods
 fits <- do.call(rbind, lapply(c(2L, 8L), function(win) {
   ends <- paste0("w", win, "_ends")
   all <- if (win == 2L) ends else paste0("w", win, "_all")
-  rbind(data.frame(fit = "KARST 2 time points", window = win, design = ends, method = "karst"),
-        data.frame(fit = paste(method_label[c("karst", karst_other_methods)], "all time points"), window = win,
-                   design = all, method = if (win == 2L) "karst" else c("karst", karst_other_methods)),
-        data.frame(fit = "alfak dev2@f93b2d2 2 time points", window = win, design = ends, method = "alfak"),
-        data.frame(fit = "alfak dev2@f93b2d2 all time points", window = win, design = all, method = "alfak"),
-        data.frame(fit = "paper (alfak main@4ad82b0)", window = win, design = NA, method = "alfak_paper"))
+  rbind(data.frame(fit = "KARST 2 time points", window = win, design = ends, folder = "karst", repeat_of_2tp = FALSE),
+        data.frame(fit = paste(method_label[c("karst", other)], "all time points"), window = win, design = all,
+                   folder = if (win == 2L) rep("karst", length(other) + 1L) else c("karst", other),
+                   repeat_of_2tp = win == 2L),
+        data.frame(fit = "alfak dev2@f93b2d2 2 time points", window = win, design = ends, folder = "alfak",
+                   repeat_of_2tp = FALSE),
+        data.frame(fit = "alfak dev2@f93b2d2 all time points", window = win, design = all, folder = "alfak",
+                   repeat_of_2tp = win == 2L),
+        data.frame(fit = "paper (alfak main@4ad82b0)", window = win, design = NA, folder = "alfak_paper",
+                   repeat_of_2tp = FALSE))
 }))
+# design group of the figure's panels; the paper's fits are of every time
+# point of the window (ntp 2: the two time points)
+fits$group <- ifelse(fits$folder == "alfak_paper", ifelse(fits$window == 2L, "2 time points", "all time points"),
+                     fit_group(fits$fit))
 fit_dir <- function(i, m) {
-  if (fits$method[i] == "alfak_paper") {
+  if (fits$folder[i] == "alfak_paper") {
     return(file.path(paths$paper_abm, id, sprintf("minobs_%s_ntp_%d", m, fits$window[i])))
   }
-  file.path(paths$results, "fits", "abm", id, fits$design[i], fits$method[i], paste0("minobs_", m))
+  file.path(paths$results, "fits", "abm", id, fits$design[i], fits$folder[i], paste0("minobs_", m))
+}
+# A fit's file; NULL, said so, when the fit failed; an error when the fit
+# folder does not exist (a method missing from the round, e.g. a renamed one).
+fit_file <- function(i, m, name) {
+  dir <- fit_dir(i, m)
+  if (!dir.exists(dir)) stop("No fit folder for ", fits$fit[i], ", window ", fits$window[i], ", minobs ", m, ": ", dir)
+  path <- file.path(dir, name)
+  if (!file.exists(path)) {
+    message("No ", name, " (fit failed?): ", fits$fit[i], ", window ", fits$window[i], ", minobs ", m)
+    return(NULL)
+  }
+  path
 }
 
 ## 2c ---------------------------------------------------------------------------------
 c_rows <- do.call(rbind, lapply(seq_len(nrow(fits)), function(i) do.call(rbind, lapply(c(5, 10, 20), function(m) {
-  path <- file.path(fit_dir(i, m), "landscape.Rds")
-  if (!file.exists(path)) return(NULL)
+  path <- fit_file(i, m, "landscape.Rds")
+  if (is.null(path)) return(NULL)
   ls <- readRDS(path)
   ls <- ls[ls$fq, ]
   if (!nrow(ls)) return(NULL)
   tru <- grf_fitness(ls$k, w, sim$true_landscape)
-  data.frame(fit = fits$fit[i], window = fits$window[i], minobs = m, k = ls$k, est = ls$mean - mean(ls$mean),
-             true = tru - mean(tru), hi = ls$k %in% highlight)
+  data.frame(fit = fits$fit[i], window = fits$window[i], group = fits$group[i], repeat_of_2tp = fits$repeat_of_2tp[i],
+             minobs = m, k = ls$k, est = ls$mean - mean(ls$mean), true = tru - mean(tru), hi = ls$k %in% highlight)
 }))))
 c_tab <- do.call(rbind, lapply(split(c_rows, c_rows[c("fit", "window", "minobs")], drop = TRUE), function(x) data.frame(
   fit = x$fit[1], window = x$window[1], minobs = x$minobs[1], frequent = nrow(x),
   pearson_r = if (nrow(x) > 2) round(stats::cor(x$true, x$est), 3) else NA_real_)))
 c_tab <- c_tab[order(c_tab$window, match(c_tab$fit, fit_levels), c_tab$minobs), ]
 utils::write.table(c_tab, file.path(out, "supp2c_example.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
-c_rows$fit <- factor(c_rows$fit, fit_levels)
-p <- ggplot(c_rows, aes(true, est, colour = hi)) +
-  facet_grid(fit + paste("window", window) ~ paste("minobs", minobs), scales = "free") +
-  geom_abline(linewidth = 0.2) + geom_point(size = 0.6, show.legend = FALSE) +
-  scale_colour_manual(values = c("FALSE" = "black", "TRUE" = "#FFA500")) +
-  labs(x = "true fitness (centred)", y = "estimated fitness (centred)", subtitle = paste(id, "(lambda = 1.6)")) +
-  theme_classic(base_size = 7) + theme(strip.background = element_blank(), strip.text.y = element_text(angle = 0))
-ggsave(file.path(fig, "supp2c_example.png"), p, width = 170, height = 22 * length(unique(paste(c_rows$fit, c_rows$window))) + 20,
+# Every method in the same panel; panels by window and design (the paper's
+# fits with the design they share) and minobs. The two karyotypes of the
+# paper's figure are drawn larger.
+cp <- c_rows[!c_rows$repeat_of_2tp, ]
+cp$fit <- factor(cp$fit, fit_levels)
+cp$row <- factor(paste0("window ", cp$window, "\n", cp$group),
+                 paste0("window ", c(2L, 8L, 8L), "\n", c("2 time points", "2 time points", "all time points")))
+cp$col <- factor(paste("minobs", cp$minobs), paste("minobs", c(5, 10, 20)))
+p <- ggplot(cp, aes(true, est, colour = fit)) +
+  facet_grid(row ~ col, scales = "free", drop = TRUE) +
+  geom_abline(linewidth = 0.2) + geom_point(aes(size = hi), alpha = 0.7) +
+  scale_size_manual(values = c("FALSE" = 0.5, "TRUE" = 1.6), guide = "none") +
+  scale_colour_manual(NULL, values = fit_colours) +
+  labs(x = "true fitness (centred)", y = "estimated fitness (centred)",
+       subtitle = paste(id, "(lambda = 1.6); larger points: the paper's two highlighted karyotypes")) +
+  theme_classic(base_size = 7) +
+  theme(strip.background = element_blank(), strip.text.y = element_text(angle = 0), legend.position = "top")
+ggsave(file.path(fig, "supp2c_example.png"), p, width = 170, height = 30 * length(unique(cp$row)) + 25,
        units = "mm", dpi = 200, bg = "white", limitsize = FALSE)
 
 ## 2d-e -------------------------------------------------------------------------------
@@ -85,8 +123,8 @@ for (win in c(8L, 2L)) {
   obs_f <- sweep(as.matrix(yi$x), 2, colSums(yi$x), "/")[top, , drop = FALSE]
   tt <- seq(min(times), max(times), length.out = 50)
   for (i in which(fits$window == win)) {
-    path <- file.path(fit_dir(i, 20), "bootstrap_res.Rds")
-    if (!file.exists(path)) next
+    path <- fit_file(i, 20, "bootstrap_res.Rds")
+    if (is.null(path)) next
     b <- readRDS(path)
     reps <- lapply(seq_len(nrow(b$final_frequencies)), function(r) {
       x0 <- b$final_frequencies[r, ]
@@ -104,8 +142,10 @@ for (win in c(8L, 2L)) {
     obs_k <- sweep(obs_f[keep, , drop = FALSE], 2, colSums(obs_f[keep, , drop = FALSE]), "/")
     de_tab[[length(de_tab) + 1]] <- data.frame(fit = fits$fit[i], window = win, karyotypes = length(keep),
                                                mae = round(mean(abs(med[, at] - obs_k)), 4))
-    de_rows[[length(de_rows) + 1]] <- data.frame(fit = fits$fit[i], window = win, k = rep(keep, length(tt)),
-                                                 time = rep(tt, each = length(keep)), freq = as.vector(med))
+    if (!fits$repeat_of_2tp[i]) {
+      de_rows[[length(de_rows) + 1]] <- data.frame(fit = fits$fit[i], window = win, k = rep(keep, length(tt)),
+                                                   time = rep(tt, each = length(keep)), freq = as.vector(med))
+    }
   }
 }
 de_tab <- do.call(rbind, de_tab)

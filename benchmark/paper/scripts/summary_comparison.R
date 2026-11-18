@@ -32,8 +32,8 @@
 #                            shares of pairs where the method is better and
 #                            worse than alfak (the rest: ties) and a paired
 #                            test (better_than_alfak, worse_than_alfak,
-#                            p_vs_alfak), and for pairwise, state space and
-#                            auto the same against anchored, for the
+#                            p_vs_alfak), and for pairwise and state space
+#                            the same against anchored, for the
 #                            missegregation-rate arms against `reference`
 #                            (columns *_anchored)
 #   summary_performance.tsv  per data set, group and method: fits, failed
@@ -63,8 +63,7 @@ options(width = 200)
 set.seed(1)
 methods <- c("karst", karst_other_methods, names(karst_beta_methods), "alfak")
 method_colours <- c(karst = "#D55E00", karst_pairwise = "#CC79A7", karst_state_space = "#7B3294",
-                    karst_auto = "#117733", karst_beta_auto = "#1B7837", karst_beta_fixed = "#762A83",
-                    alfak = "#0072B2")
+                    karst_beta_auto = "#1B7837", karst_beta_fixed = "#762A83", alfak = "#0072B2")
 # the fixed-rate fit a method is also compared with, NA for none
 reference_of <- function(mt, arms) {
   if (mt %in% karst_other_methods || mt == "karst_beta_fixed") return("karst")
@@ -214,7 +213,12 @@ for (mt in c("wasserstein", "euclidean")) {
   r$window <- NA_integer_
   acc <- rbind(acc, r)
 }
-novel <- label_salehi_fits(readRDS(file.path(tab, "salehi_novel.Rds")))
+# Both Salehi panels pair the fits that ran (run status; per_fit.Rds of
+# analyse_salehi.R likewise), whatever their CV score.
+novel <- readRDS(file.path(tab, "salehi_novel.Rds"))
+run_ok <- with(sal_runs_all[sal_runs_all$status == "ok", ], paste(fi, design, method, min_obs))
+novel <- novel[paste(novel$fi, novel$design, novel$method, novel$min_obs) %in% run_ok, ]
+novel <- label_salehi_fits(novel)
 novel <- novel[novel$ids == "f" & novel$method %in% methods & !excluded("salehi", novel$fi, novel$design), ]
 novel <- novel[!(fit_group(novel$fit) == "all time points" & !multi(novel$fi)), ]
 novel$value <- as.numeric(novel$Estimate > 0 & novel$p < 0.05)

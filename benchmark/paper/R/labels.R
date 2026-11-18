@@ -8,26 +8,23 @@
 # time points), a reference only. karst's other ways of fitting more than two
 # time points (fit_sparse_joint(series = ...), c7f809c on; methods
 # karst_pairwise and karst_state_space, R/fit.R) are "all time points" fits of
-# their own; "KARST all time points" is the default, "anchored". "KARST auto"
-# is, per input, one of the three picked by a rule (scripts/auto_picks.R).
+# their own; "KARST all time points" is the default, "anchored".
 # "KARST beta auto" (ac36fd1 round) is karst with its missegregation rate
 # picked per input (beta = "auto"), on both designs; "KARST beta 5e-5" is
 # karst at 5e-5 on the missegregation simulations, whose "karst" fits take
 # the true rate.
 
 fit_levels <- c("KARST 2 time points", "KARST all time points", "KARST pairwise all time points",
-                "KARST state space all time points", "KARST auto all time points",
-                "KARST beta auto 2 time points", "KARST beta auto all time points",
+                "KARST state space all time points", "KARST beta auto 2 time points", "KARST beta auto all time points",
                 "KARST beta 5e-5 2 time points", "KARST beta 5e-5 all time points", "alfak dev2@f93b2d2 2 time points",
                 "alfak dev2@f93b2d2 all time points", "paper (alfak main@4ad82b0)")
 fit_colours <- c("KARST 2 time points" = "#D55E00", "KARST all time points" = "#E69F00",
                  "KARST pairwise all time points" = "#CC79A7", "KARST state space all time points" = "#7B3294",
-                 "KARST auto all time points" = "#117733",
                  "KARST beta auto 2 time points" = "#1B7837", "KARST beta auto all time points" = "#7FBC41",
                  "KARST beta 5e-5 2 time points" = "#762A83", "KARST beta 5e-5 all time points" = "#C2A5CF",
                  "alfak dev2@f93b2d2 2 time points" = "#0072B2", "alfak dev2@f93b2d2 all time points" = "#56B4E9", "paper (alfak main@4ad82b0)" = "#999999")
 method_label <- c(karst = "KARST", karst_pairwise = "KARST pairwise", karst_state_space = "KARST state space",
-                  karst_auto = "KARST auto", karst_beta_auto = "KARST beta auto",
+                  karst_beta_auto = "KARST beta auto",
                   karst_beta_fixed = "KARST beta 5e-5", karst_free = "KARST free", alfak = "alfak dev2@f93b2d2")
 fit_method <- function(fit) sub(" .*$", "", as.character(fit))
 fit_group <- function(fit) ifelse(grepl("all time points$", fit), "all time points", "2 time points")
@@ -53,6 +50,13 @@ label_fit_rows <- function(d, all, two) {
     d <- do.call(rbind, c(list(d, dup), series))
   }
   d$fit <- factor(d$fit, fit_levels)
+  # methods without a label here (e.g. the alfak2 era's karst_auto) are left
+  # out, and said so
+  unlabelled <- is.na(d$fit)
+  if (any(unlabelled)) {
+    message("Rows left out, method without a label (R/labels.R): ", paste(unique(d$method[unlabelled]), collapse = ", "))
+    d <- d[!unlabelled, , drop = FALSE]
+  }
   d
 }
 

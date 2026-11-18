@@ -18,8 +18,14 @@
 #
 # Writes BENCH_RESULTS/analysis/fig456/:
 #   fig4_estimates.tsv   per arm and parameter: draws, 2.5/50/97.5% quantiles
-#                        (4d: PDX_v, cisplatin_v, PDX_kv, cisplatin_kv; 4f:
-#                        the similarity model's coefficients)
+#                        (4d: PDX_v, cisplatin_v, PDX_kv, cisplatin_kv, and
+#                        the variance models with na.rm, PDX_kv_narm,
+#                        cisplatin_kv_narm; 4f: the similarity model's
+#                        coefficients)
+#   fig4_kvar_dropped.tsv  per arm: frequent karyotypes per draw and the
+#                        share the variance models of 4d lose (a neighbour
+#                        missing from the landscape; 06 takes the variance
+#                        without na.rm)
 #   fig4_deltaf.tsv      example draw (seed 42): delta f by context and
 #                        treatment (4c)
 #   fig5_tests.tsv       (from fig5_wgd.R) and fig5_model.tsv (5b terms)
@@ -29,8 +35,11 @@
 #   fig6_agreement.tsv   per arm and landscape: same dominant karyotype as the
 #                        paper's at the lowest and the highest rate
 #   fig6_reproduction.tsv  the paper line rerun against the stored results
-#   conclusions.tsv      per statement and arm: the value, whether its sign
-#                        and significance agree with the reference
+#   conclusions.tsv      per statement and arm: the value, its significance
+#                        and whether it agrees with the reference: the same
+#                        significance and, where both are significant, the
+#                        same sign; intercepts are not statements, Fig. 6 is
+#                        descriptive (fig456_conclusions(), R/paper_fig456.R)
 # and figures/fig4_effects.png, fig5_wgd.png, fig6_dominance.png.
 
 for (f in list.files("R", full.names = TRUE)) source(f)
@@ -69,7 +78,11 @@ df1 <- bind_rows_fill(list(f4$df1, f4_all$df1, pub1))
 df2 <- bind_rows_fill(list(f4$df2, f4_all$df2, pub2))
 est <- NULL
 if (!is.null(df1)) {
-  long1 <- do.call(rbind, lapply(c("PDX_v", "cisplatin_v", "PDX_kv", "cisplatin_kv"), function(v)
+  # the na.rm sensitivity of the variance models (fig4_cna_effects.R; rounds
+  # from 2026-11-18 on)
+  params1 <- intersect(c("PDX_v", "cisplatin_v", "PDX_kv", "cisplatin_kv", "PDX_kv_narm", "cisplatin_kv_narm"),
+                       names(df1))
+  long1 <- do.call(rbind, lapply(params1, function(v)
     data.frame(arm = df1$arm, param = v, value = df1[[v]])))
   long2 <- data.frame(arm = df2$arm, param = df2$param, value = df2$Estimate)
   long <- rbind(long1, long2)
@@ -79,6 +92,23 @@ if (!is.null(df1)) {
   }))
   est <- est[order(match(est$arm, arm_levels), est$param), ]
   write_tab(est, "fig4_estimates")
+}
+# Frequent karyotypes the variance models of 4d lose: 06 takes the variance
+# of delta f without na.rm, so one neighbour missing from the landscape
+# drops the karyotype (fig4_cna_effects.R; the published bootstrap does not
+# record it).
+kvar_tab <- NULL
+if (!is.null(df1$kvar_frequent)) {
+  kv <- df1[!is.na(df1$kvar_frequent) & df1$kvar_frequent > 0, ]
+  kvar_tab <- do.call(rbind, lapply(split(kv, kv$arm), function(x) {
+    share <- x$kvar_na / x$kvar_frequent
+    q <- q3(share)
+    data.frame(arm = x$arm[1], draws = nrow(x), frequent_median = stats::median(x$kvar_frequent),
+               dropped_median = stats::median(x$kvar_na), share_dropped_lo = round(q[1], 3),
+               share_dropped_median = round(q[2], 3), share_dropped_hi = round(q[3], 3))
+  }))
+  kvar_tab <- kvar_tab[order(match(kvar_tab$arm, arm_levels)), ]
+  write_tab(kvar_tab, "fig4_kvar_dropped")
 }
 if (!is.null(f4$example)) {
   ex <- f4$example
@@ -155,61 +185,11 @@ if (length(f6_all$paper)) {
 }
 
 ## Conclusions ------------------------------------------------------------------------
-# Fig. 4: sign of the median and whether the 95% interval excludes 0; the
-# reference is the published bootstrap.
-concl <- list()
-if (!is.null(est)) {
-  ref <- est[est$arm == "paper_published", ]
-  for (i in seq_len(nrow(est))) {
-    r <- ref[ref$param == est$param[i], ]
-    if (!nrow(r)) next
-    sig <- function(x) if (!is.finite(x$lo) || !is.finite(x$hi)) NA else (x$lo > 0 | x$hi < 0)
-    concl[[length(concl) + 1]] <- data.frame(
-      figure = if (est$param[i] %in% c("PDX_v", "cisplatin_v", "PDX_kv", "cisplatin_kv")) "4d" else "4f",
-      statement = est$param[i], arm = est$arm[i], value = round(est$mid[i], 4),
-      interval = sprintf("[%.3g, %.3g]", est$lo[i], est$hi[i]), significant = sig(est[i, ]),
-      reference_value = round(r$mid, 4), reference_significant = sig(r),
-      agrees = sign(est$mid[i]) == sign(r$mid) & identical(sig(est[i, ]), sig(r)))
-  }
-}
-# Fig. 5: KS permutation p < 0.05 and the model terms at p < 0.05; the
-# reference is the paper's fits on every input.
-if (!is.null(f5_tests)) {
-  r5 <- f5_tests[f5_tests$arm == "paper_all_inputs", ]
-  for (i in seq_len(nrow(f5_tests))) {
-    concl[[length(concl) + 1]] <- data.frame(
-      figure = "5c", statement = "WGD+ vs WGD- delta f (KS, permutation)", arm = f5_tests$arm[i],
-      value = round(f5_tests$ks_D[i], 3), interval = sprintf("p = %.3g", f5_tests$ks_perm_p[i]),
-      significant = f5_tests$ks_perm_p[i] < 0.05, reference_value = if (nrow(r5)) round(r5$ks_D, 3) else NA,
-      reference_significant = if (nrow(r5)) r5$ks_perm_p < 0.05 else NA,
-      agrees = if (nrow(r5)) (f5_tests$ks_perm_p[i] < 0.05) == (r5$ks_perm_p < 0.05) else NA)
-  }
-}
-if (!is.null(f5_model)) {
-  r5m <- f5_model[f5_model$arm == "paper_all_inputs", ]
-  for (i in seq_len(nrow(f5_model))) {
-    r <- r5m[r5m$term == f5_model$term[i], ]
-    concl[[length(concl) + 1]] <- data.frame(
-      figure = "5b", statement = f5_model$term[i], arm = f5_model$arm[i], value = signif(f5_model$Estimate[i], 3),
-      interval = sprintf("p = %.3g", f5_model$p[i]), significant = f5_model$p[i] < 0.05,
-      reference_value = if (nrow(r)) signif(r$Estimate, 3) else NA,
-      reference_significant = if (nrow(r)) r$p < 0.05 else NA,
-      agrees = if (nrow(r)) sign(f5_model$Estimate[i]) == sign(r$Estimate) & (f5_model$p[i] < 0.05) == (r$p < 0.05) else NA)
-  }
-}
-# Fig. 6: landscapes whose dominant karyotype changes with the rate.
-if (!is.null(dom_tab)) {
-  r6 <- dom_tab[dom_tab$arm == if (any(dom_tab$arm == "paper_all_inputs")) "paper_all_inputs" else "paper_published", ]
-  for (i in seq_len(nrow(dom_tab))) {
-    concl[[length(concl) + 1]] <- data.frame(
-      figure = "6", statement = "landscapes whose dominant karyotype changes with the missegregation rate",
-      arm = dom_tab$arm[i], value = dom_tab$share_switching[i],
-      interval = sprintf("%d of %d", dom_tab$switching[i], dom_tab$landscapes[i]), significant = dom_tab$switching[i] > 0,
-      reference_value = r6$share_switching, reference_significant = r6$switching > 0,
-      agrees = (dom_tab$switching[i] > 0) == (r6$switching > 0))
-  }
-}
-conclusions <- do.call(rbind, concl)
+# fig456_conclusions() (R/paper_fig456.R): Fig. 4 against the published
+# bootstrap, Fig. 5 against the paper's fits on every input; agreement is the
+# same significance and, where both are significant, the same sign;
+# intercepts left out; Fig. 6 descriptive.
+conclusions <- fig456_conclusions(est, f5_tests, f5_model, dom_tab)
 if (!is.null(conclusions)) {
   conclusions$arm_label <- arm_label[conclusions$arm]
   write_tab(conclusions, "conclusions")
@@ -231,15 +211,21 @@ if (!is.null(est)) {
   ggsave(file.path(fig, "fig4_effects.png"), p, width = 200, height = 120, units = "mm", dpi = 200, bg = "white")
 }
 if (length(f5)) {
+  # every method in the same panel; panels by design (the paper's fits, all
+  # time points, are drawn in both as the reference) and by WGD status
   dfl <- bind_rows_fill(lapply(f5, `[[`, "dfl"))
+  design_of <- c(stats::setNames(ifelse(fig456_arms$all, "all time points", "2 time points"), fig456_arms$key))
+  dfl$design <- design_of[dfl$arm]
+  dfl <- rbind(dfl[dfl$arm != "paper", ], transform(dfl[dfl$arm == "paper", ], design = "2 time points"),
+               dfl[dfl$arm == "paper", ])
   dfl$arm_label <- factor(arm_label[dfl$arm], arm_label[arm_levels])
-  p <- ggplot(dfl, aes(df, colour = wgd_str)) +
-    facet_wrap(~arm_label, ncol = 4) + stat_ecdf(linewidth = 0.4) +
+  p <- ggplot(dfl, aes(df, colour = arm_label)) +
+    facet_grid(wgd_str ~ design) + stat_ecdf(linewidth = 0.4) +
     scale_x_continuous("fitness effect (delta f)", limits = c(-0.05, 0.05)) +
-    scale_colour_manual(NULL, values = c("WGD-" = "#8E44AD", "WGD+" = "#00724D")) +
-    labs(y = "cumulative fraction", subtitle = "Fig. 5c: SA906 fits") +
+    scale_colour_manual(NULL, values = fit_col) +
+    labs(y = "cumulative fraction", subtitle = "Fig. 5c: SA906 fits (KARST one minobs per trajectory)") +
     theme_classic(base_size = 7) + theme(strip.background = element_blank(), legend.position = "top")
-  ggsave(file.path(fig, "fig5_wgd.png"), p, width = 200, height = 90, units = "mm", dpi = 200, bg = "white")
+  ggsave(file.path(fig, "fig5_wgd.png"), p, width = 200, height = 120, units = "mm", dpi = 200, bg = "white")
 }
 if (!is.null(dom_tab)) {
   d <- dom_tab
@@ -254,6 +240,10 @@ if (!is.null(dom_tab)) {
 }
 options(width = 220)
 if (!is.null(est)) { cat("== Fig. 4 estimates\n"); print(est, row.names = FALSE) }
+if (!is.null(kvar_tab)) {
+  cat("\n== Fig. 4d, frequent karyotypes the variance models lose (no na.rm, as 06)\n")
+  print(kvar_tab, row.names = FALSE)
+}
 if (!is.null(f5_tests)) { cat("\n== Fig. 5 tests\n"); print(f5_tests, row.names = FALSE) }
 cat("\n== Fig. 6 dominance\n"); print(dom_tab, row.names = FALSE)
 if (exists("rep6")) {
@@ -262,6 +252,6 @@ if (exists("rep6")) {
       sum(rep6$same_dominants, na.rm = TRUE), " largest difference", signif(max(rep6$max_diff, na.rm = TRUE), 2), "\n")
 }
 if (!is.null(conclusions)) {
-  cat("\n== Agreement with the reference, per arm\n")
+  cat("\n== Agreement with the reference, per arm (tested statements; Fig. 6 descriptive)\n")
   print(stats::aggregate(agrees ~ arm, conclusions, function(v) sprintf("%d/%d", sum(v, na.rm = TRUE), sum(!is.na(v)))))
 }
