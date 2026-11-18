@@ -19,6 +19,25 @@ The code is not part of the KARST package (`.Rbuildignore`). Up to version
 0.2.0 KARST was called alfak2 and this benchmark was a repository of its own
 (alfak2-paper-benchmark); the reports of that time are in `docs/alfak2_era/`.
 
+## Code adapted from the paper
+
+Some files of this folder adapt the analysis code of the ALFA-K paper by
+Richard J. Beck (https://github.com/Richard-Beck/ALFA-K), parts of it
+unchanged:
+
+| File | Adapted from |
+|---|---|
+| `scripts/fig4_cna_effects.R` | `scripts/06_cna_fitness_effects.R` |
+| `scripts/fig5_wgd.R` | `scripts/07_wgd.R`, `dev/wgd4Noemi.R` |
+| `scripts/fig6_steady_states.R` | `scripts/04_analyze_fit_data.R` |
+| `R/paper_fig456.R` | `R/utils_karyo.R` (karyotype helpers, unchanged) |
+| `R/metrics_salehi.R` | `scripts/04_analyze_fit_data.R`, `R/utils_karyo.R` |
+| `R/metrics_abm.R` | `scripts/S04_process_abm_results.R`, `R/utils_karyo.R` |
+
+The ALFA-K repository states no license. The adapted code remains the work of
+its author and is not covered by the MIT license of karst (`LICENSE.md`),
+which applies to the karst package and the rest of this repository.
+
 ## Design
 
 Two time points are the minimum input of KARST. Each time window is fitted with
