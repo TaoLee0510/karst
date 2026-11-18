@@ -19,6 +19,23 @@ names change, and old names have no aliases.
   `doc/commit_map.tsv`.
 - The ALFA-K paper benchmark is part of the repository (`benchmark/paper`).
 
+## Validation
+
+Every KARST fit of the ALFA-K paper benchmark, the Salehi horizon test and the
+development benchmark (held-out landscapes included) was redone with 1.0.0
+(round e7e32f8, `benchmark/paper/docs/report_e7e32f8.md`):
+
+- The fits are those of alfak2 0.2.0 (round 05a8855): the same landscapes
+  (to 1e-16), histories, cross-validation predictions and forecasts, except
+  the cross-validation of pairwise fits, which the fix above changes.
+- The paper's tests, the Fig. 2d noise check and the forecasts against later
+  passages give the numbers of the alfak2 era. Tables that pick fits by the
+  cross-validation score keep tied scores, as the paper does, and move slightly
+  with rounding.
+- On the development benchmark, coverage at one and two steps is higher than in
+  the runs of 2026-11-10/11, whose fits predate the deficit of karyotypes seen
+  at no time point; the method document's numbers are from this rerun.
+
 ## Fixes (code review of 2026-11-17)
 
 - A missegregation rate given to `fit_sparse_joint()` or

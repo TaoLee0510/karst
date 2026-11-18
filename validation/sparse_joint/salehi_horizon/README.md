@@ -9,11 +9,13 @@ test, and the score is a proper one.
 
 ## Design
 
-- **Inputs and fits.** The "ends" fits of the paper benchmark's round 05a8855,
-  read only: KARST at its default (`initial_state = "balance"`, which is the
-  default again), alfak (alfakR_dev2 f93b2d2) and, from the
-  alfak2-salehi-variants project, KARST with `initial_state = "free"`;
-  minobs 5, 10 and 20. No fit is repeated.
+- **Inputs and fits.** The "ends" fits of a round of the paper benchmark
+  (`benchmark/paper`), read only: KARST at its default (`initial_state =
+  "balance"`), alfak (alfak dev2@f93b2d2) and KARST with `initial_state =
+  "free"` (method `karst_free`, fitted by the same round into a folder of its
+  own); minobs 5, 10 and 20. The test makes no fit of its own. The first run
+  (2026-11-16, alfak2 era) read round 05a8855 and the free fits of the
+  alfak2-salehi-variants project; the KARST 1.0.0 run reads round e7e32f8.
 - **Forecasts.** From the trajectory's last passage, as the paper benchmark
   forecasts (`forecast_salehi_dir()`: `alfakR::predict_evo`, ABM, 5
   replicates, missegregation 5e-5, population 1e7), but up to the furthest
@@ -38,8 +40,22 @@ test, and the score is a proper one.
 ## Files
 
 - `make_tasks.R`, `forecast_score.R`: the task table and one task (one fit),
-  run on HPC in the paper benchmark's image (`array_task.sh`, not tracked).
-- `analyse.R`: the tables and figure in `results/report/` (not tracked).
+  run on HPC in the paper benchmark's image (`benchmark/paper`:
+  `hpc/submit.sh horizon TASKS.tsv 8G 02:00:00`, with `HORIZON_OUT` the rows'
+  folder).
+- `reuse_rows.R`: carries a method's rows over from an earlier run under its
+  current name (alfak's rows of the first run, whose fits are the same).
+- `analyse.R`, `analyse_all.R`: the tables and figures in `results/report/`
+  and `results/report_all/` (not tracked).
+
+## KARST 1.0.0 rerun (2026-11-18)
+
+With round e7e32f8 of the paper benchmark (KARST 1.0.0), 1662 tasks for the
+two-time-point fits (KARST, KARST free) and 2460 for the fits of every passage
+(anchored, pairwise, state space, free); alfak's rows were carried over from
+the first run (`reuse_rows.R`), its fits being the same folders. Every table of
+`results/report/` and `results/report_all/` equals that of the first run to
+within 1e-14: the numbers below stand for KARST 1.0.0.
 
 ## Results (2026-11-16)
 

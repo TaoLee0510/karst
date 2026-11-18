@@ -1157,8 +1157,9 @@ Wasserstein distance from the parent passage to the forecast, and the observed
 change, from the parent to the daughter passage, both on the karyotypes of the
 fitted landscape (its Fig.~2d). On this test \texttt{alfak} ranks better than
 \texttt{karst}. On the rows that every compared method has (paper benchmark
-round 05a8855, without the paper's selection by cross-validation), the
-Spearman correlations were:
+round e7e32f8 of KARST 1.0.0, whose fits are those of \texttt{alfak2} round
+05a8855; without the paper's selection by cross-validation), the Spearman
+correlations were:
 
 \begin{center}
 \begin{tabular}{L{0.42\textwidth}L{0.22\textwidth}L{0.22\textwidth}}
@@ -1239,8 +1240,9 @@ The Salehi trajectories are sequences of passages. A fit of the first and the
 last passage of a trajectory, $(a,x)$, can be tested on every passage that
 follows $x$; the paper benchmark's trajectories of different lengths from the
 same start give the inputs $(a,b), (a,c), (a,d), \dots$, from each of 72
-starting passages. No fit was repeated: the fits of the paper benchmark (round
-05a8855) were forecast from their last passage with the benchmark's engine
+starting passages. No fit was made for this test: the fits of the paper
+benchmark (round e7e32f8, the same as \texttt{alfak2} round 05a8855) were
+forecast from their last passage with the benchmark's engine
 (\texttt{alfakR::predict\_evo}, agent-based, five replicates, $\beta=5\times
 10^{-5}$, population $10^7$) up to every descendant within four passages, and
 scored against it.

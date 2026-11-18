@@ -170,7 +170,10 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
     labs(x = "passages ahead of the parent", y = "karst minus alfak (per cell)", title = "b  Paired difference")
   for (ext in c("png", "pdf")) {
     f <- file.path(out_dir, "figures", paste0("horizon.", ext))
-    if (ext == "png") grDevices::png(f, width = 10, height = 4, units = "in", res = 150) else grDevices::pdf(f, width = 10, height = 4)
+    # cairo: no X11 display on the HPC nodes
+    if (ext == "png") grDevices::png(f, width = 10, height = 4, units = "in", res = 150,
+                                     type = if (capabilities("cairo")) "cairo" else getOption("bitmapType")) else
+      grDevices::pdf(f, width = 10, height = 4)
     grid::grid.newpage()
     grid::pushViewport(grid::viewport(layout = grid::grid.layout(1, 2, widths = grid::unit(c(0.6, 0.4), "npc"))))
     print(a, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 1))
