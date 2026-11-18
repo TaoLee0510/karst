@@ -1,5 +1,5 @@
-KARST_COMMIT=b9a275e
-KARST_SHA256=b08369fdc38f990fa8c88bd21d4c61f1c58f0121ee959b62d15d3614efe214e3
+KARST_COMMIT=e7e32f8
+KARST_SHA256=62e17eb1398fdaeb9d88090b6ab5ecd6ba620261dc10e85131134887011da381
 # The commit of karst that a round fits, and the sha256 of its source archive
 # (git archive --format=tar.gz), set when a round is staged.
 # Rounds of the alfak2 era (before the rename to KARST) are in
@@ -7,3 +7,7 @@ KARST_SHA256=b08369fdc38f990fa8c88bd21d4c61f1c58f0121ee959b62d15d3614efe214e3
 # alfak2 commit ids from before the history was cleaned; doc/commit_map.tsv in
 # the karst repository maps them to the current ids. Their round of record is
 # 348addd (identical to 05a8855).
+# Earlier rounds of KARST:
+#   b9a275e  sha256 b08369fdc38f990fa8c88bd21d4c61f1c58f0121ee959b62d15d3614efe214e3
+#            results in results_b9a275e/: stopped 2026-11-17 with every fit but
+#            one done and no tables, superseded by e7e32f8 (review fixes)

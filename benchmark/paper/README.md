@@ -179,7 +179,8 @@ and `alfak2_state_space`, set `COMPARE_OLD_METHOD` to that name.
 
 | KARST | Results | Report |
 |---|---|---|
-| b9a275e (1.0.0, the rename; all KARST fits redone) | `results_b9a275e/` | `docs/report_b9a275e.md` |
+| b9a275e (1.0.0, the rename; stopped with every fit but one done, superseded by e7e32f8) | `results_b9a275e/` | |
+| e7e32f8 (1.0.0 with the fixes of the code review of 2026-11-17; all KARST fits redone) | `results_e7e32f8/` | `docs/report_e7e32f8.md` |
 
 The same round fits KARST with `initial_state = "free"` to the Salehi data
 (method `karst_free`, both designs) into `results_<commit>_free/`, for the

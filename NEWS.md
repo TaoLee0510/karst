@@ -1,7 +1,7 @@
 # karst 1.0.0 (2026-11-17)
 
 alfak2 is renamed KARST (Karyotype Abundance-based Reconstruction from Sparse
-Time points). The methods and their results are those of alfak2 0.2.0; only
+Time points). The methods are those of alfak2 0.2.0, with the fixes below;
 names change, and old names have no aliases.
 
 - The package is `karst`: `library(karst)`. Functions, classes, options and
@@ -17,6 +17,24 @@ names change, and old names have no aliases.
   are named by branch and commit, such as alfak dev2@f93b2d2.
 - Commit ids cited from before the rename map to the current history through
   `doc/commit_map.tsv`.
+- The ALFA-K paper benchmark is part of the repository (`benchmark/paper`).
+
+## Fixes (code review of 2026-11-17)
+
+- A missegregation rate given to `fit_sparse_joint()` or
+  `fit_sparse_joint_cohort()` replaces the one stored in `karst_data`; before,
+  `fit_sparse_joint_rates(beta_range =)` refitted prepared data at its stored
+  rate only.
+- `as_alfak()`: the cross-validation of a `series = "pairwise"` fit centres the
+  unseen karyotypes of each pair on the depth at the start of the pair, as the
+  fit does, not on the first time point's depth.
+- The two-layer pipeline (`fit_local_posterior()`, `build_karyotype_graph()`)
+  stops on more than two time points; before, it read the first two and
+  rescaled fitness by their share of the whole interval.
+- The default `anchor_covariance_inflation` covers every status a local fit
+  reports; a status it lacked stopped the two-layer fit.
+- `alfak_scale = TRUE` with a covariance reported for the near-field nodes only
+  (`truncated_nearfield_gmrf`) no longer stops on mismatched dimensions.
 
 # karst 0.2.0 (2026-11-17, released as alfak2)
 
