@@ -108,6 +108,16 @@ Two ways of reporting: the paper's rule (failed fits dropped, test
 instances selected by each method's own CV score) and a paired comparison
 on the inputs where both methods have a fit, without selection.
 
+The paper's rule keeps every minobs that ties for an input's highest CV
+score (S05: `Rxv == max(Rxv)`). alfak's scores never tie; KARST derives every
+minobs from one fit, and two or three of them often have the same
+cross-validation predictions and scores that differ only by rounding, so that
+a strict comparison counted such an input once, twice or three times
+depending on the rounding. Since 2026-11-18 scores within 1e-8 of the best
+count as tied and the lowest minobs of a tie is kept (`R/select.R`), in every
+analysis that selects by CV score (Supp. Fig. 4c and 5, Fig. 1g, 2b-2f, 3e-f,
+4 and 6). For alfak and the paper's own fits the selection is the paper's.
+
 ## Settings
 
 * alfak algorithm settings as PANcanKFLs: `nboot = 500`,
@@ -269,6 +279,7 @@ benchmark of simulated tumours (`hpc/submit.sh dev TASK_FILE ...`,
 * `R/coverage.R` whether KARST can fit an input, decided before fitting
 * `R/fit.R` fitting with alfak or KARST
 * `R/labels.R` names and colours of the fits compared
+* `R/select.R` selection by CV score, the paper's rule with ties resolved
 * `R/forecast.R` ABM forecasts
 * `R/metrics_abm.R` scores of S04 (`abm_preds_summary.Rds`)
 * `R/metrics_salehi.R` scores of 03, references of 04, regression data of 05

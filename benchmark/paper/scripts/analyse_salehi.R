@@ -208,7 +208,7 @@ write_tab(fail, "fit_failures")
 ## Fig. 2b: CV score against training length ----------------------------------------
 # 04: one row per fit and minobs that did not fail, best minobs per trajectory
 x0 <- fits[!is.na(fits$xv), ]
-x0 <- do.call(rbind, lapply(split(x0, x0[c("fit", "fi")], drop = TRUE), function(d) d[d$xv == max(d$xv), ]))
+x0 <- select_by_cv(x0, c("fit", "fi"), "min_obs", "xv")
 f2b <- by_fit(x0, function(x) do.call(rbind, lapply(split(x, x$ntrain), function(y) data.frame(
   ntrain = y$ntrain[1], gap = y$gap[1], trajectories = nrow(y), xv_median = round(stats::median(y$xv), 3),
   xv_share_pos = round(mean(y$xv > 0), 3)))))
@@ -231,12 +231,14 @@ p <- ggplot(x0, aes(pmax(-1, xv), factor(ntrain), colour = fit)) +
 save_plot(p, "fig2b_cv_by_length", 200, 70)
 
 ## Paper's selection and evaluation passage (04) ------------------------------------
+# The best minobs of each trajectory, then the best trajectory of each start;
+# ties resolved (R/select.R).
 select_paper <- function(x) {
   x <- x[!is.na(x$xv) & x$xv > 0 & !is.na(x$test_treat) & x$test_treat != "NaN", ]
   if (!nrow(x)) return(NULL)
-  x <- do.call(rbind, lapply(split(x, x$fi), function(d) d[d$xv == max(d$xv), ]))
+  x <- select_by_cv(x, "fi", "min_obs", "xv")
   x$clean_id <- sub("_l_\\d+_d1_\\d+_d2_\\d+$", "", x$fi)
-  x <- do.call(rbind, lapply(split(x, x$clean_id), function(d) d[d$xv == max(d$xv), ]))
+  x <- select_by_cv(x, "clean_id", "fi", "xv")
   rownames(x) <- NULL
   x
 }
@@ -485,7 +487,10 @@ paper_rule <- function(x) {
                 scores$xv > 0, ]
   if (!nrow(m)) return(NULL)
   m$tail_id <- vapply(strsplit(m$fi, "_l_", fixed = TRUE), `[`, character(1), 1)
-  m <- do.call(rbind, lapply(split(m, m$tail_id), function(d) d[d$xv == max(d$xv), ]))
+  # the best fit and minobs of each start, ties resolved (R/select.R): the
+  # lowest minobs, then the first trajectory
+  m$choice <- paste(sprintf("%04d", as.integer(m$min_obs)), m$fi)
+  m <- select_by_cv(m, "tail_id", "choice", "xv")
   # keep the row order: 05 drops the first row of each trajectory (an intercept)
   x[paste(x$fi, x$min_obs) %in% paste(m$fi, m$min_obs), ]
 }

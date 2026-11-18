@@ -27,10 +27,13 @@ cat("Fig. 6, arm", arm$key, " exclusion", exclude, "\n")
 rows <- fig456_fit_rows(arm, paths, exclude)
 x <- do.call(rbind, lapply(rows, function(r) r[c("fi", "min_obs", "xv", "test_treat")]))
 x <- x[!is.na(x$xv) & x$xv > 0 & x$test_treat != "NaN", ]
-x <- do.call(rbind, lapply(split(x, x$fi), function(df) df[df$xv == max(df$xv), ]))
+# the best minobs of each trajectory, then the best trajectory of each start,
+# ties resolved (R/select.R)
+x <- select_by_cv(x, "fi", "min_obs", "xv")
+x <- x[!duplicated(x$fi), ]
 rownames(x) <- NULL
 x$clean_id <- sub("_l_\\d+_d1_\\d+_d2_\\d+$", "", x$fi)
-x <- do.call(rbind, lapply(split(x, x$clean_id), function(df) utils::head(df[df$xv == max(df$xv), ], 1)))
+x <- select_by_cv(x, "clean_id", "fi", "xv")
 x <- x[!duplicated(x$fi), ]
 cat("landscapes:", nrow(x), "\n")
 p <- 0.00002 * 2^(1:8)

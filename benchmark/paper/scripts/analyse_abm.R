@@ -77,9 +77,9 @@ save_plot <- function(p, name, width, height) {
 }
 theme_set(theme_classic(base_size = 8) + theme(strip.background = element_blank(), legend.position = "top"))
 # Best CV score among the minobs of one fit of one input (S05: ties kept).
+# The paper's choice of minobs by CV score, with ties resolved (R/select.R).
 select_best_xv <- function(d, by = c("fit", "sim_id", "window")) {
-  d <- d[is.finite(d$Rxv), ]
-  do.call(rbind, lapply(split(d, d[by], drop = TRUE), function(x) x[x$Rxv == max(x$Rxv), , drop = FALSE]))
+  select_by_cv(d[is.finite(d$Rxv), ], by, "minobs", "Rxv")
 }
 
 ## Data -----------------------------------------------------------------------

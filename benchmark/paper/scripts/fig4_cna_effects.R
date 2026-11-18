@@ -55,15 +55,11 @@ rows <- fig456_fit_rows(arm, paths, exclude)
 if (arm$method == "alfak_paper") rows <- rows[vapply(rows, ncol, integer(1)) == 13L]
 x0 <- do.call(rbind, lapply(rows, function(r) utils::head(r[c("fi", "min_obs", "ntrain", "train_treat", "xv")], 1)))
 x0 <- x0[!is.na(x0$xv) & x0$xv > 0, ]
-x0 <- do.call(rbind, by(seq_len(nrow(x0)), x0$fi, function(i) {
-  sub <- x0[i, , drop = FALSE]
-  sub[sub$xv == max(sub$xv), ]
-}))
 # One fit per trajectory: karst derives every minobs from one fit, so xv is
-# often tied between minobs, and a trajectory kept twice breaks the profile
-# correlations (06 keeps every tie; the paper's fits have none). The lowest
-# minobs of a tie is kept.
-x0 <- x0[order(x0$fi, as.numeric(x0$min_obs)), ]
+# often tied between minobs (to rounding), and a trajectory kept twice breaks
+# the profile correlations (06 keeps every tie; the paper's fits have none).
+# The lowest minobs of a tie is kept (R/select.R).
+x0 <- select_by_cv(x0, "fi", "min_obs", "xv")
 x0 <- x0[!duplicated(x0$fi), ]
 rownames(x0) <- NULL
 lineages_raw <- readRDS(paths$salehi_lineages)

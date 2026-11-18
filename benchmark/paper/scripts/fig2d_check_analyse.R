@@ -82,9 +82,9 @@ scores <- scores[!input_key(scores$fi, scores$design) %in% excluded_keys, ]
 select_paper <- function(x) {
   x <- x[!is.na(x$xv) & x$xv > 0 & !is.na(x$test_treat) & x$test_treat != "NaN", ]
   if (!nrow(x)) return(NULL)
-  x <- do.call(rbind, lapply(split(x, x$fi), function(d) d[d$xv == max(d$xv), ]))
+  x <- select_by_cv(x, "fi", "min_obs", "xv")
   x$clean_id <- sub("_l_\\d+_d1_\\d+_d2_\\d+$", "", x$fi)
-  x <- do.call(rbind, lapply(split(x, x$clean_id), function(d) d[d$xv == max(d$xv), ]))
+  x <- select_by_cv(x, "clean_id", "fi", "xv")
   rownames(x) <- NULL
   x
 }

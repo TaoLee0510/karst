@@ -29,9 +29,11 @@ development benchmark (held-out landscapes included) was redone with 1.0.0
   (to 1e-16), histories, cross-validation predictions and forecasts, except
   the cross-validation of pairwise fits, which the fix above changes.
 - The paper's tests, the Fig. 2d noise check and the forecasts against later
-  passages give the numbers of the alfak2 era. Tables that pick fits by the
-  cross-validation score keep tied scores, as the paper does, and move slightly
-  with rounding.
+  passages give the numbers of the alfak2 era. Where the paper picks fits by the
+  cross-validation score, the benchmark now resolves ties (scores within 1e-8,
+  the lowest minobs kept): KARST derives every minobs from one fit, and the
+  paper's rule counted many inputs two or three times, as often as rounding
+  made their scores equal.
 - On the development benchmark, coverage at one and two steps is higher than in
   the runs of 2026-11-10/11, whose fits predate the deficit of karyotypes seen
   at no time point; the method document's numbers are from this rerun.

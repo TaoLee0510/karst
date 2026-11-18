@@ -21,11 +21,11 @@
    - pairwise：3265 个拟合的景观、历史长度和预报都相同，只有交叉验证变了（上面那处修复），影响深度不等的输入。
    - 与 b9a275e 比对：anchored 和 state space 完全相同（b9a275e 停掉时还缺一个 Salehi 拟合）；pairwise 只差交叉验证。
 2. **不按交叉验证挑选的表，与 alfak2 348addd 逐行相同。** 包括配对的景观和预报比较、错分率模拟、Salehi 的覆盖和失败统计、Fig. 2d 噪声检查、Fig. 5 检验、Fig. 6，以及汇总准确度表的 114 行中的 109 行（另 5 行见第 2 节）。alfak 和文章拟合的各行全部相同。
-3. **按文章规则用 CV 分数挑拟合的表，KARST 各臂有小的变化。**
-   - pairwise：交叉验证本身改了。
-   - anchored 和 state space：拟合没有变，但 CV 分数（R2R）由交叉验证的预测和景观算出，景观的 1e-16 差别使它有浮点误差（最大 2.3e-10）。文章规则保留并列最优的 minobs，所以"并列几个"会随浮点误差变化：窗口 2（两个时间点）的 ABM 输入中有 28/400 个的并列数不同，入选行数因此差 1–2 行（例如 Fig. 1g 的 109 对 110）。
-   - Fig. 4–6 的 19 条结论中，显著性没有变化；state space 的一条（4f `treat_pairsame`，−0.0013 → +0.0009）在 0 附近换了符号，与文章一致的条数从 10 变成 11。
-   - 这正是审阅第 8 条（"保留 CV 分数的并列"）的后果，是否改为去重由用户决定。
+3. **按文章规则用 CV 分数挑拟合时，并列现在按固定规则处理（第 7 节）。**
+   - 文章规则保留 CV 分数并列最优的全部 minobs。KARST 的各个 minobs 由同一次拟合派生，交叉验证的预测常常相同，分数只差浮点误差，于是一个输入被算 1、2 或 3 次，而且次数随浮点误差变化。ABM 上 KARST 的 1921 个输入，原规则留下 3282 行；alfak 从不并列。
+   - 用户 2026-11-18 决定：分数相差不到 1e-8 的算并列，取最小的 minobs，每个输入只留一个（`R/select.R`）。alfak 和文章自己的拟合挑出的结果与原规则逐个相同。
+   - 去重前的表保留在 `analysis_cv_ties_kept/` 和 `figures_cv_ties_kept/`。去重后 KARST 的样本数少了约 35–50%（ABM），合并后的比例变化约 0.03 以内（例如 Fig. 1g 第 10 次传代，窗口 2 胜过不变的比例 0.68 → 0.65），细分的小组变化更大（第 7 节）。
+   - 与 alfak2 348addd 相比，Fig. 4–6 的 19 条结论中显著性没有变化；state space 的一条（4f `treat_pairsame`，−0.0013 → +0.0009）在 0 附近换了符号，与文章一致的条数从 10 变成 11。原因是一条轨迹（SA609UnBU_X7_l_3）三个 minobs 的 CV 分数只差 1e-16，两轮各挑了一个，而这几个 minobs 列出的核型不同（minobs 5 列 6831 个，20 列 2774 个）。去重规则固定取最小的 minobs 后，这样的选择不再随浮点误差变化。
 4. **主要结论与 alfak2 时期相同。**
    - ABM 和错分率模拟上，KARST 的景观在每个窗口都比 alfak 准，配对输入中 86–98% 更好（第 2 节）。
    - Salehi 的 Fig. 2d 主要反映抽样噪声；固定噪声后，KARST 没有一臂与 alfak 有可靠差别（第 3 节）。
@@ -84,9 +84,9 @@
 | 新核型的适应度预测其出现 | 两个时间点 | 480 | 0.57 | | | 0.21 |
 | | 全部时间点 | 351 | 0.52 | 0.66 | 0.55 | 0.24 |
 
-这些数与 alfak2 348addd 相同，只有 5 行有小差别，都与 CV 挑选的并列有关：
-- Salehi 新核型一项，KARST 两个时间点 0.565 → 0.567，全部时间点 0.521 → 0.516；同一项中 pairwise 和 state space 与 anchored 的配对比例差 ≤ 0.005；
-- ABM 全部时间点窗口 4 的 Spearman，pairwise 比 anchored 好的比例 0.322 → 0.323。
+这些数与 alfak2 348addd 相同，只有 5 行有小差别，都不涉及 CV 挑选：
+- Salehi 新核型一项，KARST 两个时间点 0.565 → 0.567，全部时间点 0.521 → 0.516；同一项中 pairwise 和 state space 与 anchored 的配对比例差 ≤ 0.005。原因是一条轨迹（SA039U_X51_l_3）对一个子代的逻辑回归完全分离，系数到 ±10¹⁴、p = 0，景观 1e-16 的差就让符号翻转（文章 05 脚本的做法，按原样保留）；
+- ABM 全部时间点窗口 4 的 Spearman，pairwise 比 anchored 好的比例 0.322 → 0.323（秩相关的并列）。
 
 **失败与资源**（`analysis/summary/summary_performance.tsv`；alfak 的资源取自 8327282 一轮的作业记录）
 
@@ -108,14 +108,14 @@
 
 ## 3. Fig. 2d：原始与固定抽样噪声后
 
-**文章的规则**：按 CV 分数挑拟合（`analysis/salehi/fig2d_wasserstein.tsv`）。挑出的子集各不相同、行数少，各臂之间不能直接比。
+**文章的规则**：按 CV 分数挑拟合，并列去重（`analysis/salehi/fig2d_wasserstein.tsv`）。挑出的子集各不相同、行数少，各臂之间不能直接比。
 
 | 拟合 | 行数 | Spearman |
 |---|---|---|
-| KARST 两个时间点 | 53 | 0.23 |
-| KARST 全部时间点（anchored） | 52 | 0.31 |
-| KARST pairwise | 53 | 0.57 |
-| KARST state space | 49 | 0.55 |
+| KARST 两个时间点 | 50 | 0.23 |
+| KARST 全部时间点（anchored） | 49 | 0.30 |
+| KARST pairwise | 50 | 0.56 |
+| KARST state space | 48 | 0.54 |
 | alfak dev2@f93b2d2 两个时间点 | 44 | 0.45 |
 | alfak dev2@f93b2d2 全部时间点 | 46 | 0.70 |
 | 文章（alfak main@4ad82b0） | 45 | 0.69 |
@@ -211,10 +211,22 @@ pairwise 交叉验证不同的拟合，都是各时间点深度不同的输入�
 
 RMSE，括号内为 Spearman，再后是 95% 区间的覆盖率；八个核心场景合并，每格 96 个数据集。方法文档（`doc/karst_method.tex` 第 5 节和附录、`doc/generated/`）的数字取自这次重跑。
 
-## 7. 待用户决定
+## 7. CV 分数的并列（审阅第 8 条）
 
-- **CV 分数的并列**（审阅第 8 条）：文章规则保留并列最优的 minobs。KARST 的各个 minobs 来自同一次拟合，并列常见，第 1 节第 3 条的变化就来自这里。改为每个输入只保留一个（例如最小的 minobs）会让这些表不再受浮点误差影响，但与文章规则不完全一样。
-- 审阅中标"可能"的另外两条，以及读取 alfak2 时期结果的脚本中的旧名映射，未改。
+用户 2026-11-18 决定去重（见第 1 节第 3 条）。重跑的是按 CV 挑选的分析：`analyse_abm`、`analyse_salehi`、`summary_comparison`、Fig. 4（80 个任务）、Fig. 6（8 个任务）、`fig456_summary`（作业 22041408–22041417），不重新拟合。受影响的表：
+
+| 文章图 | 表 | KARST 的变化 |
+|---|---|---|
+| Supp. Fig. 4c | `abm/supp4c_selected_by_cv.tsv` | 选出的拟合的 r、R²、ρ 中位数变化 ≤ 0.09 |
+| Supp. Fig. 5a、5b，Fig. 1g | `abm/supp5*`、`abm/fig1g_beat_baseline.tsv` | 样本数少 35–50%；胜过不变的比例变化 ≤ 0.03（Supp. 5b），按 λ 和传代分的 Fig. 1g 各格 ≤ 0.07 |
+| Fig. 2b | `salehi/fig2b_*` | CV 中位数 0.86 → 0.89（两个时间点） |
+| Fig. 2c | `salehi/fig2c_angle_test.tsv` | 全部时间点 anchored 的角度中位数 55.3° → 66.7°，pairwise 51.7° → 64.5°；仍都显著 |
+| Fig. 2d（文章规则） | `salehi/fig2d_wasserstein.tsv` | 见第 3 节，Spearman 变化 ≤ 0.01 |
+| Fig. 2e、2f | `salehi/fig2e_*`、`salehi/fig2f_*` | 每臂少 1–3 条轨迹；合并的比例变化 ≤ 0.02，按谱系类型分的小组最多 0.25 |
+| Fig. 3e–f（文章规则的行） | `salehi/fig3ef_novel_karyotypes.tsv` | 回归数少 1–3 |
+| Fig. 4、6 | `fig456/` | 本轮内不变（这两项本来就按最小 minobs 去重，只是判断并列用严格相等） |
+
+审阅中标"可能"的另外两条（第 9、10 条），以及读取 alfak2 时期结果的脚本中的旧名映射，仍未改。
 
 ## 8. 运行
 
