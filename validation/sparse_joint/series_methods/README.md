@@ -127,7 +127,16 @@ All sets use the development simulator and the landscapes of
   karyotype divides at the start population's mean rate. This uses
   `abm_constant.cpp`, a copy of the simulator with that one switch.
   Every fitness difference a method reports is a false positive. 288
-  datasets.
+  datasets. It is not a stationary null (noted 2026-11-18, no rerun): the
+  start population is e1's, shaped by the GRF landscape up to the first
+  time point, with the neighbours of the frequent karyotypes held down by
+  selection. Once all divide at one rate, the composition relaxes towards
+  the neutral balance of missegregation, and the neighbours gain on the
+  majors systematically, not only by drift. A method can read that
+  relaxation as fitness differences. `pairwise` starts every pair from the
+  composition observed at its earlier time point, so it meets the
+  relaxation again in every pair; `ends` and `anchored` start once, from
+  the first time point. See the reading under Power.
 - **e4**: a higher missegregation rate, for `../beta_choice` only. The e1
   design on populations simulated from day 0 at 4× (odd landscapes) or 16×
   (even landscapes) the default rate. The truth populations are e4's own
@@ -140,7 +149,14 @@ Every method is scored on the karyotypes of stage 2: observed ones, and one
 and two steps away. The reference is the same for every method.
 - **Accuracy**: RMSE of relative fitness against the truth, as a ratio to
   `ends` (the first and last time point alone), paired by dataset. Also 95%
-  coverage.
+  coverage. The truth is, from 2026-11-18, the net growth rate at the
+  dataset's true missegregation rate (`sm_true_net_rate()`: birth rate
+  times 2 P_ii − 1), which is what the fits report; before, it was the
+  birth rate. At the default rate (e1–e3) the factor is about 0.9956 for a
+  near-diploid karyotype, at 4× and 16× (e4) 0.982 and 0.931. The results
+  below were scored against the birth rate and were not recomputed with the
+  current code (e1–e3 differ by that factor only; e4 is used in
+  `../beta_choice`, which marks its numbers).
 - **Power** at effect e (0.02, 0.05, 0.1 per day): among karyotypes with
   |truth| ≥ e, the share whose 95% interval excludes zero on the correct
   side.
@@ -178,7 +194,9 @@ Results are in `results/` (git-ignored).
 
 On HPC, the task lists hold one line per fit:
 `sm_<set><TAB>method<TAB>dataset_id`. They are run by
-`../multi_timepoint/hpc/submit.sh fit BUILD TASKS MEM TIME`.
+`../multi_timepoint/hpc/submit.sh fit BUILD TASKS MEM TIME`. Neither that
+script nor the task lists are in the repository, so the HPC route cannot be
+reproduced from it.
 
 ## Results (build cv10)
 
@@ -241,7 +259,14 @@ At a controlled 5% false-positive rate (Measures), effect 0.05:
   (`relative_sd_model`; this is why the calibration exists).
 - For the two new methods it is far too small at distances 1 and 2 of
   neutral data: z* is 6.5–9 there, against 4.3–4.7 for the others. They pay
-  for that in power at those distances.
+  for that in power at those distances. z* is set on e3, whose populations
+  relax from a selection-shaped start towards the neutral balance (Simulated
+  sets, e3), so these thresholds, the e3 rows of the accuracy table and "worst on
+  neutral data" for `pairwise` mix two things: an sd too small, and a
+  response to that relaxation, which `pairwise` meets in every pair. They
+  were not separated; a stationary neutral start (the population run at
+  constant fitness before the first time point) would. The numbers stand as
+  measured on this design; `anchored`'s are not affected by the re-reading.
 - On the karyotypes observed in clonal sweeps, both new methods have more
   power than `anchored`.
 - Direction (right sign at |truth| ≥ 0.05, no threshold) is 0.97–1.00 on e1

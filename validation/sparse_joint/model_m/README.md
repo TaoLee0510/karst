@@ -73,8 +73,15 @@ Integrating (zeta, g) jointly over every sparse karyotype, majors included,
 was not tried. It would take tens of times longer, and nothing guarantees it
 would remove the degeneracy.
 
-Meanwhile the degeneracy does not cost accuracy. In C3, the fits that cv1
-changed had a median RMSE ratio to ff13cf4 of 1.000 at every distance.
+Whether the degeneracy costs accuracy is open. In C3, the fits that cv1
+changed had a median RMSE ratio to ff13cf4 of 1.000 at every distance, but
+`../convergence/evaluate.R` then counted as changed every fit whose record
+differed anywhere, including fits that kept the same candidate and changed
+only the objective of a candidate they did not keep. Those have a ratio of
+exactly 1 and pull the median there. From 2026-11-18 it counts a fit as
+changed only when it kept another candidate or the kept candidate differs;
+the median was not recomputed with the current code (the reference records
+are on HPC).
 
 ## Decision (user, 2026-11-14)
 

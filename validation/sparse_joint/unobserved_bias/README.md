@@ -77,7 +77,12 @@ started from equals the fit's in every dataset.
 The posterior is strongly skewed towards deeper drops: its mean lies well
 below its mode for unobserved and weakly observed karyotypes, and the median
 with the mean. Predicted drop as a share of the true drop, and RMSE of the
-mean against that of the mode:
+mean against that of the mode. The "outside" column included observed
+karyotypes dropped from the domain, which `predict()` gives the observed
+level but `laplace_mean.R` gave the trend; from 2026-11-18 it keeps only
+karyotypes no cell was seen in (distance > 0). That column was not
+recomputed with the current code (the draws are on HPC); the others are
+unchanged:
 
 | set | wavelength | unobserved in domain, mode / mean | outside, shell 2-3, mode / mean | RMSE of the mean, unobserved |
 | --- | --- | --- | --- | --- |

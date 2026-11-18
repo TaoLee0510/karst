@@ -198,4 +198,6 @@ per dataset and method (`hpc/`: `submit.sh build`, then `submit.sh fit`);
 `calibration_fit.R` refits the uncertainty constants on that copy.
 `cohort_short.R` builds and scores the short-interval cohorts
 (`hpc/array_task_cohort.sh`). Held-out runs need `--unseal-heldout`
-(`SPLIT=heldout` for `hpc/submit.sh`).
+(`SPLIT=heldout` for `hpc/submit.sh`). `hpc/` (`submit.sh`,
+`array_task_cohort.sh`) is not in the repository, so these HPC routes cannot
+be reproduced from it.

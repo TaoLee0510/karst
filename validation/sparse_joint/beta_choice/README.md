@@ -70,8 +70,12 @@ Picks, as multiples of 5e-5, over all three windows:
 
 - **The pick follows the truth.** Where the truth is the default, it stays
   at 1 or 1/4. Where the truth is 8e-4, it moves to 4–16.
-- **It leans one step low.** The simulated populations divide about 0.9
-  times a day, and the fit assumes 1, so part of this is expected.
+- **It leans one step low.** One step of the grid is a factor 4 (2 in
+  log2). The simulated populations divide about 0.9 times a day while the
+  fit assumes 1, but β enters as a product with the birth rate, and a 10%
+  lower birth rate is worth about −0.15 in log2 of β, far less than one
+  step: that difference does not explain the lean, whose cause was not
+  found.
 - **Accuracy at the pick equals accuracy at the true rate**, in median.
   Where the true rate is high, the pick is better than 5e-5. At
   missegregation 8e-4, r is 0.31 against 0.07 with 2 passages, and 0.57
@@ -206,10 +210,30 @@ That makes 288 datasets, generated with
 `../series_methods/run.R --stage=truth|datasets --set=e4`. The
 two-time-point fit (`ends`) was run at the six candidate rates: 1728 HPC
 tasks, one fit each. 22 datasets fail at every rate, with no cell inside
-the model domain, and are left out below.
+the model domain, and are left out below (but see step 3: up to 2026-11-18
+`rules.R` counted them as picking ×1 in "within 4×").
+
+**Scoring caveat (2026-11-18).** The RMSEs of e4 (and the RMSE ratios of
+step 3 and of the fallback) compared the fits' net growth rates,
+(2 P_ii − 1) × birth rate, with the true *birth* rate. In the ABM a
+karyotype's cells grow at the birth rate times 2 P_ii − 1 at the true
+rate: about 0.9956 at 5e-5, 0.982 at 4× and 0.931 at 16× for a near-diploid
+karyotype. Rows with truth ×1 are unaffected in practice; rows with truth
+×4 and ×16 are not. `../series_methods/setup.R` (`sm_true_net_rate()`) and
+`range.R` now score against the net rate at the true rate, and `rules.R`
+refuses metrics scored the old way. The e4 numbers below were not
+recomputed with the current code (rescoring needs the fits, on HPC:
+`../series_methods/run.R --stage=score --set=e4`, then `rules.R` and
+`range.R`); they are marked. "β stays fixed" probably still holds: the
+rules of the step-3 table that pass the null criterion (truth ×1) have a
+step-0 gain of 0, which must be above 0 (Pearson r, unchanged by a common
+scale factor), so they fail whatever e4 shows. The rules not shown there
+were not checked again (`results/rules.md` is not tracked).
 
 **Knowing the rate helps.** These are median RMSE ratios against the fit at
-the true rate, at distance 1 (one chromosome from the majors):
+the true rate, at distance 1 (one chromosome from the majors). The ×4 and
+×16 rows were scored against the birth rate and were not recomputed with
+the current code; `rules.R` now writes this table to `results/rules.md`:
 
 | truth | assumed 4× too low | 4× too high |
 | --- | --- | --- |
@@ -258,7 +282,10 @@ replicates 1–12. Testing was to use L07–L12 and replicates 13–25.
 3. **Salehi.** Report the in vitro and PDX picks under every rule.
 
 **Result: no rule passes on the tuning half, so none went to the test
-half.** Some rules, tuning half:
+half.** Some rules, tuning half. Not recomputed with the current code: the
+"e4 median ratio" and "e4 better / worse" columns were scored against the
+birth rate (caveat under step 2), and "within 4×" counted the 22 e4
+datasets that fail at every rate as picking ×1:
 
 | rule | e1 cells within 1.03 (ends / anchored) | within 4× | e4 median ratio | step-0 gain | e1 moved | e4 moved | e4 better / worse |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -276,8 +303,9 @@ half.** Some rules, tuning half:
 **The two requirements pull apart.** Rules that keep the null sets where
 they were do so by staying at the default in most datasets. They then also
 stay at the default in most e4 datasets, and on the step-0 high-rate
-simulations. Where any rule moves, the move is about as often worse as
-better. R0 picks the true rate in 34% of the e4 datasets that fit.
+simulations. Where any rule moves, the move was about as often worse as
+better (e4 scored against the birth rate; not recomputed with the current
+code). R0 picks the true rate in 34% of the e4 datasets that fit.
 
 With few cells, short intervals or strong drift, two time points do not tell
 a high missegregation rate apart from drift and sampling noise.
@@ -310,7 +338,9 @@ and standard deviations up to 0.22 apart.
   forms it.
 
 Each was scored against the truth like a fit and compared with the fit at
-the default alone. The table gives medians at distance 1:
+the default alone. The table gives medians at distance 1. The ×4 and ×16
+rows, and the coverage bullet below, were scored against the birth rate
+and were not recomputed with the current code (caveat under step 2):
 
 | truth | range, point | RMSE ratio | coverage (default alone → range) | interval score ratio |
 | --- | --- | --- | --- | --- |

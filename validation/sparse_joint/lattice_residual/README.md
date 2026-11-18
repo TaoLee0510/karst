@@ -77,7 +77,12 @@ shift are the fitted residuals of the neighbouring majors, of all observed
 neighbours, or of all domain neighbours (pooling the zero counts of unobserved
 ones), and, as bounds, the true residuals of the observed neighbours or the
 true mean residual of the unobserved neighbours of each major. Geometric mean
-RMSE relative to the base fit, at rho = 1 (smaller rho lies in between):
+RMSE relative to the base fit, at rho = 1 (smaller rho lies in between).
+No tracked code produced this table: `screen.R` printed the median of the
+RMSE over that of predicting no differences. It now writes the geometric
+mean over datasets of the RMSE relative to rho = 0 (the base fit) to
+`results/<set>/screen_summary.csv` (`--report-only` rebuilds it from
+`screen.csv`); the numbers below were not recomputed with the current code:
 
 | source | w 0.2, d1 | w 0.4, d1 | w 0.8, d1 | d2, all wavelengths |
 | --- | --- | --- | --- | --- |

@@ -86,7 +86,10 @@ stt_method_karst_sparse_joint <- function(dataset, nodes, method) {
 
 # Datasets fitted together with `dataset`, which comes first. "landscape":
 # the other patients of its landscape. "other_landscapes": patient 1 of the
-# following landscapes of the split, a cohort that does not share a landscape.
+# landscapes that follow it in `method$landscapes` (config.R: the twelve
+# landscapes of the original wavelength classes of its split), a cohort that
+# does not share a landscape. A landscape outside that pool takes its first
+# members.
 stt_cohort_members <- function(dataset, method) {
   others <- if (identical(method$members, "landscape")) {
     sprintf("%s_P%02d_%s", dataset$landscape_id, setdiff(seq_len(method$cohort_size), dataset$patient),
@@ -94,6 +97,7 @@ stt_cohort_members <- function(dataset, method) {
   } else {
     ids <- method$landscapes$landscape_id[method$landscapes$split == dataset$split]
     at <- match(dataset$landscape_id, ids)
+    if (is.na(at)) at <- 0L
     sprintf("%s_P01_%s", ids[(at + seq_len(method$cohort_size - 1L) - 1L) %% length(ids) + 1L], dataset$scenario)
   }
   paths <- file.path(method$dataset_dir, paste0(others, ".rds"))

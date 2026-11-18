@@ -12,6 +12,17 @@ stt_metric_columns <- c("rmse", "rmse_zero", "median_abs_error", "median_abs_err
 
 stt_mean <- function(x) if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
 
+# A failed fit is scored as the null predictor, whose rank correlation is taken
+# as zero (score.R, stt_rank_correlation()). Metrics tables scored before that
+# rule have NA there instead, which would leave failed fits out of a method's
+# mean Spearman correlation; this sets them to what the scoring now gives.
+stt_null_rank <- function(metrics, null_methods = "zero") {
+  no_ordering <- metrics$status != "ok" | metrics$method %in% null_methods | metrics$prediction_fraction == 0
+  fix <- is.na(metrics$spearman) & no_ordering & metrics$n_nodes >= 3 & metrics$truth_sd > 0
+  metrics$spearman[which(fix)] <- 0
+  metrics
+}
+
 # One row per landscape x scenario x method x distance.
 stt_landscape_scenario_means <- function(metrics) {
   key <- c("landscape_id", "wavelength_class", "scenario", "method", "stratum")
@@ -86,34 +97,82 @@ stt_markdown_table <- function(x, digits = 3L) {
   c(header, rule, body)
 }
 
-# The acceptance rule for a candidate, evaluated on the three distances.
+# The acceptance rule for a candidate, evaluated on the three distances: RMSE
+# below the no-information answer and Spearman correlation above the original
+# ALFA-K (`acceptance$alfak`), each with the landscape-bootstrap 95% interval
+# of the paired difference excluding zero.
 #
 # Predicting no fitness differences is the bar for error, because the original
 # ALFA-K is far above it (a few unconstrained fits dominate its RMSE). Rank
-# agreement is compared with the original ALFA-K settings, since it is what
-# they do carry and it does not depend on the reference.
+# agreement is compared with the original ALFA-K, since it is what it does
+# carry and it does not depend on the reference.
+#
+# A criterion is evaluated only when the candidate and the baseline are
+# compared on every landscape of the split (and on at least three). Otherwise,
+# for instance when the baseline was not fitted on the split or on some of its
+# landscapes, its status is "not evaluated" and `passed` is NA: it never counts
+# as passed.
 stt_acceptance <- function(cells, candidate, acceptance) {
   methods <- unique(cells$method)
+  n_split <- length(unique(cells$landscape_id))
   criterion <- function(label, baseline, metric, lower_is_better) {
-    if (!baseline %in% methods) return(NULL)
-    paired <- stt_paired_comparison(cells, candidate, baseline, metric)
-    if (is.null(paired)) return(NULL)
-    data.frame(
-      candidate = candidate, criterion = label, stratum = paired$stratum,
-      n_landscapes = paired$n_landscapes, baseline_mean = paired$baseline_mean,
-      candidate_mean = paired$candidate_mean, difference = paired$difference,
-      ci_low = paired$ci_low, ci_high = paired$ci_high,
-      passed = if (lower_is_better) paired$ci_high < 0 else paired$ci_low > 0,
-      stringsAsFactors = FALSE
-    )
+    paired <- if (all(c(candidate, baseline) %in% methods)) {
+      stt_paired_comparison(cells, candidate, baseline, metric)
+    }
+    do.call(rbind, lapply(c("d0", "d1", "d2"), function(d) {
+      row <- if (is.null(paired)) NULL else paired[paired$stratum == d, , drop = FALSE]
+      found <- !is.null(row) && nrow(row) == 1L
+      n <- if (found) row$n_landscapes else {
+        common <- function(method) {
+          unique(cells$landscape_id[cells$method == method & cells$stratum == d & is.finite(cells[[metric]])])
+        }
+        length(intersect(common(candidate), common(baseline)))
+      }
+      note <- if (!baseline %in% methods) {
+        sprintf("%s not scored on this split", baseline)
+      } else if (!candidate %in% methods) {
+        sprintf("%s not scored on this split", candidate)
+      } else if (!found || n < n_split) {
+        sprintf("compared on %d of %d landscapes", n, n_split)
+      } else NA_character_
+      evaluated <- is.na(note)
+      passed <- if (!evaluated) NA else if (lower_is_better) row$ci_high < 0 else row$ci_low > 0
+      value <- function(column) if (found) row[[column]] else NA_real_
+      data.frame(
+        candidate = candidate, criterion = label, stratum = d, n_landscapes = n,
+        baseline_mean = value("baseline_mean"), candidate_mean = value("candidate_mean"),
+        difference = value("difference"), ci_low = value("ci_low"), ci_high = value("ci_high"),
+        status = if (!evaluated) "not evaluated" else if (passed) "passed" else "failed",
+        passed = passed, note = note,
+        stringsAsFactors = FALSE
+      )
+    }))
   }
-  rows <- list(
-    criterion("RMSE below the no-information answer", acceptance$zero, "rmse", TRUE)
+  rbind(
+    criterion("RMSE below the no-information answer", acceptance$zero, "rmse", TRUE),
+    criterion(paste("Spearman above", acceptance$alfak), acceptance$alfak, "spearman", FALSE)
   )
-  for (original in acceptance$original) {
-    rows[[length(rows) + 1L]] <- criterion(paste("Spearman above", original), original, "spearman", FALSE)
-  }
-  do.call(rbind, rows)
+}
+
+# One line per candidate: passes only when every criterion was evaluated and
+# passed.
+stt_acceptance_summary <- function(verdict) {
+  vapply(unique(verdict$candidate), function(candidate) {
+    part <- verdict[verdict$candidate == candidate, ]
+    failed <- part[part$status == "failed", ]
+    open <- part[part$status == "not evaluated", ]
+    describe <- function(x) paste(sprintf("%s at %s", x$criterion, x$stratum), collapse = "; ")
+    verdict_text <- if (nrow(failed)) {
+      sprintf("fails %d of %d criteria (%s)", nrow(failed), nrow(part), describe(failed))
+    } else if (nrow(open)) {
+      sprintf("passes %d of %d criteria; %d not evaluated (%s: %s), so it does not pass the rule",
+              sum(part$status == "passed"), nrow(part), nrow(open), describe(open),
+              paste(unique(open$note), collapse = "; "))
+    } else {
+      sprintf("passes every criterion (%d of %d)", nrow(part), nrow(part))
+    }
+    sprintf("- `%s` %s.", candidate, verdict_text)
+  }, character(1), USE.NAMES = FALSE)
 }
 
 stt_stage_report <- function(config, split) {
@@ -121,6 +180,7 @@ stt_stage_report <- function(config, split) {
                              stringsAsFactors = FALSE)
   # Methods scored in earlier rounds but no longer configured are left out.
   metrics <- metrics[metrics$method %in% names(config$methods), ]
+  metrics <- stt_null_rank(metrics, config$acceptance$zero)
   # The verdict is made on the core scenarios. Stress scenarios break an
   # assumption on purpose and are tabulated after it.
   stress <- metrics[metrics$scenario %in% config$scenarios$scenario[config$scenarios$role == "stress"], ]
@@ -155,11 +215,15 @@ stt_stage_report <- function(config, split) {
   }))
   if (is.null(paired)) stop("No paired comparison is available yet.", call. = FALSE)
   verdict <- do.call(rbind, lapply(candidates, function(candidate) stt_acceptance(cells, candidate, acceptance)))
-  # Cohort methods against the single-dataset model, on the cohort scenario.
+  # Cohort methods against the single-dataset model of the same initial state
+  # (and the cohort with balance also against the cohort without it), on the
+  # cohort scenario.
   cohort_cells <- cells[cells$scenario == config$cohort_scenario, ]
-  cohort_paired <- do.call(rbind, lapply(intersect(acceptance$cohort, methods), function(method) {
-    do.call(rbind, lapply(c("rmse", "bias", "spearman", "coverage95"), function(metric) {
-      stt_paired_comparison(cohort_cells, method, acceptance$cohort_baseline, metric)
+  cohort_paired <- do.call(rbind, lapply(intersect(names(acceptance$cohort), methods), function(method) {
+    do.call(rbind, lapply(intersect(acceptance$cohort[[method]], methods), function(baseline) {
+      do.call(rbind, lapply(c("rmse", "bias", "spearman", "coverage95"), function(metric) {
+        stt_paired_comparison(cohort_cells, method, baseline, metric)
+      }))
     }))
   }))
   report_dir <- file.path(config$output_dir, "report")
@@ -188,12 +252,14 @@ stt_stage_report <- function(config, split) {
             length(unique(metrics$dataset_id)), length(unique(metrics$landscape_id)), length(unique(metrics$scenario))),
     "", "## Pooled over scenarios", "", stt_markdown_table(board[show]),
     "", "## Acceptance", "",
+    sprintf(paste("Rule: at distances 0, 1 and 2, RMSE below `%s` and Spearman correlation above `%s`, each with",
+                  "the landscape-bootstrap 95%% interval of the paired difference excluding zero. A criterion whose",
+                  "baseline is missing, or that compares on fewer than all %d landscapes, is not evaluated and does",
+                  "not count as passed."),
+            acceptance$zero, acceptance$alfak, length(unique(metrics$landscape_id))),
+    "",
     if (is.null(verdict)) "No candidate method has been scored yet." else {
-      c(sprintf("Candidates passing every criterion: %s.",
-                {
-                  ok <- vapply(candidates, function(candidate) all(verdict$passed[verdict$candidate == candidate]), logical(1))
-                  if (any(ok)) paste(candidates[ok], collapse = ", ") else "none"
-                }), "",
+      c(stt_acceptance_summary(verdict), "",
         stt_markdown_table(verdict, 4L))
     },
     "", "## Paired differences (candidate minus baseline, landscape bootstrap 95% interval)", "",
@@ -201,7 +267,7 @@ stt_stage_report <- function(config, split) {
                                 "candidate_mean", "difference", "ci_low", "ci_high", "relative_change")], 4L),
     if (!is.null(cohort_paired)) {
       utils::write.csv(cohort_paired, file.path(report_dir, sprintf("cohort_%s.csv", split)), row.names = FALSE)
-      c("", sprintf("## Cohort fits against the single-dataset fit (scenario %s)", config$cohort_scenario), "",
+      c("", sprintf("## Cohort fits against the single-dataset fit of the same initial state (scenario %s; failed fits scored as the no-information answer)", config$cohort_scenario), "",
         stt_markdown_table(cohort_paired[c("candidate", "baseline", "metric", "stratum", "n_landscapes", "baseline_mean",
                                            "candidate_mean", "difference", "ci_low", "ci_high")], 4L))
     },

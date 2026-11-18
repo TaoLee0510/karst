@@ -8,13 +8,17 @@
 # the same reference karyotypes. Direction accuracy, for every method but the null predictor,
 # comes from direction_accuracy.R (sweeps/direction/direction_<split>.csv). Values are averaged over the scenarios of each
 # landscape and then over the three landscapes of each wavelength; error
-# ratios divide the mean error by the mean error of the null predictor.
+# ratios divide the mean error by the mean error of the null predictor. The
+# wavelength classes are those in the metrics, in order of wavelength. A failed
+# fit is scored as the null predictor, with rank correlation zero
+# (stt_null_rank() in benchmark/sparse_two_timepoint/report.R).
 
 suppressMessages(library(ggplot2))
 args <- commandArgs(TRUE)
 out_dir <- if (length(args)) args[[1L]] else "doc/generated"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 results <- "benchmark/results/sparse_two_timepoint"
+source("benchmark/sparse_two_timepoint/report.R")
 
 labels <- c(
   "zero" = "Null predictor",
@@ -22,7 +26,11 @@ labels <- c(
   "karst_sparse_joint" = "Sparse joint, independent",
   "karst_sparse_joint_balance" = "Sparse joint, balance (default)"
 )
-waves <- c("w0.4", "w0.8", "w1.2", "w1.6")
+# Wavelength classes present, in order of wavelength.
+waves_of <- function(x) {
+  w <- unique(x$wavelength_class)
+  w[order(as.numeric(sub("^w", "", w)))]
+}
 mean_na <- function(v) if (all(is.na(v))) NA_real_ else mean(v, na.rm = TRUE)
 cols <- c("rmse", "rmse_zero", "bias", "spearman", "coverage95", "prediction_fraction", "direction")
 
@@ -32,8 +40,8 @@ load <- function(split) {
   near <- near[near$stratum %in% c("d0", "d1", "d2"), ]
   far <- far[far$stratum %in% c("d3", "d4"), ]
   keep <- c("dataset_id", "method", "landscape_id", "wavelength_class", "scenario", "role", "scoreboard", "stratum",
-            setdiff(cols, "direction"))
-  m <- rbind(near[keep], far[keep])
+            "status", "n_nodes", "truth_sd", setdiff(cols, "direction"))
+  m <- stt_null_rank(rbind(near[keep], far[keep]))
   direction <- utils::read.csv(file.path(results, "sweeps", "direction", sprintf("direction_%s.csv", split)),
                                stringsAsFactors = FALSE)
   m <- merge(m, direction[c("dataset_id", "method", "stratum", "direction")], by = c("dataset_id", "method", "stratum"),
@@ -49,6 +57,7 @@ load <- function(split) {
 }
 held <- load("heldout")
 dev <- load("dev")
+cat("Wavelength classes, held-out:", waves_of(held), " development:", waves_of(dev), "\n")
 
 ## Figures: distance 0 to 4 ----------------------------------------------------
 palette <- c("Sparse joint, balance (default)" = "#2a78d6", "Sparse joint, independent" = "#eb6834",
@@ -58,7 +67,7 @@ shapes <- c("Sparse joint, balance (default)" = 16, "Sparse joint, independent" 
 cap <- 8
 plotted <- held[held$label %in% names(palette), ]
 plotted$label <- factor(plotted$label, levels = names(palette))
-plotted$lambda <- factor(sub("^w", "lambda == ", plotted$wavelength_class), levels = sub("^w", "lambda == ", waves))
+plotted$lambda <- factor(sub("^w", "lambda == ", plotted$wavelength_class), levels = sub("^w", "lambda == ", waves_of(plotted)))
 plotted$ratio_shown <- pmin(plotted$ratio, cap)
 plotted$above <- ifelse(plotted$ratio > cap, sprintf("%.0f", plotted$ratio), "")
 theme_doc <- theme_minimal(base_size = 8) +
@@ -103,6 +112,8 @@ ggsave(file.path(out_dir, "far_distance_direction.pdf"), direction_plot, width =
 ## Tables: distances 3 and 4 --------------------------------------------------
 fmt <- function(v, digits) ifelse(is.finite(v), formatC(v, format = "f", digits = digits), "--")
 table_tex <- function(wl, column, digits, title, methods = names(labels)) {
+  waves <- waves_of(wl)
+  k <- seq_along(waves)
   rows <- vapply(methods, function(m) {
     vals <- unlist(lapply(waves, function(w) vapply(c(3L, 4L), function(d) {
       v <- wl[wl$method == m & wl$wavelength_class == w & wl$distance == d, column]
@@ -114,11 +125,10 @@ table_tex <- function(wl, column, digits, title, methods = names(labels)) {
   # The minipage keeps each title on the page of its table.
   c("\\par\\medskip\\noindent\\begin{minipage}{\\linewidth}", paste0("\\textit{", title, "}"),
     "\\begin{center}", "\\footnotesize", "\\setlength{\\tabcolsep}{3.5pt}",
-    "\\begin{tabular}{l*{8}{r}}", "\\toprule",
-    paste0(" & \\multicolumn{2}{c}{$\\lambda=0.4$} & \\multicolumn{2}{c}{$\\lambda=0.8$}",
-           " & \\multicolumn{2}{c}{$\\lambda=1.2$} & \\multicolumn{2}{c}{$\\lambda=1.6$} \\\\"),
-    "\\cmidrule(lr){2-3}\\cmidrule(lr){4-5}\\cmidrule(lr){6-7}\\cmidrule(lr){8-9}",
-    paste0("Method", paste(rep(" & $d=3$ & $d=4$", 4), collapse = ""), " \\\\"), "\\midrule",
+    sprintf("\\begin{tabular}{l*{%d}{r}}", 2L * length(waves)), "\\toprule",
+    paste0(paste(sprintf(" & \\multicolumn{2}{c}{$\\lambda=%s$}", sub("^w", "", waves)), collapse = ""), " \\\\"),
+    paste(sprintf("\\cmidrule(lr){%d-%d}", 2L * k, 2L * k + 1L), collapse = ""),
+    paste0("Method", paste(rep(" & $d=3$ & $d=4$", length(waves)), collapse = ""), " \\\\"), "\\midrule",
     rows, "\\bottomrule", "\\end{tabular}", "\\end{center}", "\\end{minipage}")
 }
 main_methods <- c("zero", "alfak_minobs20", "karst_sparse_joint", "karst_sparse_joint_balance")

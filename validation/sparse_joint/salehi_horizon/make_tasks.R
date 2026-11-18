@@ -9,7 +9,10 @@
 # followed by "_free"). Design "all" (every passage of the trajectories of
 # three or more passages): KARST anchored (the default), pairwise and
 # state_space, alfak, and KARST "free". A task without a fit or without
-# descendants records that and stops.
+# descendants records that and stops. Every task gets the same support roots
+# (both roots), so that forecast_score.R's common-support scores of one
+# trajectory and minobs are on one set of karyotypes for every method and
+# design.
 #   Rscript make_tasks.R OUT.tsv [ends | all] [METHOD ...]   (from benchmark/paper)
 # METHOD keeps those methods' tasks only (e.g. KARST's, when alfak's rows are
 # carried over from an earlier run with reuse_rows.R).
@@ -35,6 +38,7 @@ if (length(args) > 2L) {
 tasks <- expand.grid(id = ids, method = names(roots), minobs = c(5, 10, 20), stringsAsFactors = FALSE)
 tasks$design <- design
 tasks$root <- roots[tasks$method]
+tasks$support_roots <- paste(unique(c(round, free)), collapse = ";")
 tasks$pm <- bench_settings$salehi$pm
 tasks$nb <- bench_settings$salehi$nb
 utils::write.table(tasks, args[[1]], sep = "\t", quote = FALSE, row.names = FALSE)

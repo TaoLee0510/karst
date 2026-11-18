@@ -18,13 +18,17 @@
 # design; ratios are the mean error over those landscapes divided by the mean
 # error of the null predictor on the same karyotypes. Direction accuracy comes
 # from direction_accuracy.R (sweeps/direction/direction_<split>.csv); it is not
-# computed for the null predictor, which scores 1/2 by construction.
+# computed for the null predictor, which scores 1/2 by construction. The
+# wavelength classes are those in each split's metrics, in order of
+# wavelength. A failed fit is scored as the null predictor, with rank
+# correlation zero (stt_null_rank() in benchmark/sparse_two_timepoint/report.R).
 
 suppressMessages(library(ggplot2))
 args <- commandArgs(TRUE)
 out_dir <- if (length(args)) args[[1L]] else "doc/generated"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 results <- "benchmark/results/sparse_two_timepoint"
+source("benchmark/sparse_two_timepoint/report.R")
 
 methods <- c(
   "Null predictor" = "zero",
@@ -42,10 +46,14 @@ designs <- c(
   "unbalanced_100_3000_360d" = "100/3000, 360 d",
   "unbalanced_3000_100_360d" = "3000/100, 360 d"
 )
-waves <- c("w0.4", "w0.8", "w1.2", "w1.6")
+# Wavelength classes present, in order of wavelength.
+waves_of <- function(x) {
+  w <- unique(x$wavelength_class)
+  w[order(as.numeric(sub("^w", "", w)))]
+}
 
 load_split <- function(split) {
-  m <- utils::read.csv(file.path(results, sprintf("metrics_%s.csv", split)), stringsAsFactors = FALSE)
+  m <- stt_null_rank(utils::read.csv(file.path(results, sprintf("metrics_%s.csv", split)), stringsAsFactors = FALSE))
   m <- m[m$role == "core" & m$scoreboard & m$stratum %in% c("d0", "d1", "d2") & m$method %in% methods, ]
   m$label <- names(methods)[match(m$method, methods)]
   m$design <- factor(designs[m$scenario], levels = designs)
@@ -76,6 +84,8 @@ held <- load_split("heldout")
 dev <- load_split("dev")
 held_cells <- summarise_cells(held)
 dev_cells <- summarise_cells(dev)
+waves <- waves_of(held)
+cat("Wavelength classes, held-out:", waves, " development:", waves_of(dev), "\n")
 
 ## Figures -------------------------------------------------------------------
 
@@ -121,7 +131,9 @@ ratio_plot <- ggplot(plotted, aes(design, ratio_shown, colour = label, shape = l
   scale_colour_manual(values = palette) + scale_shape_manual(values = shapes) +
   facet_grid(lambda ~ distance, labeller = label_parsed) +
   labs(x = NULL, y = "Error relative to the null predictor (log scale)") + theme_doc
-ggsave(file.path(out_dir, "scenario_rmse_ratio.pdf"), ratio_plot, width = 6.5, height = 8.2, device = grDevices::cairo_pdf)
+# One row of panels per wavelength: 8.2 inches for four.
+height <- 1.2 + 1.75 * length(waves)
+ggsave(file.path(out_dir, "scenario_rmse_ratio.pdf"), ratio_plot, width = 6.5, height = height, device = grDevices::cairo_pdf)
 
 rank_plot <- ggplot(plotted[is.finite(plotted$spearman), ], aes(design, spearman, colour = label, shape = label)) +
   separators +
@@ -131,7 +143,7 @@ rank_plot <- ggplot(plotted[is.finite(plotted$spearman), ], aes(design, spearman
   scale_colour_manual(values = palette) + scale_shape_manual(values = shapes) +
   facet_grid(lambda ~ distance, labeller = label_parsed) +
   labs(x = NULL, y = "Spearman correlation with the reference values") + theme_doc
-ggsave(file.path(out_dir, "scenario_spearman.pdf"), rank_plot, width = 6.5, height = 8.2, device = grDevices::cairo_pdf)
+ggsave(file.path(out_dir, "scenario_spearman.pdf"), rank_plot, width = 6.5, height = height, device = grDevices::cairo_pdf)
 
 direction_plot <- ggplot(plotted[is.finite(plotted$direction), ], aes(design, direction, colour = label, shape = label)) +
   separators +
@@ -142,20 +154,21 @@ direction_plot <- ggplot(plotted[is.finite(plotted$direction), ], aes(design, di
   scale_colour_manual(values = palette) + scale_shape_manual(values = shapes) +
   facet_grid(lambda ~ distance, labeller = label_parsed) +
   labs(x = NULL, y = "Direction accuracy (share of neighbour pairs with the correct sign)") + theme_doc
-ggsave(file.path(out_dir, "scenario_direction.pdf"), direction_plot, width = 6.5, height = 8.2, device = grDevices::cairo_pdf)
+ggsave(file.path(out_dir, "scenario_direction.pdf"), direction_plot, width = 6.5, height = height, device = grDevices::cairo_pdf)
 
 ## Tables --------------------------------------------------------------------
 
 fmt <- function(v) ifelse(is.finite(v), sprintf("%.2f", v), "--")
 fmt3 <- function(v) ifelse(is.finite(v), sprintf("%.3f", v), "--")
 header <- c("\\begin{center}", "\\footnotesize", "\\setlength{\\tabcolsep}{3pt}")
-lambda_head <- function(first) c(
-  paste0(first, " & \\multicolumn{3}{c}{$\\lambda=0.4$} & \\multicolumn{3}{c}{$\\lambda=0.8$}",
-         " & \\multicolumn{3}{c}{$\\lambda=1.2$} & \\multicolumn{3}{c}{$\\lambda=1.6$} \\\\"),
-  "\\cmidrule(lr){2-4}\\cmidrule(lr){5-7}\\cmidrule(lr){8-10}\\cmidrule(lr){11-13}",
-  paste0(paste(rep(" & $d=0$ & $d=1$ & $d=2$", 4), collapse = ""), " \\\\"), "\\midrule")
+# Column heads: three distances for each wavelength class in `waves`.
+lambda_head <- function(first, waves) c(
+  paste0(first, paste(sprintf(" & \\multicolumn{3}{c}{$\\lambda=%s$}", sub("^w", "", waves)), collapse = ""), " \\\\"),
+  paste(sprintf("\\cmidrule(lr){%d-%d}", 3L * seq_along(waves) - 1L, 3L * seq_along(waves) + 1L), collapse = ""),
+  paste0(paste(rep(" & $d=0$ & $d=1$ & $d=2$", length(waves)), collapse = ""), " \\\\"), "\\midrule")
+tabular <- function(waves) sprintf("\\begin{tabular}{l*{%d}{r}}", 3L * length(waves))
 cell_value <- function(cells, label, design, column, format) {
-  vapply(waves, function(w) {
+  vapply(waves_of(cells), function(w) {
     vapply(c("d0", "d1", "d2"), function(d) {
       v <- cells[cells$label == label & cells$design == design & cells$wavelength_class == w & cells$stratum == d, column]
       if (length(v)) format(v) else "--"
@@ -176,15 +189,15 @@ cpk_rows <- vapply(designs, function(design) {
   paste0(design, " & ", paste(sprintf("%.1f", v), collapse = " & "), " \\\\")
 }, "")
 main <- c("\\noindent\\textit{Cells per observed karyotype (median over landscapes).}", header,
-          "\\begin{tabular}{lrrrr}", "\\toprule",
-          "Design & $\\lambda=0.4$ & $\\lambda=0.8$ & $\\lambda=1.2$ & $\\lambda=1.6$ \\\\", "\\midrule",
+          paste0("\\begin{tabular}{l", strrep("r", length(waves)), "}"), "\\toprule",
+          paste0("Design", paste(sprintf(" & $\\lambda=%s$", sub("^w", "", waves)), collapse = ""), " \\\\"), "\\midrule",
           cpk_rows, "\\bottomrule", "\\end{tabular}", "\\end{center}", "",
           "\\noindent\\textit{Error of the sparse joint model (balance) relative to the null predictor.}",
-          header, "\\begin{tabular}{l*{12}{r}}", "\\toprule", lambda_head("Design"),
+          header, tabular(waves), "\\toprule", lambda_head("Design", waves),
           design_rows(held_cells, "Sparse joint, balance (default)", "ratio", fmt),
           "\\bottomrule", "\\end{tabular}", "\\end{center}", "",
           "\\noindent\\textit{Direction accuracy of the sparse joint model (balance).}",
-          header, "\\begin{tabular}{l*{12}{r}}", "\\toprule", lambda_head("Design"),
+          header, tabular(waves), "\\toprule", lambda_head("Design", waves),
           design_rows(held_cells, "Sparse joint, balance (default)", "direction", fmt),
           "\\bottomrule", "\\end{tabular}", "\\end{center}")
 writeLines(main, file.path(out_dir, "scenario_main.tex"))
@@ -197,17 +210,16 @@ range_value <- function(design, w, d) {
   sprintf("%.2f--%.2f", r$ratio_low, r$ratio_high)
 }
 range_table <- function(pair) {
-  c(header, "\\begin{tabular}{l*{6}{r}}", "\\toprule",
-    paste0("Design", paste(sprintf(" & \\multicolumn{3}{c}{$\\lambda=%s$}", sub("^w", "", pair)), collapse = ""), " \\\\"),
-    "\\cmidrule(lr){2-4}\\cmidrule(lr){5-7}",
-    paste0(paste(rep(" & $d=0$ & $d=1$ & $d=2$", 2), collapse = ""), " \\\\"), "\\midrule",
+  c(header, tabular(pair), "\\toprule", lambda_head("Design", pair),
     vapply(designs, function(design) {
       paste0(design, " & ", paste(unlist(lapply(pair, function(w) vapply(c("d0", "d1", "d2"),
                                                                           function(d) range_value(design, w, d), ""))),
                                   collapse = " & "), " \\\\")
     }, ""), "\\bottomrule", "\\end{tabular}", "\\end{center}")
 }
-writeLines(c(range_table(c("w0.4", "w0.8")), "", range_table(c("w1.2", "w1.6"))), file.path(out_dir, "scenario_ranges.tex"))
+pairs <- split(waves, ceiling(seq_along(waves) / 2))
+writeLines(unlist(lapply(seq_along(pairs), function(k) c(if (k > 1L) "", range_table(pairs[[k]])))),
+           file.path(out_dir, "scenario_ranges.tex"))
 
 # Supplement: every method, by design, with short labels and a smaller font
 # for width.
@@ -218,15 +230,15 @@ supp_table <- function(cells, column, labels, title) {
   rows <- unlist(lapply(seq_along(designs), function(k) {
     design <- designs[[k]]
     c(if (k > 1L) "\\addlinespace[2pt]" else NULL,
-      paste0("\\multicolumn{13}{l}{\\textit{", design, "}} \\\\"),
+      paste0("\\multicolumn{", 1L + 3L * length(waves_of(cells)), "}{l}{\\textit{", design, "}} \\\\"),
       vapply(labels, function(label) {
         paste0("\\quad ", short[[label]], " & ",
                paste(cell_value(cells, label, design, column, fmt3), collapse = " & "), " \\\\")
       }, ""))
   }))
   c(paste0("\\noindent\\textit{", title, "}"), "\\begin{center}", "\\scriptsize", "\\setlength{\\tabcolsep}{2.5pt}",
-    "\\begin{tabular}{l*{12}{r}}", "\\toprule",
-    lambda_head("Method"), rows, "\\bottomrule", "\\end{tabular}", "\\end{center}")
+    tabular(waves_of(cells)), "\\toprule",
+    lambda_head("Method", waves_of(cells)), rows, "\\bottomrule", "\\end{tabular}", "\\end{center}")
 }
 for (split in c("heldout", "dev")) {
   cells <- if (split == "heldout") held_cells else dev_cells

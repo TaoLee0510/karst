@@ -2,18 +2,26 @@
 # study: reads the fits of results/devbench (devbench.R) instead of the
 # development benchmark's own results. Fits the constants that turn the
 # model's posterior standard deviation of relative fitness into the reported
-# one (R/sparse-joint.R, "Calibration"):
+# one, with the package's formula (sparse_joint_calibrate() in
+# R/sparse-joint.R):
 #
-#   reported sd = sqrt(model sd^2 + (deficit * relative fitness)^2 + (floor * birth rate * (1 + shell))^2)
+#   reported sd = sqrt(model sd^2 + (deficit_k * relative fitness)^2 + (floor * birth rate * (1 + shell))^2)
 #
-#   Rscript validation/sparse_joint/short_interval/calibration_fit.R <method> [check: floor,deficit]
+# where relative fitness is the fit's own (relative to the count-weighted mean
+# of its major karyotypes, not the scoring reference) and deficit_k is
+# `deficit` for observed karyotypes and `deficit_unobserved` for karyotypes
+# seen at neither time point (here: distance 0 or not).
 #
-# Without `check`, fits the two constants by Gaussian likelihood on the core
-# scenarios of the split and prints the coverage they give. With `check`,
-# only evaluates the given constants, for instance on another method or on
-# the held-out landscapes. Every dataset, and within it every kind of
-# karyotype, has the same weight, so the 4000 unobserved karyotypes of a
-# dataset do not outvote its 20 abundant ones.
+#   Rscript validation/sparse_joint/short_interval/calibration_fit.R <method> [check: floor,deficit[,deficit_unobserved]]
+#
+# Without `check`, fits floor and deficit by Gaussian likelihood on the core
+# scenarios of the split, with unobserved karyotypes taking the same deficit
+# (the two-constant form), and prints the coverage they give. With `check`,
+# only evaluates the given constants, for instance the package's
+# 0.009,0.6,1.1 or another method; two constants give the two-constant form.
+# Every dataset, and within it every kind of karyotype, has the same weight, so
+# the 4000 unobserved karyotypes of a dataset do not outvote its 20 abundant
+# ones.
 
 si_script_dir <- "validation/sparse_joint/short_interval"
 source(file.path(si_script_dir, "setup.R"))
@@ -39,10 +47,12 @@ nodes <- do.call(rbind, lapply(index$dataset_id, function(id) {
   at <- match(table$karyotype, prediction$karyotype)
   table$model_sd <- prediction$model_sd[at]
   table$shell <- prediction$shell[at]
+  # The fit's relative fitness, which the package's deficit multiplies.
+  table$relative <- prediction$fitness[at]
   cbind(dataset_id = id, scenario = dataset$scenario, table)
 }))
 nodes <- merge(nodes, index[c("dataset_id", "role")])
-nodes <- nodes[is.finite(nodes$model_sd), ]
+nodes <- nodes[is.finite(nodes$model_sd) & is.finite(nodes$relative), ]
 nodes$error <- nodes$pred_relative - nodes$truth_relative
 total <- nodes$count_t0 + nodes$count_t1
 nodes$kind <- ifelse(nodes$distance == 0L, ifelse(total >= 5, "observed, 5+ cells", "observed, <5 cells"),
@@ -50,8 +60,12 @@ nodes$kind <- ifelse(nodes$distance == 0L, ifelse(total >= 5, "observed, 5+ cell
 cell <- paste(nodes$dataset_id, nodes$kind)
 nodes$weight <- 1 / as.numeric(table(cell)[cell])
 
+# `constants`: floor, deficit and optionally deficit_unobserved (otherwise
+# `deficit` for all), as in the package.
 reported_sd <- function(constants, part) {
-  sqrt(part$model_sd^2 + (constants[[2L]] * part$pred_relative)^2 +
+  unobserved <- if (length(constants) > 2L) constants[[3L]] else constants[[2L]]
+  deficit <- ifelse(part$distance == 0L, constants[[2L]], unobserved)
+  sqrt(part$model_sd^2 + (deficit * part$relative)^2 +
          (constants[[1L]] * birth_rate * (1 + part$shell))^2)
 }
 core <- nodes[nodes$role == "core", ]
@@ -66,8 +80,9 @@ if (is.null(check)) {
               length(unique(core$dataset_id)), split, constants[1L], constants[2L], best$convergence))
 } else {
   constants <- check
-  cat(sprintf("Checking floor = %.4f  deficit = %.3f on %s, method %s\n",
-              constants[1L], constants[2L], split, method))
+  cat(sprintf("Checking floor = %.4f  deficit = %.3f  deficit_unobserved = %.3f on %s, method %s\n",
+              constants[1L], constants[2L], if (length(constants) > 2L) constants[3L] else constants[2L],
+              split, method))
 }
 
 coverage <- function(part, by) {

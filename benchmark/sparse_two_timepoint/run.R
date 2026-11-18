@@ -185,10 +185,24 @@ stt_stage_score <- function(config, split, workers, method_names) {
   metrics <- merge(index, do.call(rbind, scored), by = "dataset_id")
   path <- file.path(config$output_dir, sprintf("metrics_%s.csv", split))
   # Scoring some methods replaces their rows and keeps those of the others.
+  # Columns are matched by name; when the scoring has gained or lost a column
+  # since the kept rows were written, they are kept all the same, with NA where
+  # a column is new, and a warning names the columns.
   if (file.exists(path)) {
     previous <- utils::read.csv(path, stringsAsFactors = FALSE)
     previous <- previous[!previous$method %in% method_names, , drop = FALSE]
-    if (nrow(previous) && setequal(names(previous), names(metrics))) {
+    if (nrow(previous)) {
+      only_new <- setdiff(names(metrics), names(previous))
+      only_old <- setdiff(names(previous), names(metrics))
+      if (length(only_new) || length(only_old)) {
+        warning("metrics_", split, ".csv was scored with other columns. The kept rows of ",
+                paste(unique(previous$method), collapse = ", "), " have NA in ",
+                if (length(only_new)) paste(only_new, collapse = ", ") else "no column",
+                "; the new rows have NA in ", if (length(only_old)) paste(only_old, collapse = ", ") else "no column",
+                ". Rescore every method to fill them.", call. = FALSE)
+      }
+      for (column in only_new) previous[[column]] <- NA
+      for (column in only_old) metrics[[column]] <- NA
       metrics <- rbind(previous[names(metrics)], metrics)
     }
   }

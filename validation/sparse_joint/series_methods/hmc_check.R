@@ -109,7 +109,10 @@ hc_main <- function() {
   build <- if (is.null(args$build)) stop("--build is required.", call. = FALSE) else args$build
   iterations <- if (is.null(args$iterations)) 3000L else as.integer(args$iterations)
   warmup <- if (is.null(args$warmup)) 1000L else as.integer(args$warmup)
-  .libPaths(c(si_library(build, mt_default_output), .libPaths()))
+  # .libPaths() drops a folder that does not exist without a word.
+  library_dir <- si_library(build, mt_default_output)
+  if (!dir.exists(file.path(library_dir, "karst"))) stop("No karst build in ", library_dir, call. = FALSE)
+  .libPaths(c(library_dir, .libPaths()))
   loadNamespace("karst")
   cat("karst from", dirname(find.package("karst")), "\n")
   source(file.path(si_repo, "tests", "testthat", "helper-sparse-joint.R"), local = environment())

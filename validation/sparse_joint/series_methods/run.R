@@ -39,7 +39,10 @@ sm_main <- function() {
   switch(stage,
     sweeps = {
       sm_link(config)
-      .libPaths(c(si_library(config$build, config$library_root), .libPaths()))
+      # .libPaths() drops a folder that does not exist without a word.
+      library_dir <- si_library(config$build, config$library_root)
+      if (!dir.exists(file.path(library_dir, "karst"))) stop("No karst build in ", library_dir, call. = FALSE)
+      .libPaths(c(library_dir, .libPaths()))
       loadNamespace("karst")
       table <- sm_sweep_table(config)
       utils::write.csv(table, file.path(config$output_dir, "sweeps.csv"), row.names = FALSE)

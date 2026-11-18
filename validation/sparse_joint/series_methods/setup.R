@@ -335,11 +335,25 @@ sm_sweep_table <- function(config) {
 
 # ---- Fits ---------------------------------------------------------------------
 
-sm_true_growth_rate <- function(labels, truth) {
-  if (!is.null(truth$constant_fitness)) {
-    return(rep(stt_effective_growth_rate(truth$constant_fitness, truth$abm_delta_t), length(labels)))
-  }
-  stt_true_growth_rate(labels, truth)
+# True net growth rate per day of each karyotype, the quantity a karst fit
+# reports ((2 P_ii - 1) times the birth rate). In the ABM a cell of fitness f
+# divides with probability f * delta_t per step, and each daughter keeps its
+# parent's karyotype with probability P_ii (the missegregation kernel at the
+# dataset's true rate `beta`), so the karyotype's cells grow by the factor
+# 1 + f * delta_t * (2 P_ii - 1) per step. stt_true_growth_rate() is the birth
+# rate alone, log1p(f * delta_t) / delta_t; up to 2026-11-18 the scores here
+# used it. The factor 2 P_ii - 1 is about 0.9956 for a near-diploid karyotype
+# at 5e-5 (e1-e3), 0.982 at 4x and 0.931 at 16x (e4), 0.737 at 64x.
+sm_self_factor <- function(labels, beta) {
+  k <- stt_parse_karyotypes(labels)
+  stay <- vapply(0:max(k), function(cn) karst:::karst_pij_cpp(cn, cn, beta), numeric(1))
+  2 * exp(rowSums(matrix(log(stay)[k + 1L], nrow = nrow(k)))) - 1
+}
+
+sm_true_net_rate <- function(labels, truth, beta) {
+  f <- if (!is.null(truth$constant_fitness)) rep(truth$constant_fitness, length(labels)) else
+    stt_grf_fitness(labels, truth$centroids, truth$wavelength)
+  log1p(pmax(f, 0) * sm_self_factor(labels, beta) * truth$abm_delta_t) / truth$abm_delta_t
 }
 
 sm_fit_series <- function(config, dataset, nodes, method) {
@@ -509,13 +523,17 @@ sm_stage_score <- function(config, workers) {
   scored <- si_parallel(index$dataset_id, function(dataset_id) {
     dataset <- readRDS(stt_dataset_path(config, dataset_id))
     nodes <- mt_dataset_nodes(config, dataset)
-    truth <- sm_true_growth_rate(nodes$karyotype, dataset$truth)
+    # net growth at the dataset's true rate, as the fits report it
+    truth <- sm_true_net_rate(nodes$karyotype, dataset$truth, dataset$beta)
     rows <- lapply(methods, function(method) {
       path <- si_fit_path(config, dataset_id, method)
       if (!file.exists(path)) return(NULL)
       fit <- readRDS(path)
+      # truth_rate marks scores against the net growth rate (from 2026-11-18;
+      # beta_choice/rules.R requires it)
       key <- data.frame(dataset_id = dataset_id, method = method, status = fit$status, seconds = fit$seconds,
-                        peak_mb = if (is.null(fit$peak_mb)) NA_real_ else fit$peak_mb, stringsAsFactors = FALSE)
+                        peak_mb = if (is.null(fit$peak_mb)) NA_real_ else fit$peak_mb, truth_rate = "net",
+                        stringsAsFactors = FALSE)
       if (!identical(fit$status, "ok")) {
         key$detail <- fit$detail
         return(list(fit = key))

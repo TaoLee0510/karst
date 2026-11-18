@@ -186,19 +186,33 @@ show(scales_sub[!grepl("^dev", scales_sub$group),
                   "history_over_interval", "spearman_history_variance", "balance_level", "shell_coef")],
      "By interval (short) and level (diverse)")
 
-# Criteria 1 and 2 of the README.
-verdict <- function(groups, label) {
+# Criteria 1 and 2 of the README. Criterion 2 holds per mechanism of the
+# diverse set (`role`: rate, smooth, call), every one passing; up to
+# 2026-11-18 it was judged on the pooled set, which is now only reported.
+verdict <- function(groups, label, r_tab = rmse, d_tab = direction) {
   do.call(rbind, lapply(candidates, function(arm) {
-    if (is.null(rmse) || is.null(direction)) return(NULL)
-    r <- rmse[rmse$group %in% groups & rmse$arm == arm, ]
-    d <- direction[direction$group %in% groups & direction$arm == arm, ]
+    if (is.null(r_tab) || is.null(d_tab)) return(NULL)
+    r <- r_tab[r_tab$group %in% groups & r_tab$arm == arm, ]
+    d <- d_tab[d_tab$group %in% groups & d_tab$arm == arm, ]
     if (!nrow(r)) return(NULL)
     data.frame(rule = label, arm = arm, worst_rmse_ratio = max(r$effect), worst_direction_difference = min(d$effect),
                pass = max(r$effect) <= 1.03 && min(d$effect) >= -0.01, stringsAsFactors = FALSE)
   }))
 }
-criteria <- rbind(verdict("dev core", "1 dev core"), verdict("short", "1 short"), verdict("diverse", "2 diverse"),
-                  verdict("dev stress", "(dev stress, reported)"))
+ok$mechanism <- ifelse(ok$group == "diverse", paste("diverse", ok$role), ok$group)
+rmse_mechanism <- by_group(paste0("rmse_d", 0:2), "ratio", "mechanism")
+direction_mechanism <- by_group(paste0("direction_d", 0:2), "difference", "mechanism")
+mechanisms <- sort(unique(ok$mechanism[ok$group == "diverse"]))
+per_mechanism <- do.call(rbind, lapply(mechanisms, function(m) {
+  verdict(m, paste("2", m), rmse_mechanism, direction_mechanism)
+}))
+criterion2 <- if (!is.null(per_mechanism)) do.call(rbind, lapply(split(per_mechanism, per_mechanism$arm), function(v) {
+  data.frame(rule = "2 diverse, every mechanism", arm = v$arm[[1L]], worst_rmse_ratio = max(v$worst_rmse_ratio),
+             worst_direction_difference = min(v$worst_direction_difference), pass = all(v$pass),
+             stringsAsFactors = FALSE)
+}))
+criteria <- rbind(verdict("dev core", "1 dev core"), verdict("short", "1 short"), criterion2, per_mechanism,
+                  verdict("diverse", "(diverse pooled, reported)"), verdict("dev stress", "(dev stress, reported)"))
 if (!is.null(criteria)) {
   utils::write.csv(criteria, file.path(out_dir, "criteria.csv"), row.names = FALSE)
   show(criteria, "Criteria 1 and 2")

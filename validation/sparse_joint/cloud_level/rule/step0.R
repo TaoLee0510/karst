@@ -9,9 +9,11 @@
 #       (results_827c4b5/analysis/initial_state/vs_truth_fits.tsv, copied to
 #       results/step0/). The benchmark fits at the true rate, so these inputs
 #       show only where switching must not happen.
-#   (2) this study's simulations (scores.csv, scores_confirm.csv and the
-#       paper-sized set paper3 in scores_paper3.csv): base, free and level_dt
-#       on every input, scored against the truth.
+#   (2) this study's simulations: base, free, level_dt and level_age on every
+#       input, scored against the truth, read from scores_rule.csv (the six
+#       earlier sets) and scores_paper3.csv (the paper-sized set paper3); both
+#       must exist. (Up to 2026-11-18 this header named scores.csv and
+#       scores_confirm.csv, and a missing file was skipped silently.)
 # For each input the features a rule could use before or after the first fit:
 #   level      the level of the level_dt fit (the "auto" check)
 #   dt         the interval in days (one division per day is assumed)
@@ -19,9 +21,16 @@
 #   coverage   the share of the first time point's cells in the domain
 #   singleton  the share of its cells on karyotypes seen once
 #   top        the share of its largest karyotype
-#   n_major    the number of major karyotypes
+#   n_major    the number of major karyotypes (of the counts, from the
+#              dataset index; the fit's own is n_major_fit, or n_major.y in
+#              score files written before 2026-11-18)
 # and the effect of switching: the change in landscape correlation with the
 # truth (paper) or in RMSE at distance 1 and direction accuracy (study).
+# Switching "helped" where free lowered the RMSE at distance 1 by more than
+# 5% or raised the landscape correlation by more than 0.05, "hurt" in the
+# opposite case, "neutral" otherwise; the paper benchmark, which has the
+# landscape correlation only, takes the same 0.05 dead zone on it. (Up to
+# 2026-11-18 any decrease of the paper's correlation counted as "hurt".)
 #   Rscript validation/sparse_joint/cloud_level/rule/step0.R
 script_dir <- local({
   file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
@@ -42,18 +51,27 @@ pf <- merge(pf, vt, by = c("source", "dataset", "design"), all.x = TRUE)
 pf$hr <- pf$history / pf$dt
 pf$group <- paste("paper", pf$source, pf$design)
 pf$switched <- pf$chosen == "free"
-pf$effect <- ifelse(pf$switched, ifelse(pf$dr < 0, "hurt", "helped"), "not switched")
+pf$effect <- ifelse(!pf$switched, "not switched",
+                    ifelse(pf$dr > 0.05, "helped", ifelse(pf$dr < -0.05, "hurt", "neutral")))
+sw <- pf[pf$switched & is.finite(pf$dr), ]
+if (nrow(sw)) {
+  cat("== Paper benchmark: switched inputs whose landscape r fell (any amount / by more than 0.05) ==\n")
+  print(stats::aggregate(cbind(switched = 1, fell = dr < 0, fell_0.05 = dr < -0.05) ~ group, data = sw, FUN = sum),
+        row.names = FALSE)
+}
 
 # (2) This study.
 read_scores <- function(file) {
   path <- file.path(res, file)
-  if (!file.exists(path)) return(NULL)
+  if (!file.exists(path)) stop("Missing ", path, call. = FALSE)
   s <- utils::read.csv(path, stringsAsFactors = FALSE)
+  # cl_stage_score() merged the index (the counts' n_major) with the fit's
+  # scores (the fit's n_major) into n_major.x and n_major.y before 2026-11-18.
+  if (is.null(s$n_major) && !is.null(s$n_major.x)) s$n_major <- s$n_major.x
   s[s$status == "ok", ]
 }
 st <- do.call(rbind, lapply(c("scores_rule.csv", "scores_paper3.csv"), function(f) {
   s <- read_scores(f)
-  if (is.null(s)) return(NULL)
   columns <- c("set", "dataset_id", "landscape_id", "wavelength_class", "role", "interval", "coverage_t0",
                "singleton_t0", "top_t0", "n_major", "method", "rmse_d1", "direction_d1", "landscape_r", "history",
                "balance_level")

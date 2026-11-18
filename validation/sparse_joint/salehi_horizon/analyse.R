@@ -13,14 +13,23 @@
 # often the forecast is closer than the parent in Wasserstein distance, and the
 # sampling noise of the later passage (two random halves).
 #
+# Horizon: days between the parent and the later passage. The metadata's
+# parent links ("depth" in the rows) are sampling levels, not passages:
+# adjacent levels are one passage (15 days) apart in the PDX lines, sometimes
+# two, but 5 to 21 passages (25 to 105 days) apart in the p53 lines (SA906,
+# SA039; 5 days per passage). Bins: up to 15 days (one PDX passage), 16-30,
+# 31-60 and over 60 days.
+#
 # Intervals: 95% percentile intervals of a bootstrap over the six lineage
 # types (the paper's unit), and over samples (data sets); 4000 draws, seed 1.
-#   Rscript validation/sparse_joint/salehi_horizon/analyse.R
+#   Rscript validation/sparse_joint/salehi_horizon/analyse.R [RESULTS]
+# RESULTS: the folder with rows/ (default results/ next to this script); the
+# report goes to RESULTS/report.
 script_dir <- local({
   file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
   if (length(file_arg)) dirname(normalizePath(sub("^--file=", "", file_arg[[1L]]))) else getwd()
 })
-res <- file.path(script_dir, "results")
+res <- if (length(commandArgs(TRUE))) commandArgs(TRUE)[[1L]] else file.path(script_dir, "results")
 out_dir <- file.path(res, "report")
 dir.create(file.path(out_dir, "figures"), recursive = TRUE, showWarnings = FALSE)
 files <- list.files(file.path(res, "rows"), pattern = "[.]Rds$", full.names = TRUE)
@@ -54,8 +63,12 @@ x$gain <- x$ll_fc_e2 - x$ll_p0_e2
 x$gain3 <- x$ll_fc_e3 - x$ll_p0_e3
 x$closer <- x$w_fc < x$w_p0
 x$key <- paste(x$id, x$minobs, x$uid)
-x$horizon <- ifelse(x$depth >= 3L, "3-4", as.character(x$depth))
-cat("\nRows by method:\n"); print(table(x$method, x$depth))
+# 5 days per passage in SA906 and SA039 (the p53 lines), 15 in the others,
+# as forecast_score.R converts passages to days.
+x$passages_ahead <- x$days / ifelse(x$type %in% c("p53 k.o", "p53 w.t"), 5, 15)
+horizons <- c("<=15", "16-30", "31-60", ">60")
+x$horizon <- cut(x$days, c(0, 15, 30, 60, Inf), labels = horizons)
+cat("\nRows by method and days ahead:\n"); print(table(x$method, x$horizon))
 
 boot <- function(d, statistic, cluster, draws = 4000L) {
   g <- split(seq_len(nrow(d)), d[[cluster]])
@@ -67,7 +80,8 @@ boot <- function(d, statistic, cluster, draws = 4000L) {
 wide <- function(methods) {
   keys <- Reduce(intersect, lapply(methods, function(m) x$key[x$method == m & is.finite(x$gain)]))
   w <- x[x$method == methods[[1L]] & x$key %in% keys,
-         c("key", "id", "minobs", "uid", "depth", "horizon", "days", "type", "sample", "treatment", "passages",
+         c("key", "id", "minobs", "uid", "depth", "horizon", "days", "passages_ahead", "type", "sample", "treatment",
+           "passages",
            "coverage", "cells_desc", "noise", "w_p0", "ll_p0_e2")]
   for (m in methods) {
     r <- x[x$method == m & x$key %in% keys, ]
@@ -82,7 +96,7 @@ wide <- function(methods) {
 }
 
 summarise <- function(w, methods, by) {
-  groups <- split(w, w[[by]])
+  groups <- split(w, w[[by]], drop = TRUE)
   do.call(rbind, lapply(names(groups), function(gname) {
     d <- groups[[gname]]
     rows <- lapply(methods, function(m) {
@@ -98,7 +112,7 @@ summarise <- function(w, methods, by) {
   }))
 }
 paired <- function(w, a, b, by) {
-  groups <- c(list(all = w), split(w, w[[by]]))
+  groups <- c(list(all = w), split(w, w[[by]], drop = TRUE))
   do.call(rbind, lapply(names(groups), function(gname) {
     d <- groups[[gname]]
     stat <- function(z) mean(z[[paste0("ll|", a)]] - z[[paste0("ll|", b)]])
@@ -125,7 +139,7 @@ two <- c("karst", "alfak")
 w2 <- wide(two)
 s_h <- summarise(w2, two, "horizon")
 p_h <- paired(w2, "karst", "alfak", "horizon")
-show(s_h, "Log-score gain over persistence per cell, by horizon (passages ahead)")
+show(s_h, "Log-score gain over persistence per cell, by horizon (days ahead)")
 show(p_h, "karst minus alfak, log score per cell")
 utils::write.csv(s_h, file.path(out_dir, "gain_by_horizon.csv"), row.names = FALSE)
 utils::write.csv(p_h, file.path(out_dir, "paired_by_horizon.csv"), row.names = FALSE)
@@ -156,18 +170,18 @@ saveRDS(list(two = w2, three = w3), file.path(out_dir, "rows.Rds"))
 if (requireNamespace("ggplot2", quietly = TRUE)) {
   library(ggplot2)
   theme_set(theme_bw(base_size = 11))
-  s3$horizon <- factor(s3$subset, levels = c("1", "2", "3-4"))
+  s3$horizon <- factor(s3$subset, levels = horizons)
   a <- ggplot(s3, aes(horizon, gain, colour = method, group = method)) +
     geom_hline(yintercept = 0, colour = "grey50") +
     geom_pointrange(aes(ymin = low, ymax = high), position = position_dodge(width = 0.4)) +
     geom_line(position = position_dodge(width = 0.4)) +
-    labs(x = "passages ahead of the parent", y = "log score over persistence (per cell)", colour = NULL,
+    labs(x = "days ahead of the parent", y = "log score over persistence (per cell)", colour = NULL,
          title = "a  Forecasts against later passages")
   d <- p_h[p_h$cluster == "lineage type" & p_h$subset != "all", ]
-  d$horizon <- factor(d$subset, levels = c("1", "2", "3-4"))
+  d$horizon <- factor(d$subset, levels = horizons)
   b <- ggplot(d, aes(horizon, difference)) + geom_hline(yintercept = 0, colour = "grey50") +
     geom_pointrange(aes(ymin = low, ymax = high)) +
-    labs(x = "passages ahead of the parent", y = "karst minus alfak (per cell)", title = "b  Paired difference")
+    labs(x = "days ahead of the parent", y = "karst minus alfak (per cell)", title = "b  Paired difference")
   for (ext in c("png", "pdf")) {
     f <- file.path(out_dir, "figures", paste0("horizon.", ext))
     # cairo: no X11 display on the HPC nodes

@@ -17,7 +17,8 @@
 #                       which a neutral cloud has the observed size
 #   balance_residual_*  mean and sd over the fed states of log abundance at
 #                       the first time point minus the balance prior's centre
-#                       (two time points only)
+#                       (two time points only; balance_error: why they are
+#                       missing, when the rebuild failed)
 # and the profile of the marginal likelihood over the candidate histories
 # (one row per candidate, in a second table).
 #
@@ -55,7 +56,8 @@ for (id in ids) for (design in c("ends", "all")) for (method in c("karst", "kars
     cloud_cells_t0 = NA_real_, major_cells_t0 = NA_real_, neutral_per_day = NA_real_,
     cloud_states = NA_real_, cloud_states_seen_t0 = NA_real_,
     var_major = NA_real_, sd_relative_minor_observed = NA_real_,
-    balance_residual_mean = NA_real_, balance_residual_sd = NA_real_, balance_fed = NA_real_
+    balance_residual_mean = NA_real_, balance_residual_sd = NA_real_, balance_fed = NA_real_,
+    balance_error = NA_character_, stringsAsFactors = FALSE
   ))
   # The plain summary (two time points, anchored): states x time points.
   if (!is.null(s$major) && !is.null(s$count_t0) && nrow(s) == d$n_states) {
@@ -74,20 +76,22 @@ for (id in ids) for (design in c("ends", "all")) for (method in c("karst", "kars
     if (sum(seen_minor) > 1L) row$sd_relative_minor_observed <- stats::sd(s$relative_fitness[seen_minor])
   }
   if (n_time == 2L && identical(d$initial_state, "balance")) {
+    # The posterior rebuilt as predict() rebuilds it (sparse_joint_rebuild():
+    # the stored mode, the parameters a fit does not store, such as a
+    # mapped-out balance level, at their starting values, the scales fixed),
+    # and the residuals read at its inner mode. Up to 2026-11-18 the
+    # parameters were taken from fit$posterior alone, which lacks the
+    # mapped-out ones: MakeADFun failed, the error was swallowed, and every
+    # residual was NA. Errors are now kept (balance_error).
     residual <- tryCatch({
-      rebuilt <- karst:::sparse_joint_rebuild(fit, posterior = FALSE)
-      problem <- karst:::sparse_joint_problem(fit$data, fit$settings)
-      parameters <- fit$posterior[names(problem$parameters)]
-      map <- problem$map
-      map$log_scale <- factor(rep(NA, length(parameters$log_scale)))
-      objective <- TMB::MakeADFun(problem$tmb_data, parameters, map = map, random = problem$random,
-                                  DLL = "karst", silent = TRUE, inner.control = fit$settings$inner_control)
-      objective$fn(numeric(0))
-      report <- objective$report(objective$env$last.par)
-      fed <- seq_along(report$balance_residual) > problem$domain$n_major & report$balance_residual != 0
+      rebuilt <- karst:::sparse_joint_rebuild(fit)
+      report <- rebuilt$objective$report(rebuilt$objective$env$last.par)
+      fed <- seq_along(report$balance_residual) > rebuilt$problem$domain$n_major & report$balance_residual != 0
       report$balance_residual[fed]
-    }, error = function(e) NULL)
-    if (length(residual)) {
+    }, error = function(e) e)
+    if (inherits(residual, "error")) {
+      row$balance_error <- conditionMessage(residual)
+    } else if (length(residual)) {
       row$balance_residual_mean <- mean(residual)
       row$balance_residual_sd <- stats::sd(residual)
       row$balance_fed <- length(residual)
@@ -104,3 +108,7 @@ fits$implied_history <- fits$cloud_cells_t0 / fits$neutral_per_day
 utils::write.csv(fits, file.path(out_dir, "salehi_fits.csv"), row.names = FALSE)
 utils::write.csv(do.call(rbind, profiles), file.path(out_dir, "salehi_history_profiles.csv"), row.names = FALSE)
 cat("Fits:", nrow(fits), " profile rows:", sum(vapply(profiles, nrow, integer(1))), "\n")
+if (any(!is.na(fits$balance_error))) {
+  cat("Balance residuals not rebuilt for", sum(!is.na(fits$balance_error)), "fits:\n")
+  print(table(fits$balance_error))
+}

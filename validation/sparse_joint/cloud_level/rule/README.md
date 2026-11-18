@@ -29,17 +29,31 @@ simulations of the paper's population size and age generated here.
   day). 1416 fits (array 21984600).
 - Switching "helped" where free lowered RMSE at distance one by more than 5%
   or raised the landscape correlation by more than 0.05, "hurt" in the
-  opposite case.
+  opposite case. For the paper benchmark, which has the landscape
+  correlation only, `step0.R` took any fall of it as "hurt" until
+  2026-11-18; it now applies the same 0.05 dead zone (and prints both
+  counts).
+- The study's scores are read from `results/scores_rule.csv` (the six
+  earlier sets) and `results/scores_paper3.csv`; `step0.R` now stops if one
+  is missing instead of skipping it. In score files written before
+  2026-11-18 the number of majors of the counts is `n_major.x` (a clash with
+  the fit's `n_major` in `cl_stage_score()`), so the `n_major` feature of
+  the tables was empty; `step0.R` now reads it, and new score files name the
+  fit's `n_major_fit`.
 
 Tables: `results/rule_step0/` and `results/logs/rule_step0.log`
-(`step0.R`, `interval_rule.R`).
+(`step0.R`, `interval_rule.R`). They were written before these fixes and
+were not recomputed with the current code (the score files are on HPC);
+only the `n_major` column and the paper's effect classes change.
 
 ## Findings
 
 **The cloud's diversity does not mark a wrong rate.** The paper's
 missegregation simulations, fitted at their true rate, are as diverse as the
 study's wrong-rate sets (domain coverage 0.84, a fifth of the cells on
-karyotypes seen once), and switching hurt 110 of 119 of them.
+karyotypes seen once), and switching lowered the landscape correlation in
+110 of 119 of them (any fall; how many fell by more than 0.05, the dead zone
+of the simulations' "hurt", was not recomputed with the current code).
 
 **The level against the balance over the population's age does not separate
 them either** (AUC 0.52 between helped and hurt inputs). In old populations

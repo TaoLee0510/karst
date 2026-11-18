@@ -108,7 +108,11 @@ Gaussian-likelihood fit on the 96 development datasets
 0.91 for the four kinds above. By scenario and distance it lies between 0.89
 and 1.00, except after 1080 days (0.92 / 0.88 / 0.84). A free multiplier on
 the model's standard deviation fitted to zero once the other two terms were
-present, so it was fixed at one.
+present, so it was fixed at one. That fit applied the deficit to fitness
+relative to the scoring reference; `calibration_fit.R` now applies it as the
+package does, to the fit's own relative fitness (relative to its majors) and
+with the deficit of unobserved karyotypes below. The numbers of this paragraph
+are not recomputed with the current code.
 
 **A deficit for unobserved karyotypes (2026-11-13).** On moderately rugged
 landscapes (wavelengths 0.4-0.8), in young populations or at intervals of
@@ -129,9 +133,20 @@ intervals. Confirmed once on 84 new paper-sized datasets (seed base 96000):
 unobserved karyotypes at distances one and two were covered 0.93 / 0.90 at
 wavelength 0.4 (0.84 / 0.78 before), 0.97 / 0.96 at 0.8 (0.94 / 0.93) and
 1.00 / 1.00 at 0.2 (0.97 / 0.99); the lowest cell, distance two at 18 days and
-wavelength 0.4, was 0.899 (0.771).
+wavelength 0.4, was 0.899 (0.771). The pooled coverages, factors and widths
+before this confirmation come from `unobserved_bias/calibration_forms.R`,
+which then applied the deficit to fitness relative to the scoring reference;
+it now applies the package's formula and prints the table of candidate
+deficits. They are not recomputed with the current code; the confirmation
+scored the package's own intervals and is not affected.
 
 ## The two rates the model is given
+
+The first two tables and the points after them (`rate_sensitivity.R`) are
+from runs before a58c572 (2026-11-11), with independent initial abundances
+(`initial_state = "free"`, then the default; the script now passes it
+explicitly, so that a rerun fits the same model). They are not recomputed
+with the current code.
 
 Typical scenario, 12 datasets; the simulated populations divide 0.9 times per
 day. RMSE and mean prediction relative to the reference, at distance 1:
@@ -218,8 +233,17 @@ The balance prior is not log-linear either, and with the observed Hessian 4 of
 taken at zero residual, as for the counts; all 168 development and all 168
 held-out fits then finish.
 
-It became the default on 2026-11-11, after the held-out confirmation, where
-it passed every criterion and the free model did not. It assumes that fitness
+It became the default on 2026-11-11, after the held-out confirmation. The
+acceptance rule of that date also required every scenario to be within 10%
+of the two-layer pipeline, since removed. The free model was not, in
+`unbalanced_3000_100_360d`, whose information is in the deep first time point
+that only balance reads (and, held out, in `very_sparse_50_50_180d` at
+distance 0); balance was everywhere. Under the present rule (RMSE below the
+no-information answer and Spearman above ALFA-K with minobs 20 at each
+distance, `benchmark/sparse_two_timepoint/README.md`) both pass all six
+criteria on both sets of landscapes (KARST 1.0.0 rerun, below). The earlier
+rule's comparison with ALFA-K at minobs 5 was never evaluated on the held-out
+landscapes, where minobs 5 was not run. Balance assumes that fitness
 before the first time point resembled fitness between the time points. On
 simulated landscapes that changed at the first time point it was still the
 more accurate of the two (stress scenarios, below), which matters for patients
@@ -289,15 +313,18 @@ than two time points `"auto"` is `"balance"`.
   marginal likelihood, cost 4-24% on the development landscapes: the level
   and the neighbours' mean fitness move all non-major abundances alike.
 - The rule was fixed on one set of simulations and confirmed on new
-  landscapes (seed bases 101000-103000): development scenarios all kept the
-  balance prior (unchanged); short intervals switched 23% with errors
+  landscapes (seed bases 101000-103000; criterion 2 judged on the pooled
+  diverse set, not per mechanism; not recomputed with the current code):
+  development scenarios all kept the balance prior (unchanged); short intervals switched 23% with errors
   unchanged (0.99-1.00); the diverse populations all switched, errors 0.73-0.81
   of the balance prior's and direction at distance one 0.37 to 0.66; stress
   scenarios 1.02-1.03 (6% switched).
 - Cost: one extra fit at the interval.
 - On the Salehi passages half the trajectories switch. Their Fig. 2d ranking
   is dominated by sampling noise (two random halves of one passage rank the
-  observed change at 0.62-0.77), so it neither supports nor refutes the rule.
+  observed change at 0.62-0.77; noise_check.R matched passage files by
+  substring until 2026-11-18 and could read another passage; not recomputed
+  with the current code), so it neither supports nor refutes the rule.
 - `validation/sparse_joint/cloud_level/` has the study.
 - It was the default in 827c4b5 only. The ALFA-K paper benchmark of that
   commit showed that with time points one passage apart (windows of two
@@ -331,13 +358,13 @@ correlation in brackets, then coverage of the reported 95% intervals.
 All 168 fits of each variant (core and stress scenarios) finished; median
 9 s for the default and 14 s with balance, maximum 238 s.
 
-Acceptance: both models pass every criterion. RMSE is below the
-no-information answer at every distance, and Spearman above ALFA-K with
-minobs 5 and 20, all with landscape-bootstrap intervals excluding zero. The
+Acceptance under the present rule: see the KARST 1.0.0 rerun below. The
 default model's weakest cell is scenario `unbalanced_3000_100_360d` at
 distance 0: two near-monoclonal datasets whose information is in the deep
 first time point, which the default model does not read and the model with
-balance does.
+balance does. ALFA-K's Spearman correlation in this table and the next
+averages its successful fits only; the rerun's table counts its failed fits
+as the null predictor's, zero.
 
 ## Held-out confirmation
 
@@ -350,10 +377,11 @@ Twelve landscapes simulated with seeds sealed until the methods were frozen
 | 1 | 0.090 | 0.371 (0.13) | 0.058 (0.36), 0.95 | 0.046 (0.37), 0.96 |
 | 2 | 0.136 | 0.454 (0.12) | 0.082 (0.30), 0.93 | 0.068 (0.31), 0.94 |
 
-- With balance, all six criteria that could be evaluated pass (ALFA-K with
-  minobs 5 was not run on these landscapes): RMSE 43%, 49% and 50% below no
-  information, with every interval excluding zero. All 168 fits finished.
-- The default model passes all six as well. Its weakest scenarios are
+- With balance, RMSE is 43%, 49% and 50% below no information, with every
+  interval excluding zero. All 168 fits finished. ALFA-K with minobs 5 was
+  not run on these landscapes, so no criterion compares with it here.
+- The present rule's verdict is that of the KARST 1.0.0 rerun below. The
+  default model's weakest scenarios are
   `unbalanced_3000_100_360d` at distances 0 and 1, as on the development
   landscapes, from three datasets in which most observed karyotypes, seen at
   the deep first time point only, are predicted at the trend (bias -0.12 to
@@ -378,14 +406,20 @@ the eight core scenarios, 96 datasets each:
 
 | Distance | No information | ALFA-K (minobs 20) | Sparse joint | With balance |
 | --- | ---: | ---: | ---: | ---: |
-| Development 0 | 0.046 | 1.073 (0.23) | 0.033 (0.44), 0.97 | 0.026 (0.47), 0.98 |
-| Development 1 | 0.092 | 1.186 (0.20) | 0.055 (0.43), 0.97 | 0.044 (0.45), 0.99 |
-| Development 2 | 0.137 | 1.297 (0.18) | 0.079 (0.36), 0.95 | 0.066 (0.38), 0.98 |
-| Held-out 0 | 0.044 | 0.277 (0.16) | 0.032 (0.41), 0.97 | 0.025 (0.44), 0.98 |
-| Held-out 1 | 0.090 | 0.371 (0.13) | 0.058 (0.36), 0.98 | 0.046 (0.37), 0.99 |
-| Held-out 2 | 0.136 | 0.454 (0.12) | 0.083 (0.30), 0.96 | 0.068 (0.31), 0.98 |
+| Development 0 | 0.046 | 1.073 (0.22) | 0.033 (0.44), 0.97 | 0.026 (0.47), 0.98 |
+| Development 1 | 0.092 | 1.186 (0.18) | 0.055 (0.43), 0.97 | 0.044 (0.45), 0.99 |
+| Development 2 | 0.137 | 1.297 (0.17) | 0.079 (0.36), 0.95 | 0.066 (0.38), 0.98 |
+| Held-out 0 | 0.044 | 0.277 (0.14) | 0.032 (0.41), 0.97 | 0.025 (0.44), 0.98 |
+| Held-out 1 | 0.090 | 0.371 (0.12) | 0.058 (0.36), 0.98 | 0.046 (0.37), 0.99 |
+| Held-out 2 | 0.136 | 0.454 (0.11) | 0.083 (0.30), 0.96 | 0.068 (0.31), 0.98 |
 
-- Errors and rank correlations are those of the earlier runs to within 0.002.
+- A failed fit is scored as the null predictor: its error is the null
+  predictor's and its rank correlation zero (since 2026-11-18, as the method
+  document states). ALFA-K failed on 7 development and 5 held-out datasets;
+  averaged over its successful fits only, as before, its Spearman correlation
+  was 0.23 / 0.20 / 0.18 (development) and 0.16 / 0.13 / 0.12 (held-out).
+- Errors and rank correlations of the two sparse joint models are those of
+  the earlier runs to within 0.002.
 - Coverage at distances 1 and 2 is higher: the earlier runs' fits predate
   the deficit of karyotypes seen at no time point (kappa = 1.1, 2026-11-13),
   which widens their intervals. The held-out rerun with alfak2 dbc35fe
@@ -395,9 +429,21 @@ the eight core scenarios, 96 datasets each:
   difference between the Mac it ran on and the HPC.
 - The method document's numbers (Section 5 and the supplements, and
   `doc/generated/`) are from this rerun.
-- Under the acceptance rule of KARST 1.0.0 (RMSE below the no-information
-  answer, Spearman above ALFA-K), both models pass every criterion on the
-  development (9 of 9) and the held-out landscapes (6 of 6) of this rerun.
+- Acceptance (`run.R --stage=report`): RMSE below the no-information answer
+  and Spearman above ALFA-K with minobs 20 at distances 0, 1 and 2, each with
+  the landscape-bootstrap interval of the paired difference excluding zero.
+  Both models pass all six criteria on the development and on the held-out
+  landscapes, every criterion compared on all 12 landscapes. With balance,
+  Spearman is above ALFA-K by +0.25 / +0.27 / +0.21 (development) and +0.30 /
+  +0.26 / +0.20 (held-out); without, by +0.22 / +0.24 / +0.19 and +0.27 /
+  +0.25 / +0.19.
+- The report of af5101e (2026-11-18) gave "9 of 9" and "6 of 6". Its nine
+  development criteria included Spearman above ALFA-K at minobs 5, compared
+  on the 11 of 12 landscapes that have its fits; held out, where minobs 5 has
+  no fits, those three criteria were dropped without notice and the remaining
+  six reported as every criterion. A criterion without a baseline, or
+  compared on fewer than all landscapes, is now reported as not evaluated and
+  does not count as passed; ALFA-K at minobs 5 is no longer part of the rule.
 
 ## Stress scenarios
 
@@ -430,8 +476,11 @@ each); the held-out landscapes agree.
 ## Forward prediction
 
 `forward_prediction.R`: total-variation distance between the predicted and
-the true composition of the domain 180 days after the second time point, default
-model.
+the true composition of the domain 180 days after the second time point, with
+independent initial abundances (`initial_state = "free"`, the default when
+these were run, e5d44e3; the script now passes the benchmark entry's
+arguments, so that a rerun fits the same model). The numbers of this section
+are not recomputed with the current code.
 
 | Forecast | Development (72 datasets) | Held out (72) |
 | --- | ---: | ---: |
@@ -475,7 +524,9 @@ There is no truth; these are checks of behaviour.
 `fit_sparse_joint_cohort()` shares the fitness of karyotypes between datasets,
 with a between-dataset deviation whose scale is estimated. Scored on patient 1
 of each landscape in the typical scenario, fitted with patients 2–8 of the same
-landscape (cohort) or with patient 1 of seven other landscapes (control).
+landscape (cohort) or with patient 1 of seven other landscapes (control: the
+next seven, cyclically, of the twelve landscapes of the four original
+wavelength classes).
 RMSE, with Spearman correlation in brackets, at distances 0 / 1 / 2:
 
 | | Development (12 landscapes) | Held out (12) |
@@ -505,15 +556,21 @@ RMSE, with Spearman correlation in brackets, at distances 0 / 1 / 2:
 - With balance, a patient alone does as well on error (development 0.026 /
   0.044 / 0.066 over all scenarios).
 - Balance within a cohort (`karst_sparse_joint_cohort_balance`, trend
-  chosen, development, 2026-11-11): 2 of the 12 cohorts (L04, L07) fail
-  because neither trend has a finite marginal likelihood; the scale
-  optimisation fails already at the prior-centred scales. On the other 10,
-  against the cohort with free initial abundances, RMSE is lower at distances
-  1 and 2 (-0.003, interval -0.005 to -0.001; -0.006, -0.009 to -0.003) and
-  Spearman is not significantly different (+0.015); against balance alone,
-  RMSE is not significantly different and Spearman is higher (+0.078 / +0.053
-  / +0.045, intervals above zero). Coverage 0.99 / 0.96 / 0.94. A cohort of
-  eight took up to 57 minutes. The cohort default stays free.
+  chosen, development; fits of the KARST 1.0.0 rerun): 2 of the 12 cohorts
+  (L04, L07) fail because neither trend has a finite marginal likelihood; the
+  scale optimisation fails already at the prior-centred scales (as on
+  2026-11-11). On the other 10, at distances 0 / 1 / 2: against the cohort
+  with free initial abundances (the same pooling, another initial state),
+  RMSE is lower (-0.003 / -0.006 / -0.010, intervals below zero) and Spearman
+  slightly higher (+0.03 / +0.02 / +0.02, intervals just above zero); against
+  balance alone (the same initial state, no pooling), RMSE is not
+  significantly different at distances 1 and 2 (-0.003 at 0, interval just
+  below zero) and Spearman is higher (+0.087 / +0.058 / +0.052, intervals
+  above zero). Coverage 0.99 / 0.99 / 0.99. The report's cohort table makes
+  the same two comparisons over all 12 cohorts, with the two failed fits
+  scored as the null predictor; it compared with the free model alone before
+  2026-11-18, which mixed pooling and initial state. A cohort of eight took
+  up to 81 minutes. The cohort default stays free.
 - A cohort of eight takes 10 s to 45 min, twice that when the trend is chosen.
 
 On the 20 GBM datasets the per-dataset trend is strongly preferred (negative log
@@ -567,8 +624,10 @@ and tables in `doc/generated/`). Each cell holds three landscapes.
 - `alfak` is below the null predictor in 4 of 96 combinations and up to 300 times above it (the
   error figure caps its ratios at 8 and labels the larger ones). The sparse
   joint model has a lower error than `alfak` in all 96 and ranks better in
-  87 of the 93 with an `alfak` ranking; the exceptions are observed
-  karyotypes in four designs at wavelength 1.6 and two small ones at 0.4.
+  90 of 96, with `alfak`'s failed fits at the null predictor's rank
+  correlation, zero (87 of the 93 where `alfak` had a fit before
+  2026-11-18); the exceptions are observed karyotypes in four designs at
+  wavelength 1.6 and two small ones at 0.4.
 - Rank correlation at distances 1 and 2 grows with depth on smooth landscapes
   (wavelength 1.6, distance 1: 0.28 at 50/50, 0.55 to 0.61 at 500/700) and
   stays at 0.12 to 0.32 on rugged ones.
@@ -610,7 +669,8 @@ the figures and tables of Section 5.4 and Supplement S2 to `doc/generated/`.
 - Independent initial states: higher error than balance everywhere (0.48 to
   0.82), similar ranking (0.11 to 0.43).
 - `alfak` (Kriging mean, no uncertainty): 2.35 / 1.32 / 1.50 / 18.2 at
-  distance 3, 2.28 / 1.26 / 1.42 / 15.3 at distance 4; Spearman 0.01 to 0.25.
+  distance 3, 2.28 / 1.26 / 1.42 / 15.3 at distance 4; Spearman 0.01 to 0.19
+  (its failed fits at zero; 0.01 to 0.25 over its successful fits).
 - Development landscapes: balance 0.42 to 0.60, Spearman 0.14 to 0.49.
 
 ## Three measures of accuracy
@@ -625,7 +685,8 @@ and true fitness (Section 2.1 and 5.1 of `doc/karst_method.tex`):
   sign; a tie (equal predictions) counts one half, pairs with equal true
   fitness are skipped, and a pair belongs to the distance of its farther
   member (null = random = 1/2). `direction_accuracy.R` computes it from the
-  saved fits (`sweeps/direction/direction_<split>.csv`); at distances 3 and 4
+  saved fits (`sweeps/direction/direction_<split>.csv`, recomputed when a fit
+  is newer; a missing fit gives NA, a failed one 1/2); at distances 3 and 4
   the pairs include the intermediate nodes of the sampling walks. The score
   stage's `edge_sign_accuracy` counts ties as wrong, so the null predictor and
   failed fits score 0 there; it is not used. Direction accuracy was added
@@ -642,9 +703,10 @@ Held-out, means of 24 datasets per wavelength and distance:
 | sparse joint, independent | 0.53–0.96 | 0.66–0.96 | 0.76–0.81 | 96 / 96 |
 | alfak (minobs 20) | 1.39–41.6 | 0.36–0.52 | 0.45–0.53 | 28 / 96 |
 
-- alfak is below one half in 10 of 12 wavelength × distance cells at
-  distances 0–2: it predicts the wrong direction more often than the right
-  one. Its failed fits score one half (all ties).
+- alfak is below one half in 11 of 12 wavelength × distance cells at
+  distances 0–2 (10 of 12 on the development landscapes): it predicts the
+  wrong direction more often than the right one. Its failed fits score one
+  half (all ties).
 - The default's lowest value, 0.65 for observed karyotypes at wavelength 1.6,
   comes from rare observed karyotypes outside the domain: they share one log
   birth rate, so their fitness differs only through the missegregation term.
@@ -658,13 +720,14 @@ tables by design and at distances 3 and 4.
 
 ## Outputs for alfak pipelines
 
-Analyses built on `alfakR::alfak()` (branch `dev`) read four files from its
-output directory. `alfak_compat()` writes them from a sparse joint fit, with
+Analyses built on `alfakR::alfak()` (branch `dev2`, commit f93b2d2) read four
+files from its output directory (branch `dev`, 9d3eece, saves only the
+R-squared in `xval.Rds`). `alfak_compat()` writes them from a sparse joint fit, with
 the same arguments; `as_alfak()` builds them from an existing fit. It is not
 called `alfak()`: an earlier decision keeps that name out of KARST, and it
 would mask `alfakR::alfak()` wherever both packages are loaded.
 
-- Karyotypes are chosen as in alfak: frequent (`minobs` cells over both
+- Karyotypes are chosen as in alfak: frequent (`minobs` cells over all
   time points), their one-step neighbours, and those neighbours' neighbours, in
   alfak's order. `minobs` does not change the fit.
 - alfak's bootstrap replicates become joint posterior draws. Each karyotype's
@@ -674,7 +737,12 @@ would mask `alfakR::alfak()` wherever both packages are loaded.
   deviation, so `landscape.Rds` is both the summary of the draws, as in
   alfak, and exactly the model's prediction and calibrated uncertainty.
 - The scale is alfak's: the count-weighted mean of the majors is set to
-  `log(nb / n0) / dt`.
+  `g0 = log(nb / n0) / dt`. With `correct_efflux = TRUE`, birth rates are
+  reported as alfak converts them, `(f - k) / (2 P_ii - 1)` with `k` such
+  that the mean over the frequent karyotypes weighted by their frequencies at
+  time 0 is `g0`; up to cfabe12 the level was added before the division,
+  which put that mean about `1 / (2 P_ii - 1)` times too high (0.4% at 5e-5
+  per copy for 44 copies, 9% at 1e-3).
 - The cross-validation keeps alfak's folds, each frequent karyotype with its
   neighbours. A fold's counts leave the likelihood, its karyotypes get the
   prior of an unseen karyotype and stop being reference points of the trend,
@@ -719,9 +787,12 @@ the inner optimisation, and TMB's gradient is out by orders of magnitude.
   unchanged: on the stage-0 reference set every record equals ff13cf4's
   (144 items, GBM 20/20), at 1.02 times the time.
 - Searching the scales again with degenerate points excluded (build cv1)
-  raised accepted candidates from 73% to 77% at 2.2 times the time, without
-  changing accuracy (median RMSE ratio 1.000 at distances 0-2 on the 63 fits
-  it changed); it is kept as an internal option, off.
+  raised accepted candidates from 73% to 77% at 2.2 times the time; it is
+  kept as an internal option, off. Its accuracy is open: the median RMSE ratio
+  of 1.000 at distances 0-2 "on the 63 fits it changed" counted as changed
+  fits whose kept fit was identical (convergence/evaluate.R compared every
+  candidate's objective; corrected 2026-11-18, not recomputed with the
+  current code).
 - Integrating the initial abundance of non-major karyotypes out by quadrature
   (stage M) moved the flat direction to the next sparse quantity (zeta of
   majors with no cell at the first time point, g of non-majors that die out); stopped,
@@ -814,9 +885,9 @@ not help.
   time points are one passage apart. A rate measured outside the counts is
   untried.
 
-- The free model misses the information at a deep first time point (the failing
-  safety cell); balance reads it, with a history now chosen by marginal
-  likelihood (above).
+- The free model misses the information at a deep first time point (its
+  weakest scenario, `unbalanced_3000_100_360d`); balance reads it, with a
+  history now chosen by marginal likelihood (above).
 - The unknown birth rate has no remedy beyond the range fit. Intervals are too
   narrow when the assumed rate is too low, because both calibration terms
   scale with it.
@@ -841,10 +912,10 @@ not help.
   of the first and the last (+0.36 per cell, interval 0.14 to 0.49;
   `salehi_horizon/`), while alfak's did not change. A model of clone chance
   and passaging drift is untried.
-- ALFA-K with minobs 5 has 75 of 96 development fits (the HPC run continues)
-  and none on the held-out landscapes. On those 75 its RMSE is 0.169 / 0.225
-  at distances 0 / 1, above no information, and both variants rank better
-  with intervals excluding zero.
+- ALFA-K with minobs 5 has 75 of 96 development fits (11 of 12 landscapes)
+  and none on the held-out landscapes, and is not part of the acceptance
+  rule. On those 75 its RMSE is 0.169 / 0.225 at distances 0 / 1, above no
+  information, and both variants rank better with intervals excluding zero.
 - Balance within a cohort helps where it runs but fails on 2 of 12
   development cohorts; falling back to free initial abundances when it fails,
   or a marginal likelihood from the expected information, is untried.

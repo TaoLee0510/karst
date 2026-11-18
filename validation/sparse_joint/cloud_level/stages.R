@@ -247,7 +247,9 @@ cl_stage_score <- function(workers, sets = cl_sets, out_file = "scores.csv") {
       r[setdiff(columns, names(r))] <- NA
       r[columns]
     }))
-    rows[[set]] <- merge(index, scored, by = "dataset_id")
+    # The index and the scores both have n_major (of the counts; of the fit):
+    # the fit's becomes n_major_fit (before 2026-11-18: n_major.x / n_major.y).
+    rows[[set]] <- merge(index, scored, by = "dataset_id", suffixes = c("", "_fit"))
   }
   columns <- unique(unlist(lapply(rows, names)))
   out <- do.call(rbind, lapply(rows, function(r) {

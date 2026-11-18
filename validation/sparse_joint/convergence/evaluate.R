@@ -18,7 +18,13 @@
 #     the baseline's objective for that candidate;
 #   - at least 95% of candidate histories are accepted;
 #   - fits that changed: median over items of the RMSE ratio (new / baseline)
-#     at distances 0, 1 and 2 at most 1.02, median 95% coverage at least 0.90;
+#     at distances 0, 1 and 2 at most 1.02, median 95% coverage at least 0.90.
+#     A fit changed when it kept another candidate or the kept candidate's
+#     record differs (`changed`); not when only the objective of a candidate it
+#     did not keep moved on restart (`identical` is false then, but the kept
+#     fit and its predictions are the baseline's). Up to 2026-11-18 the
+#     changed set was !identical, which counted such fits (RMSE ratio 1) as
+#     changed and pulled the median towards 1;
 #   - total time at most twice the baseline's.
 # Writes items.csv, scores.csv and report.md.
 
@@ -145,6 +151,10 @@ for (part in parts) {
   }
 }
 items <- do.call(rbind, items)
+# The kept fit changed: another candidate kept, or the kept record differs
+# (a changed selection is a change even where its objective matches the
+# baseline's for that candidate).
+items$changed <- !items$same_selection | !(items$kept_identical %in% TRUE)
 utils::write.csv(items, file.path(output, "items.csv"), row.names = FALSE)
 
 # Scores of the development items against the truth.
@@ -192,7 +202,7 @@ add("## Items", "", table_md(by_part, 4L), "")
 errors <- items[nzchar(items$error_baseline) | nzchar(items$error_new), c("part", "item", "error_baseline", "error_new")]
 if (nrow(errors)) add("Errors:", "", table_md(errors), "")
 
-changed <- dev$item[!dev$identical]
+changed <- dev$item[dev$changed]
 ratio_table <- function(set) {
   if (!length(set)) return(NULL)
   s <- scores[scores$item %in% set, ]

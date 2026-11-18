@@ -19,18 +19,34 @@ md <- function(d) {
 }
 
 obj <- unique(x[is.finite(x$objective), c("fi", "context", "treated", "beta_multiple", "objective")])
+# Fits without an objective (failed, or the rate not fitted for that
+# trajectory), by context and rate: the summed objectives below use only the
+# trajectories with an objective at every rate, so that each sum is over the
+# same trajectories.
+grid <- sort(unique(x$beta_multiple))
+trajectories <- unique(x[c("fi", "context")])
+have <- table(factor(obj$fi, levels = trajectories$fi), factor(obj$beta_multiple, levels = grid)) > 0
+complete <- rownames(have)[rowSums(have) == length(grid)]
+missing <- do.call(rbind, lapply(split(trajectories$fi, trajectories$context), function(fi) {
+  data.frame(t(colSums(!have[fi, , drop = FALSE])), check.names = FALSE)
+}))
+missing <- cbind(context = rownames(missing), trajectories = as.vector(table(trajectories$context)[rownames(missing)]),
+                 missing)
 best <- do.call(rbind, by(obj, obj$fi, function(d) {
   b <- d[which.min(d$objective), ]
   base <- d$objective[d$beta_multiple == 1]
   data.frame(fi = b$fi, context = b$context, best_multiple = b$beta_multiple,
-             gain_vs_default = base - b$objective)
+             gain_vs_default = if (length(base) == 1L) base - b$objective else NA_real_)
 }))
 pref <- as.data.frame.matrix(table(best$context, best$best_multiple))
 pref <- cbind(context = rownames(pref), pref)
 gain <- aggregate(gain_vs_default ~ context, best, function(v) c(median = stats::median(v), sum = sum(v)))
 gain <- do.call(data.frame, gain)
-# Summed objective by context and rate, relative to the default rate.
-tot <- aggregate(objective ~ context + beta_multiple, obj, sum)
+# Summed objective by context and rate, relative to the default rate, over
+# the trajectories with an objective at every rate.
+oc <- obj[obj$fi %in% complete, ]
+tot <- aggregate(objective ~ context + beta_multiple, oc, sum)
+tot$trajectories <- as.vector(table(trajectories$context[trajectories$fi %in% complete])[tot$context])
 tot$relative <- tot$objective - ave(ifelse(tot$beta_multiple == 1, tot$objective, NA), tot$context,
                                     FUN = function(v) max(v, na.rm = TRUE))
 
@@ -52,7 +68,9 @@ models <- do.call(rbind, c(lapply(sort(unique(d$beta_multiple)), function(m) mod
 writeLines(c("# Fig. 4d check, step 3b: missegregation rate (beta = 5e-5 x multiple)", "",
              "## Preferred rate per trajectory (lowest objective), count", "", md(pref), "",
              "## Gain in log marginal likelihood of the preferred rate over the default", "", md(gain), "",
-             "## Summed objective by context, relative to the default rate (negative: better)", "", md(tot), "",
+             "## Trajectories without an objective at a rate (failed or not fitted), by context", "", md(missing), "",
+             "## Summed objective by context, relative to the default rate (negative: better)", "",
+             "Over the trajectories with an objective at every rate.", "", md(tot), "",
              "## Fig. 4d context model at each rate (PDX_v > 0 is the paper's direction)", "", md(models)),
            file.path(base, "beta.md"))
 cat(readLines(file.path(base, "beta.md")), sep = "\n")

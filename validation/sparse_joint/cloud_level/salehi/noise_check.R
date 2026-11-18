@@ -33,7 +33,13 @@ halves <- function(p, keep = NULL, reps = 20L) {
 rows <- lapply(seq_len(nrow(keys)), function(j) {
   k <- keys[j, ]
   fj <- paste(meta[meta$uid == as.integer(k$dj), c("datasetname", "timepoint")], collapse = "_")
-  tru <- readRDS(file.path(paths$salehi_inputs, inputs[grepl(fj, inputs)][1]))$x
+  # A trajectory that ends with the daughter: file names begin with the
+  # passage's data set and time point, then "_l_". (grepl(fj) as in the
+  # paper's metrics_salehi.R also matched "<name>_X10_l_..." for "<name>_X1",
+  # and could read another passage; changed 2026-11-18.)
+  hit <- inputs[startsWith(inputs, paste0(fj, "_l_"))]
+  if (!length(hit)) stop("No input ends with ", fj, call. = FALSE)
+  tru <- readRDS(file.path(paths$salehi_inputs, hit[[1L]]))$x
   p <- stats::setNames(tru[, ncol(tru) - 1L], rownames(tru)); p <- p[p > 0]
   d <- stats::setNames(tru[, ncol(tru)], rownames(tru)); d <- d[d > 0]
   lscape <- readRDS(file.path(paths$results, "fits", "salehi", k$fi, Sys.getenv("NOISE_DESIGN", "all"), "alfak", paste0("minobs_", k$min_obs), "landscape.Rds"))

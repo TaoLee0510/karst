@@ -50,6 +50,9 @@ ub_calibration_nodes <- function(source, name, id, reference_min_count = 5) {
   data.frame(source = name, dataset_id = id, distance = table$distance,
              total = table$count_t0 + table$count_t1, shell = fit$prediction$shell[at],
              pred = table$pred_relative, truth = table$truth_relative,
+             # The fit's own relative fitness, which the package's calibration
+             # multiplies by the deficit (calibration_forms.R).
+             relative = fit$prediction$fitness[at],
              model_sd = fit$prediction$model_sd[at], fitness_sd = fit$prediction$fitness_sd[at],
              stringsAsFactors = FALSE)
 }

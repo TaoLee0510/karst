@@ -49,10 +49,15 @@ stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_tw
                stringsAsFactors = FALSE)
   }
   landscapes <- rbind(make_split("dev", 71000L), make_split("heldout", 82000L))
+  # Control cohorts ("other_landscapes") are drawn from the twelve landscapes of
+  # the four original wavelength classes (L01-L12 of each split), so that a
+  # class added later (0.2, L13-L15) leaves their members as they were.
+  cohort_pool <- landscapes[landscapes$wavelength_class %in% wavelength_classes$wavelength_class[1:4],
+                            c("landscape_id", "split")]
   # What a cohort method needs to find the other datasets of its cohort.
   cohort_method <- function(members, ...) {
     list(type = "karst_sparse_joint_cohort", birth_rate = 1, min_cn = 1L, max_cn = 8L, members = members,
-         dataset_dir = file.path(output_dir, "datasets"), landscapes = landscapes[c("landscape_id", "split")],
+         dataset_dir = file.path(output_dir, "datasets"), landscapes = cohort_pool,
          cohort_size = 8L, arguments = utils::modifyList(list(initial_state = "free"), list(...)))
   }
   list(
@@ -102,17 +107,25 @@ stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_tw
     # Scored nodes: all observed karyotypes, and up to `d1_cap` / `d2_cap`
     # uniformly sampled one- and two-step neighbours.
     scoring = list(min_cn = 1L, max_cn = 8L, d1_cap = 2000L, d2_cap = 2000L, reference_min_count = 5),
-    # Roles in the acceptance rule (report.R).
+    # Roles in the acceptance rule (report.R). A candidate passes when, at
+    # distances 0, 1 and 2, its RMSE is below `zero`'s and its Spearman
+    # correlation above `alfak`'s, the setting fitted on both splits.
+    # `original` are the ALFA-K settings every method is compared with in the
+    # paired tables, which are not part of the rule.
     acceptance = list(zero = "zero",
+                      alfak = "alfak_minobs20",
                       original = c("alfak_minobs5", "alfak_minobs20"),
                       candidates = c("karst_sparse_joint", "karst_sparse_joint_balance"),
                       # Cohort methods exist for the cohort scenario only and are
-                      # compared there with the single-dataset model.
-                      cohort = c("karst_sparse_joint_cohort", "karst_sparse_joint_cohort_unrelated",
-                                 "karst_sparse_joint_cohort_shared_trend",
-                                 "karst_sparse_joint_cohort_unrelated_shared_trend",
-                                 "karst_sparse_joint_cohort_balance"),
-                      cohort_baseline = "karst_sparse_joint"),
+                      # compared there with the single-dataset model of the same
+                      # initial state, so that the difference is the pooling;
+                      # the cohort with balance also with the cohort without it.
+                      cohort = list(karst_sparse_joint_cohort = "karst_sparse_joint",
+                                    karst_sparse_joint_cohort_unrelated = "karst_sparse_joint",
+                                    karst_sparse_joint_cohort_shared_trend = "karst_sparse_joint",
+                                    karst_sparse_joint_cohort_unrelated_shared_trend = "karst_sparse_joint",
+                                    karst_sparse_joint_cohort_balance = c("karst_sparse_joint_balance",
+                                                                          "karst_sparse_joint_cohort"))),
     methods = list(
       zero = list(type = "zero"),
       alfak_minobs5 = list(type = "alfak", minobs = 5L, nboot = 45L, n0 = 5e4, nb = 2e6,

@@ -132,7 +132,10 @@ Landscapes are the unit of the bootstrap.
 1. **No loss on `dev` and `short`.** Mean RMSE at each of the distances 0, 1
    and 2, pooled over the core scenarios of `dev`, and over `short`, is at
    most 3% above `base`. Direction accuracy is not lower by more than 0.01.
-2. **Not worse on `diverse`.** The same two rules, per mechanism.
+2. **Not worse on `diverse`.** The same two rules, per mechanism. (Until
+   2026-11-18 `report.R` and `confirm.R` judged this on the pooled set;
+   they now judge each mechanism, rate, smooth and call, and report the
+   pooled set beside them.)
 3. **The scale no longer follows the history.** On `diverse` and on the
    Salehi inputs, the fitness variance among the first time point's cells
    does not depend on the chosen history (`level`), or there is no history to
@@ -147,13 +150,13 @@ recorded as a known limit of fits with one short interval.
 
 ## Files
 
-- `salehi_profiles.R`, `run_hpc.sh`: step 0.
+- `salehi_profiles.R`, `run_hpc.sh` (not in the repository): step 0.
 - `cl1.patch`: the change, against bf86c85.
 - `setup.R`, `stages.R`, `run.R`: sets, arms, fits and scores.
 - `hpc/`: build and array scripts for HPC (not tracked).
 - `salehi/variants.R`: the arms as methods of the paper benchmark's task
-  script; `salehi/array_task.sh` runs them in the benchmark's image with the
-  benchmark's folder read only.
+  script; `salehi/array_task.sh` (not in the repository) ran them in the
+  benchmark's image with the benchmark's folder read only.
 - `report.R`: the tables of the results below.
 - `results/` (not tracked): inputs, builds, fits, scores, logs.
 
@@ -282,8 +285,12 @@ Arms `base`, `free`, `level_dt`; the rule and its threshold were fixed before
 these fits (`confirm.R`). 1044 fits, HPC array 21974176; tables in
 `results/report_confirm/`.
 
-**The rule passes every criterion.** RMSE ratio to `base` at distances 0 / 1 / 2
-(bootstrap over landscapes) and direction accuracy:
+**The rule passes every criterion**, as `confirm.R` then judged them:
+criterion 2 on `diverse2` pooled, not per mechanism as the criterion says.
+Per mechanism (in particular `smooth`, the true rate, where switching may
+cost accuracy) this was not recomputed with the current code. The first
+round is unaffected: no arm passed criterion 1 there. RMSE ratio to `base`
+at distances 0 / 1 / 2 (bootstrap over landscapes) and direction accuracy:
 
 | Set | Switched to `free` | Rule | `free` everywhere | Direction, rule − base |
 | --- | --- | --- | --- | --- |

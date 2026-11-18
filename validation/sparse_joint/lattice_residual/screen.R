@@ -24,10 +24,16 @@
 # The trend is held fixed, so this is a screen, not change C. It also reports
 # the lag-1 autocorrelation of the true residual and of true fitness.
 #
-#   Rscript validation/sparse_joint/lattice_residual/screen.R [--workers=6] [--set=rugged]
+#   Rscript validation/sparse_joint/lattice_residual/screen.R [--workers=6] [--set=rugged] [--report-only]
 #
 # Output: results/<set>/screen.csv, screen_lag1.rds and screen_evidence.rds
-# (fitted against true residuals of unobserved domain karyotypes).
+# (fitted against true residuals of unobserved domain karyotypes), and
+# screen_summary.csv: per wavelength, distance, source and rho, the geometric
+# mean over datasets of the RMSE relative to the base fit (rho = 0 of the same
+# source and dataset; README.md, "Screen"), beside the median of the RMSE
+# over that of predicting no differences, which the script printed before
+# 2026-11-18. --report-only rebuilds the summary from screen.csv and
+# screen_lag1.rds without refitting.
 
 if (!exists("lr_script_dir")) lr_script_dir <- local({
   file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
@@ -156,22 +162,42 @@ if (sys.nframe() == 0L) {
   }
   Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
   config <- lr_config(set = value("set", "rugged"))
-  .libPaths(c(si_library("af362af", config$library_root), .libPaths()))
-  loadNamespace("karst")
-  index <- utils::read.csv(si_index_path(config), stringsAsFactors = FALSE)
-  index <- index[file.exists(si_fit_path(config, index$dataset_id, "base")), ]
-  out <- si_parallel(index$dataset_id, function(id) lr_screen_dataset(config, id, c(0, 0.25, 0.5, 0.75, 1)),
-                     as.integer(value("workers", "6")))
-  scores <- merge(index[c("dataset_id", "wavelength_class", "interval")], si_bind(lapply(out, `[[`, "scores")))
-  lag1 <- merge(index[c("dataset_id", "wavelength_class", "interval")], si_bind(lapply(out, `[[`, "lag1")))
-  utils::write.csv(scores, file.path(config$output_dir, "screen.csv"), row.names = FALSE)
-  saveRDS(lag1, file.path(config$output_dir, "screen_lag1.rds"))
-  evidence <- merge(index[c("dataset_id", "wavelength_class", "interval")], si_bind(lapply(out, `[[`, "evidence")))
-  saveRDS(evidence, file.path(config$output_dir, "screen_evidence.rds"))
+  if ("--report-only" %in% args) {
+    scores <- utils::read.csv(file.path(config$output_dir, "screen.csv"), stringsAsFactors = FALSE)
+    lag1 <- readRDS(file.path(config$output_dir, "screen_lag1.rds"))
+  } else {
+    .libPaths(c(si_library("af362af", config$library_root), .libPaths()))
+    loadNamespace("karst")
+    index <- utils::read.csv(si_index_path(config), stringsAsFactors = FALSE)
+    index <- index[file.exists(si_fit_path(config, index$dataset_id, "base")), ]
+    out <- si_parallel(index$dataset_id, function(id) lr_screen_dataset(config, id, c(0, 0.25, 0.5, 0.75, 1)),
+                       as.integer(value("workers", "6")))
+    scores <- merge(index[c("dataset_id", "wavelength_class", "interval")], si_bind(lapply(out, `[[`, "scores")))
+    lag1 <- merge(index[c("dataset_id", "wavelength_class", "interval")], si_bind(lapply(out, `[[`, "lag1")))
+    utils::write.csv(scores, file.path(config$output_dir, "screen.csv"), row.names = FALSE)
+    saveRDS(lag1, file.path(config$output_dir, "screen_lag1.rds"))
+    evidence <- merge(index[c("dataset_id", "wavelength_class", "interval")], si_bind(lapply(out, `[[`, "evidence")))
+    saveRDS(evidence, file.path(config$output_dir, "screen_evidence.rds"))
+  }
+  # RMSE relative to the base fit (rho = 0, the base prediction for every
+  # source), per dataset; geometric mean over datasets (README.md).
+  base_rmse <- scores[scores$rho == 0, c("dataset_id", "source", "stratum", "rmse")]
+  names(base_rmse)[4] <- "rmse_base"
+  scores <- merge(scores, base_rmse, by = c("dataset_id", "source", "stratum"))
+  scores$relative <- scores$rmse / scores$rmse_base
   scores$ratio <- scores$rmse / scores$rmse_zero
+  use <- scores$stratum != "d0" & is.finite(scores$relative) & scores$relative > 0
+  groups <- split(scores[use, ], scores[use, c("wavelength_class", "stratum", "source", "rho")], drop = TRUE)
+  summary <- do.call(rbind, lapply(groups, function(g) {
+    data.frame(wavelength_class = g$wavelength_class[[1L]], stratum = g$stratum[[1L]], source = g$source[[1L]],
+               rho = g$rho[[1L]], datasets = nrow(g),
+               geomean_rmse_relative_to_base = round(exp(mean(log(g$relative))), 3),
+               median_rmse_over_zero = round(stats::median(g$ratio, na.rm = TRUE), 3), stringsAsFactors = FALSE)
+  }))
+  summary <- summary[order(summary$stratum, summary$source, summary$wavelength_class, summary$rho), ]
+  utils::write.csv(summary, file.path(config$output_dir, "screen_summary.csv"), row.names = FALSE)
   options(width = 200)
-  print(stats::aggregate(ratio ~ wavelength_class + stratum + source + rho, scores[scores$stratum != "d0", ],
-                         function(x) round(stats::median(x), 3)), row.names = FALSE)
+  print(summary, row.names = FALSE)
   # Lag-1 autocorrelation within datasets, of the residual and of fitness.
   centre <- function(x, g) x - stats::ave(x, g)
   for (w in sort(unique(lag1$wavelength_class))) for (d in 1:2) {

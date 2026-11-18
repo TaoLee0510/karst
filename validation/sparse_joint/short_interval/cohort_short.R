@@ -56,7 +56,11 @@ si_cohort_fit <- function(config, method, task) {
   landscape <- config$landscapes[as.integer(task), ]
   path <- file.path(config$output_dir, "fits", sprintf("%s__%s.rds", landscape$landscape_id, method))
   if (file.exists(path)) return(invisible())
-  .libPaths(c(si_library(config$builds[[method]]), .libPaths()))
+  # .libPaths() drops a folder that does not exist without a word, and the
+  # default library's karst would fit and be recorded under this build.
+  library_dir <- si_library(config$builds[[method]])
+  if (!dir.exists(file.path(library_dir, "karst"))) stop("No karst build in ", library_dir, call. = FALSE)
+  .libPaths(c(library_dir, .libPaths()))
   members <- lapply(seq_len(config$cohort_size), function(p) readRDS(si_cohort_member_path(config, landscape$landscape_id, p)))
   samples <- lapply(members, function(m) {
     counts <- m$counts
@@ -77,6 +81,8 @@ si_cohort_fit <- function(config, method, task) {
   }, error = function(e) list(status = "failed", detail = conditionMessage(e)))
   result$seconds <- proc.time()[["elapsed"]] - started
   result$build <- config$builds[[method]]
+  # where the karst that fitted came from (one build per process)
+  result$karst_library <- if (isNamespaceLoaded("karst")) dirname(getNamespaceInfo("karst", "path")) else NA_character_
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   saveRDS(result, path)
   cat("Saved", path, result$status, "\n")

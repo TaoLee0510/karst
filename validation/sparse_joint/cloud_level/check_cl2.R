@@ -3,8 +3,12 @@
 #   1. At its defaults it gives the fits of bf86c85 (same_default.R).
 #   2. "auto" makes the choice of the rule in confirm.R and returns the fit
 #      that was chosen, as fitted in the study.
-#   3. as_alfak() runs on an "auto" fit; more than two time points give an
-#      error.
+#   3. as_alfak() runs on an "auto" fit. More than two time points gave an
+#      error in cl2; karst now fits them with the balance prior
+#      (fit_sparse_joint(): with more than two time points "auto" is
+#      "balance"), and the check asserts that: no error, initial_state
+#      "balance", no initial_state_check. Up to 2026-11-18 it only printed
+#      the outcome and passed either way.
 cl_script_dir <- "validation/sparse_joint/cloud_level"
 source(file.path(cl_script_dir, "setup.R"))
 .libPaths(c(file.path(cl_output, "lib", "karst_cl2"), .libPaths()))
@@ -47,7 +51,14 @@ compat <- as_alfak(fit, minobs = 10, nboot = 4)
 cat("as_alfak on an auto fit: landscape rows", nrow(compat$landscape), " R2R", compat$xval$R2R, "\n")
 three <- cbind(counts, counts[, 2L])
 colnames(three) <- c("0", "15", "30")
-message <- tryCatch({ fit_sparse_joint(three, times = c(0, 15, 30), initial_state = "auto"); "no error" },
-                    error = function(e) conditionMessage(e))
-cat("three time points:", message, "\n")
+three_fit <- tryCatch(suppressWarnings(fit_sparse_joint(three, times = c(0, 15, 30), initial_state = "auto",
+                                                         birth_rate = 1, min_cn = 1L, max_cn = 8L)),
+                      error = function(e) e)
+if (inherits(three_fit, "error")) {
+  stop("three time points with initial_state = \"auto\" gave an error (as cl2 did), not the balance fit: ",
+       conditionMessage(three_fit), call. = FALSE)
+}
+stopifnot(identical(three_fit$diagnostics$initial_state, "balance"),
+          is.null(three_fit$diagnostics$initial_state_check))
+cat("three time points: fitted with the balance prior, as \"auto\" does there\n")
 cat("All checks passed\n")

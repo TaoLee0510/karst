@@ -345,7 +345,10 @@ pr_stage_score <- function(config, workers) {
 # 360 days at the average rate equals one told the growth time at the rate
 # while growing, divided by the ratio. Checked on one dataset.
 pr_stage_symmetry <- function(config, dataset_id) {
-  .libPaths(c(si_library(config$build, config$library_root), .libPaths()))
+  # .libPaths() drops a folder that does not exist without a word.
+  library_dir <- si_library(config$build, config$library_root)
+  if (!dir.exists(file.path(library_dir, "karst"))) stop("No karst build in ", library_dir, call. = FALSE)
+  .libPaths(c(library_dir, .libPaths()))
   dataset <- readRDS(stt_dataset_path(config, dataset_id))
   nodes <- stt_dataset_nodes_si(config, dataset)
   fit_at <- function(dt, rate) {

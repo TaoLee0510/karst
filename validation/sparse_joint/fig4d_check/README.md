@@ -98,7 +98,10 @@ All 205 trajectories of the benchmark's "KARST 2 time points" Fig. 4
 selection were refitted: 23 in vitro, 87 PDX controls and 95 PDX
 cisplatin-treated. The Fig. 4d context model was then refitted:
 `glmmTMB(|Δf| ~ context + (1 | pdx/fi/k_id), Gamma(log))`, on all fits
-rather than the 200 lineage draws.
+rather than the 200 lineage draws. Failed fits are left out of the table.
+Up to 2026-11-18 `analyse_refits.R` dropped them before collecting their
+errors, so `results/refits.md` always said "No fit failed"; it now lists
+them. Whether any fit failed was not rechecked (the results are on HPC).
 
 | variant | in vitro \|Δf\| | PDX \|Δf\| | `PDX_v` (p) |
 | --- | --- | --- | --- |
@@ -128,6 +131,12 @@ likelihood of the same counts) compares the rates.
 | in vitro: summed objective vs the default | +340 | +89 | 0 | +203 | +681 | +2430 |
 | PDX: summed objective vs the default | +4250 | +2140 | 0 | −1400 | −1030 | +1990 |
 | Fig. 4d `PDX_v` at this β for all (p) | +0.50 (0.03) | +0.12 (0.57) | −1.08 (0.001) | −1.69 (1e-5) | −1.55 (5e-5) | −0.55 (0.15) |
+
+The summed objectives (rows 3 and 4) were summed over the trajectories with
+a fit at each rate; had a fit failed at one rate, the sums would be over
+different trajectories. `analyse_beta.R` now sums over the trajectories with
+a fit at every rate and lists the fits missing per rate; the numbers above
+were not recomputed with the current code.
 
 At each trajectory's preferred β:
 - in vitro |Δf| is 0.025 and PDX |Δf| is 0.051;

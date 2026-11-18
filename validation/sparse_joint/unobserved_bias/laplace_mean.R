@@ -131,7 +131,12 @@ ub_laplace_mean <- function(config, dataset_id, iterations, warmup, steps, base_
   started <- proc.time()[["elapsed"]]
   chain <- ub_hmc(post, iterations, warmup, steps, seed = dataset$seed)
   seconds <- proc.time()[["elapsed"]] - started
+  # Karyotypes outside the domain that no cell was seen in (distance > 0).
+  # Observed karyotypes dropped from the domain (fit$dropped) are left out:
+  # predict() gives them the observed level, not the trend this draws. Up to
+  # 2026-11-18 they were in the outside table.
   outside <- setdiff(nodes$karyotype, fit$summary$karyotype)
+  outside <- outside[nodes$distance[match(outside, nodes$karyotype)] > 0]
   cn <- ns$parse_karyotypes(outside)
   design <- ns$sparse_joint_design(cn, fit$trend$centre, fit$trend$major, fit$trend$shell_power)$design
   self_out <- 2 * ns$sparse_joint_self_probability(cn, dataset$beta) - 1
@@ -186,7 +191,10 @@ if (sys.nframe() == 0L) {
   ids <- args[!grepl("^--", args)]
   Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
   config <- ub_config(value("source", "rugged"))
-  .libPaths(c(si_library("af362af", config$library_root), .libPaths()))
+  # .libPaths() drops a folder that does not exist without a word.
+  library_dir <- si_library("af362af", config$library_root)
+  if (!dir.exists(file.path(library_dir, "karst"))) stop("No karst build in ", library_dir, call. = FALSE)
+  .libPaths(c(library_dir, .libPaths()))
   loadNamespace("karst")
   out_dir <- file.path(config$output_dir, "laplace_mean")
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)

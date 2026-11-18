@@ -11,7 +11,10 @@
 # Values are averaged over the scenarios of each landscape and then over the
 # three landscapes of each wavelength (24 datasets per point); the error ratio
 # divides the mean error by the mean error of the null predictor. Direction
-# accuracy comes from direction_accuracy.R.
+# accuracy comes from direction_accuracy.R. The wavelength classes are those in
+# the held-out metrics, in order of wavelength. A failed fit is scored as the
+# null predictor, with rank correlation zero (stt_null_rank() in
+# benchmark/sparse_two_timepoint/report.R).
 
 suppressMessages({
   library(ggplot2)
@@ -21,15 +24,20 @@ args <- commandArgs(TRUE)
 out_dir <- if (length(args)) args[[1L]] else "doc/generated"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 results <- "benchmark/results/sparse_two_timepoint"
+source("benchmark/sparse_two_timepoint/report.R")
 
 methods <- c("Sparse joint, balance (default)" = "karst_sparse_joint_balance",
              "Sparse joint, independent" = "karst_sparse_joint",
              "alfak (minobs = 20)" = "alfak_minobs20")
-waves <- c("w0.4", "w0.8", "w1.2", "w1.6")
+# Wavelength classes present, in order of wavelength.
+waves_of <- function(x) {
+  w <- unique(x$wavelength_class)
+  w[order(as.numeric(sub("^w", "", w)))]
+}
 mean_na <- function(v) if (all(is.na(v))) NA_real_ else mean(v, na.rm = TRUE)
 
 load_split <- function(split) {
-  m <- utils::read.csv(file.path(results, sprintf("metrics_%s.csv", split)), stringsAsFactors = FALSE)
+  m <- stt_null_rank(utils::read.csv(file.path(results, sprintf("metrics_%s.csv", split)), stringsAsFactors = FALSE))
   m <- m[m$role == "core" & m$scoreboard & m$stratum %in% c("d0", "d1", "d2") & m$method %in% methods, ]
   direction <- utils::read.csv(file.path(results, "sweeps", "direction", sprintf("direction_%s.csv", split)),
                                stringsAsFactors = FALSE)
@@ -42,11 +50,13 @@ load_split <- function(split) {
   wl$ratio <- wl$rmse / wl$rmse_zero
   wl$distance <- as.integer(sub("^d", "", wl$stratum))
   wl$label <- factor(names(methods)[match(wl$method, methods)], levels = names(methods))
-  wl$lambda <- factor(sub("^w", "lambda == ", wl$wavelength_class), levels = sub("^w", "lambda == ", waves))
+  wl$lambda <- factor(sub("^w", "lambda == ", wl$wavelength_class), levels = sub("^w", "lambda == ", waves_of(wl)))
   wl
 }
 held <- load_split("heldout")
 dev <- load_split("dev")
+waves <- waves_of(held)
+cat("Wavelength classes, held-out:", waves, " development:", waves_of(dev), "\n")
 
 ## Figure ----------------------------------------------------------------------
 palette <- c("Sparse joint, balance (default)" = "#2a78d6", "Sparse joint, independent" = "#eb6834",
@@ -93,11 +103,12 @@ rows <- vapply(names(display), function(label) {
   }, "")))
   paste0(display[[label]], " & ", paste(vals, collapse = " & "), " \\\\")
 }, "")
-writeLines(c("\\begin{center}", "\\footnotesize", "\\setlength{\\tabcolsep}{3pt}", "\\begin{tabular}{l*{12}{r}}", "\\toprule",
-             paste0(" & \\multicolumn{3}{c}{$\\lambda=0.4$} & \\multicolumn{3}{c}{$\\lambda=0.8$}",
-                    " & \\multicolumn{3}{c}{$\\lambda=1.2$} & \\multicolumn{3}{c}{$\\lambda=1.6$} \\\\"),
-             "\\cmidrule(lr){2-4}\\cmidrule(lr){5-7}\\cmidrule(lr){8-10}\\cmidrule(lr){11-13}",
-             paste0(paste(rep(" & $d=0$ & $d=1$ & $d=2$", 4), collapse = ""), " \\\\"), "\\midrule",
+k <- seq_along(waves)
+writeLines(c("\\begin{center}", "\\footnotesize", "\\setlength{\\tabcolsep}{3pt}",
+             sprintf("\\begin{tabular}{l*{%d}{r}}", 3L * length(waves)), "\\toprule",
+             paste0(paste(sprintf(" & \\multicolumn{3}{c}{$\\lambda=%s$}", sub("^w", "", waves)), collapse = ""), " \\\\"),
+             paste(sprintf("\\cmidrule(lr){%d-%d}", 3L * k - 1L, 3L * k + 1L), collapse = ""),
+             paste0(paste(rep(" & $d=0$ & $d=1$ & $d=2$", length(waves)), collapse = ""), " \\\\"), "\\midrule",
              rows, "\\bottomrule", "\\end{tabular}", "\\end{center}"),
            file.path(out_dir, "wavelength_direction.tex"))
 

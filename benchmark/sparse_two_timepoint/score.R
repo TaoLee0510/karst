@@ -169,9 +169,20 @@ stt_safe_cor <- function(x, y, method) {
   stats::cor(x, y, method = method)
 }
 
+# Spearman correlation of a prediction with the truth. A prediction that is the
+# same for every node (the null predictor, and a failed fit, which is scored as
+# the null predictor) gives no ordering, and its rank correlation is taken as
+# zero, so that a method's mean is not taken over its successful fits only.
+stt_rank_correlation <- function(prediction, truth) {
+  if (length(prediction) >= 3L && stats::sd(prediction) == 0 && stats::sd(truth) > 0) return(0)
+  stt_safe_cor(prediction, truth, "spearman")
+}
+
 # `prediction` has columns karyotype, fitness and optionally fitness_sd. Nodes
 # without a finite prediction are scored as relative fitness zero (the
-# no-information answer) and counted in `prediction_fraction`.
+# no-information answer) and counted in `prediction_fraction`; a fit without a
+# prediction for every reference karyotype, and a failed fit, is scored as the
+# no-information answer on all nodes.
 stt_score_predictions <- function(nodes, truth_rate, prediction, reference_min_count = 5) {
   stopifnot(length(truth_rate) == nrow(nodes))
   weights <- stt_reference_weights(nodes, reference_min_count)
@@ -256,7 +267,7 @@ stt_score_predictions <- function(nodes, truth_rate, prediction, reference_min_c
       skill = 1 - mean((pred - truth)^2) / mean(truth^2),
       slope = if (isTRUE(stats::var(truth) > 0)) stats::cov(pred, truth) / stats::var(truth) else NA_real_,
       pearson = stt_safe_cor(pred, truth, "pearson"),
-      spearman = stt_safe_cor(pred, truth, "spearman"),
+      spearman = stt_rank_correlation(pred, truth),
       auc_beneficial = stt_auc(pred, truth > 0),
       n_edges = sum(edge_use),
       edge_rmse = if (any(edge_use)) sqrt(mean((edge_pred[edge_use] - edge_truth[edge_use])^2)) else NA_real_,

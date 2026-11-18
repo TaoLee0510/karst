@@ -15,8 +15,11 @@
 suppressPackageStartupMessages(library(glmmTMB))
 base <- "validation/sparse_joint/fig4d_check/results"
 files <- list.files(file.path(base, "refits"), pattern = "\\.rds$", full.names = TRUE)
-x <- do.call(rbind, lapply(files, readRDS))
-x <- x[is.finite(x$deltaf), ]
+raw <- do.call(rbind, lapply(files, readRDS))
+# A failed fit is one row with its error and no delta f: collect the failures
+# before keeping the rows with a delta f.
+failed <- raw[!is.na(raw$error), , drop = FALSE]
+x <- raw[is.finite(raw$deltaf), ]
 x$pdx <- sub("^(SA[0-9]+).*", "\\1", x$fi)
 x$context <- stats::relevel(factor(x$context), ref = "invitro")
 
@@ -45,13 +48,19 @@ models <- do.call(rbind, lapply(unique(x$variant), function(v) {
              p = cf["contextPDX", "Pr(>|z|)"])
 }))
 fits <- aggregate(fi ~ variant + context, unique(x[c("variant", "context", "fi")]), length)
-errors <- unique(x$error[!is.na(x$error)])
+failures <- if (nrow(failed)) {
+  f <- aggregate(fi ~ variant + context, unique(failed[c("variant", "context", "fi")]), length)
+  names(f)[names(f) == "fi"] <- "failed_fits"
+  f
+} else NULL
+errors <- unique(failed$error)
 
 writeLines(c("# Fig. 4d check, step 3: refits under variants (karst, two time points)", "",
              "## Median delta f and |delta f|", "", md(wide), "",
              "## Median delta f by the source of the neighbour's value", "", md(by_src), "",
              "## Fig. 4d context model (PDX_v > 0 is the paper's direction)", "", md(models), "",
              "## Trajectories per variant", "", md(fits), "",
-             if (length(errors)) c("## Errors", "", errors) else "No fit failed."),
+             if (length(errors)) c("## Failed fits (left out above)", "", md(failures), "", "Errors:", "", errors) else
+               "No fit failed."),
            file.path(base, "refits.md"))
 cat(readLines(file.path(base, "refits.md")), sep = "\n")

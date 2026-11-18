@@ -1,7 +1,7 @@
 # Direction accuracy of the main methods, from the saved benchmark fits
 # (Section 5.1 of doc/karst_method.tex).
 #
-#   Rscript validation/sparse_joint/direction_accuracy.R [--workers=3]
+#   Rscript validation/sparse_joint/direction_accuracy.R [--workers=3] [--recompute]
 #
 # For each pair of neighbouring karyotypes x and x + e_c (one copy of one
 # chromosome apart) among a dataset's scored nodes, the sign of the predicted
@@ -19,14 +19,19 @@
 # step closer. The score stage's edge_sign_accuracy counts ties as wrong and is
 # not used here.
 #
+# A failed fit is scored as the null predictor (every pair a tie, 1/2). A fit
+# that is missing (never run, or not copied) gets NA and a warning, not 1/2.
+#
 # Writes benchmark/results/sparse_two_timepoint/sweeps/direction/
 # direction_<split>.csv, one row per dataset, method and distance (columns
-# dataset_id, method, stratum, n_pairs, direction). A split whose file exists is
-# not recomputed. One split takes about ten minutes with three workers.
+# dataset_id, method, stratum, n_pairs, direction, fit). A split's file is
+# recomputed when it is missing, when a fit it reads is newer than it, or with
+# --recompute. One split takes about ten minutes with three workers.
 
 for (part in c("landscape.R", "config.R", "score.R")) source(file.path("benchmark/sparse_two_timepoint", part))
 args <- commandArgs(TRUE)
 workers <- as.integer(sub("^--workers=", "", c(grep("^--workers=", args, value = TRUE), "--workers=3")[[1L]]))
+recompute <- "--recompute" %in% args
 config <- stt_config()
 res <- config$output_dir
 out <- file.path(res, "sweeps", "direction")
@@ -56,11 +61,18 @@ direction <- function(nodes, truth, prediction, distances) {
   }))
 }
 
+near_fit <- function(id, m) file.path(res, "fits", sprintf("%s__%s.rds", id, m))
+far_fit <- function(id, m) file.path(res, "sweeps", "far", "fits", sprintf("%s__%s.rds", id, m))
+
+# NULL for a missing fit; a failed fit (no prediction) predicts nothing, which
+# stt_score_predictions() scores as the null predictor.
 prediction_of <- function(path) {
-  empty <- data.frame(karyotype = character(), fitness = numeric(), stringsAsFactors = FALSE)
-  if (!file.exists(path)) return(empty)
+  if (!file.exists(path)) return(NULL)
   p <- readRDS(path)$prediction
-  if (is.null(p)) empty else p
+  if (is.null(p)) data.frame(karyotype = character(), fitness = numeric(), stringsAsFactors = FALSE) else p
+}
+missing_rows <- function(distances) {
+  data.frame(stratum = paste0("d", distances), n_pairs = NA_integer_, direction = NA_real_)
 }
 
 one_dataset <- function(id) {
@@ -70,23 +82,39 @@ one_dataset <- function(id) {
   truth_near <- stt_true_growth_rate(near$karyotype, dataset$truth)
   truth_far <- stt_true_growth_rate(far$karyotype, dataset$truth)
   do.call(rbind, lapply(methods, function(m) {
-    a <- direction(near, truth_near, prediction_of(file.path(res, "fits", sprintf("%s__%s.rds", id, m))), 0:2)
-    b <- direction(far, truth_far, prediction_of(file.path(res, "sweeps", "far", "fits", sprintf("%s__%s.rds", id, m))), 3:4)
+    near_prediction <- prediction_of(near_fit(id, m))
+    far_prediction <- prediction_of(far_fit(id, m))
+    a <- if (is.null(near_prediction)) missing_rows(0:2) else direction(near, truth_near, near_prediction, 0:2)
+    b <- if (is.null(far_prediction)) missing_rows(3:4) else direction(far, truth_far, far_prediction, 3:4)
+    a$fit <- if (is.null(near_prediction)) "missing" else "present"
+    b$fit <- if (is.null(far_prediction)) "missing" else "present"
     cbind(dataset_id = id, method = m, rbind(a, b), stringsAsFactors = FALSE)
   }))
 }
 
 for (split in c("heldout", "dev")) {
   file <- file.path(out, sprintf("direction_%s.csv", split))
-  if (file.exists(file)) {
-    cat("Exists:", file, "\n")
-    next
-  }
   index <- utils::read.csv(file.path(res, sprintf("dataset_index_%s.csv", split)), stringsAsFactors = FALSE)
   ids <- index$dataset_id[index$scoreboard & index$role == "core"]
+  if (!length(ids)) next
+  if (file.exists(file) && !recompute) {
+    fits <- c(outer(ids, methods, near_fit), outer(ids, methods, far_fit))
+    newest <- suppressWarnings(max(file.info(fits[file.exists(fits)])$mtime))
+    if (!is.finite(newest) || newest <= file.info(file)$mtime) {
+      cat("Up to date:", file, "\n")
+      next
+    }
+    cat("A fit is newer than", file, "; recomputing\n")
+  }
   rows <- parallel::mclapply(ids, one_dataset, mc.cores = workers, mc.preschedule = FALSE)
   failed <- !vapply(rows, is.data.frame, logical(1))
   if (any(failed)) stop("Failed datasets: ", paste(ids[failed], collapse = ", "))
-  utils::write.csv(do.call(rbind, rows), file, row.names = FALSE)
+  rows <- do.call(rbind, rows)
+  absent <- unique(rows[rows$fit == "missing", c("dataset_id", "method")])
+  if (nrow(absent)) {
+    warning(nrow(absent), " fit(s) of ", split, " are missing and have direction NA, e.g. ",
+            paste(utils::head(paste(absent$dataset_id, absent$method, sep = "__"), 5L), collapse = ", "), call. = FALSE)
+  }
+  utils::write.csv(rows, file, row.names = FALSE)
   cat("Wrote", file, "\n")
 }

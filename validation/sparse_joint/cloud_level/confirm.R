@@ -7,8 +7,10 @@
 #   initial_state = "free", otherwise the default (base).
 # Criteria, as for the first round: on dev2 core and on short2, mean RMSE at
 # distances 0, 1 and 2 at most 3% above base and direction accuracy at most
-# 0.01 below; on diverse2 not worse by the same rules. Bootstrap over
-# landscapes, 2000 draws, seed 1.
+# 0.01 below; on diverse2 not worse by the same rules, per mechanism (`role`:
+# rate, smooth, call), every one passing. Up to 2026-11-18 diverse2 was
+# judged pooled, which is now only reported. Bootstrap over landscapes, 2000
+# draws, seed 1.
 #
 #   Rscript validation/sparse_joint/cloud_level/confirm.R
 script_dir <- local({
@@ -46,8 +48,12 @@ boot <- function(index, landscapes, statistic, draws = 2000L) {
 }
 arms <- list(rule = rule, free = free)
 rows <- list()
-for (g in sort(unique(base$group))) {
-  u <- which(base$group == g)
+# The groups, and diverse2 by mechanism.
+diverse <- which(base$set == "diverse2")
+group_rows <- split(seq_len(nrow(base)), base$group)
+if (length(diverse)) group_rows <- c(group_rows, split(diverse, paste("diverse2", base$role[diverse])))
+for (g in names(group_rows)) {
+  u <- group_rows[[g]]
   for (arm in names(arms)) {
     a <- arms[[arm]]
     for (d in 0:2) {
@@ -71,14 +77,22 @@ num <- vapply(show, is.numeric, logical(1))
 show[num] <- lapply(show[num], function(v) signif(v, 3))
 cat("\n== Rule (switch to free when the fitted level > 1) and free, against base ==\n")
 print(show, row.names = FALSE)
-verdict <- do.call(rbind, lapply(c("dev2 core", "short2", "diverse2", "dev2 stress"), function(g) {
+judge <- function(g, label = g) {
   t <- table[table$group == g & table$arm == "rule", ]
   if (!nrow(t)) return(NULL)
-  data.frame(group = g, worst_rmse_ratio = max(t$rmse_ratio), worst_direction_diff = min(t$direction_diff),
+  data.frame(group = label, worst_rmse_ratio = max(t$rmse_ratio), worst_direction_diff = min(t$direction_diff),
              pass = max(t$rmse_ratio) <= 1.03 && min(t$direction_diff) >= -0.01)
-}))
+}
+mechanisms <- if (length(diverse)) sort(unique(paste("diverse2", base$role[diverse]))) else character()
+per_mechanism <- do.call(rbind, lapply(mechanisms, judge))
+criterion2 <- if (!is.null(per_mechanism)) {
+  data.frame(group = "diverse2, every mechanism", worst_rmse_ratio = max(per_mechanism$worst_rmse_ratio),
+             worst_direction_diff = min(per_mechanism$worst_direction_diff), pass = all(per_mechanism$pass))
+}
+verdict <- rbind(judge("dev2 core"), judge("short2"), criterion2, per_mechanism,
+                 judge("diverse2", "diverse2 pooled (reported)"), judge("dev2 stress"))
 utils::write.csv(verdict, file.path(out_dir, "verdict.csv"), row.names = FALSE)
-cat("\n== Verdict (dev2 stress reported, not a criterion) ==\n")
+cat("\n== Verdict (diverse2 pooled and dev2 stress reported, not criteria) ==\n")
 print(verdict, row.names = FALSE)
 cat("\nSwitched by group and level class:\n")
 print(round(tapply(switch_to_free, paste(base$group, base$wavelength_class), mean), 2))

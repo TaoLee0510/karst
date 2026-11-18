@@ -1,11 +1,14 @@
 # Does a fit predict what the population looks like later?
 #
 #   Rscript validation/sparse_joint/forward_prediction.R [--split=dev] [--horizon=180] [--workers=2]
-#                                                        [--unseal-heldout]
+#                                                        [--method=karst_sparse_joint] [--unseal-heldout]
 #
 # For every scoreboard dataset whose simulated trajectory was recorded
 # `horizon` days after the second time point, the sparse joint model is fitted
-# to the two time points and its domain is run forward from the fitted
+# to the two time points with the settings of a benchmark entry (`--method`,
+# config.R; default `karst_sparse_joint`, independent initial abundances,
+# `initial_state = "free"`, which the README's table used) and its domain is
+# run forward from the fitted
 # composition at the second time point. The predicted composition is compared, as
 # total-variation distance over the domain, with the true population at that
 # later day. Four forecasts are compared:
@@ -34,7 +37,9 @@ if (identical(split, "heldout") && !isTRUE(option("unseal-heldout", FALSE))) {
 horizon <- as.numeric(option("horizon", "180"))
 workers <- as.integer(option("workers", "2"))
 config <- stt_config()
-method <- config$methods$karst_sparse_joint
+method_name <- option("method", "karst_sparse_joint")
+method <- config$methods[[method_name]]
+if (!identical(method$type, "karst_sparse_joint")) stop("--method must be a sparse joint entry of config.R.", call. = FALSE)
 index <- utils::read.csv(file.path(config$output_dir, sprintf("dataset_index_%s.csv", split)), stringsAsFactors = FALSE)
 index <- index[index$scoreboard & index$role == "core", ]
 Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
@@ -48,8 +53,12 @@ forecast <- function(dataset_id) {
   if (is.null(later) || dataset$bottleneck > 0) return(NULL)
   counts <- dataset$counts
   storage.mode(counts) <- "integer"
-  fit <- karst::fit_sparse_joint(counts, dt = dataset$interval, beta = dataset$beta,
-                                  birth_rate = method$birth_rate, min_cn = method$min_cn, max_cn = method$max_cn)
+  # The entry's own arguments (initial_state), so that the package default
+  # does not decide which model is run.
+  fit <- do.call(karst::fit_sparse_joint, c(
+    list(counts, dt = dataset$interval, beta = dataset$beta, birth_rate = method$birth_rate,
+         min_cn = method$min_cn, max_cn = method$max_cn),
+    method$arguments))
   summary <- fit$summary
   karyotypes <- karst:::parse_karyotypes(summary$karyotype)
   kernel <- karst:::sparse_division_kernel(karyotypes, dataset$beta)
@@ -85,7 +94,9 @@ rows <- parallel::mclapply(index$dataset_id, function(id) tryCatch(forecast(id),
 failed <- vapply(rows, is.character, logical(1))
 if (any(failed)) cat("Failed:", sum(failed), "; first:", rows[[which(failed)[1L]]], "\n")
 rows <- do.call(rbind, rows[!failed])
-saveRDS(rows, file.path(config$output_dir, "report", sprintf("forward_prediction_%s.rds", split)))
+saveRDS(rows, file.path(config$output_dir, "report",
+                        sprintf("forward_prediction_%s%s.rds", split,
+                                if (identical(method_name, "karst_sparse_joint")) "" else paste0("_", method_name))))
 
 # Landscapes weigh equally within a scenario.
 per_landscape <- stats::aggregate(rows[c("distance", "true_change", "domain_mass_later")],
@@ -98,8 +109,8 @@ names(wide) <- sub("distance.", "", names(wide), fixed = TRUE)
 context <- table[table$forecast == "fitted", c("scenario", "true_change", "domain_mass_later")]
 wide <- merge(wide, context)
 options(width = 200)
-cat(sprintf("Total-variation distance to the true composition %g days after the second time point (%s landscapes, %d datasets)\n",
-            horizon, split, length(unique(rows$dataset_id))))
+cat(sprintf("Total-variation distance to the true composition %g days after the second time point (%s landscapes, %d datasets, %s)\n",
+            horizon, split, length(unique(rows$dataset_id)), method_name))
 print(format(wide[c("scenario", "no_change", "no_selection", "fitted", "true_fitness", "true_change", "domain_mass_later")],
              digits = 3), row.names = FALSE)
 pooled <- stats::aggregate(per_landscape["distance"], per_landscape[c("landscape_id", "forecast")], mean)

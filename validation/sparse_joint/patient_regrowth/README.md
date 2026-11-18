@@ -91,7 +91,8 @@ Rscript validation/sparse_joint/patient_regrowth/report.R --build=cv3
 
 On HPC each (arm, dataset) is one array task
 (`../multi_timepoint/hpc/submit.sh fit cv3 <tasks>`, task lists in
-`../multi_timepoint/hpc/tasks/`).
+`../multi_timepoint/hpc/tasks/`). Those scripts and task lists are not in
+the repository, so the HPC route cannot be reproduced from it.
 
 ## Results (build cv3, 2026-11-14)
 

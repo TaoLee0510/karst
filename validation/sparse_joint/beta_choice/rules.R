@@ -45,6 +45,13 @@ series_candidates <- function(set, base) {
   if (!dir.exists(file.path(root, set))) return(NULL)
   idx <- utils::read.csv(file.path(root, set, "dataset_index.csv"), stringsAsFactors = FALSE)
   dist <- utils::read.csv(file.path(root, set, "metrics_distance.csv"), stringsAsFactors = FALSE)
+  # RMSE against the net growth rate at the true rate, the quantity the fits
+  # report; scores of series_methods before 2026-11-18 compared with the
+  # birth rate (2 P_ii - 1 = 0.931 at a true rate of 16x).
+  if (!"truth_rate" %in% names(dist) || !all(dist$truth_rate == "net", na.rm = TRUE)) {
+    stop(set, ": metrics_distance.csv was scored against the birth rate; rescore with ",
+         "series_methods/run.R --stage=score --set=", set, call. = FALSE)
+  }
   dist <- dist[dist$stratum %in% c("d0", "d1", "d2") & dist$status == "ok", c("dataset_id", "method", "stratum", "rmse")]
   rows <- do.call(rbind, lapply(idx$dataset_id, function(id) {
     d <- readRDS(file.path(root, set, "datasets", paste0(id, ".rds")))
@@ -100,9 +107,11 @@ rule_name <- function(r) switch(r$type, R0 = "R0", A = sprintf("A(I>=%g,C>=%g)",
                                 AB = sprintf("AB(I>=%g,C>=%g,T=%g)", r$interval, r$cells, r$threshold))
 names(rules) <- vapply(rules, rule_name, character(1))
 
+# NA when no candidate fitted (no cell in the model domain): such datasets are
+# left out (apply_rule()), not counted as picking x1.
 pick_one <- function(d, r) {
   ok <- is.finite(d$objective)
-  if (!any(ok)) return(1)
+  if (!any(ok)) return(NA_real_)
   base <- d$objective[d$multiple == 1]
   if (r$type == "C") {
     pen <- d$objective + (log(d$multiple) / r$sd)^2 / 2
@@ -118,6 +127,7 @@ apply_rule <- function(cand, r) {
   key <- paste(cand$source, cand$base, cand$id)
   do.call(rbind, lapply(split(cand, key), function(d) {
     m <- pick_one(d, r)
+    if (is.na(m)) return(NULL)
     chosen <- d[d$multiple == m, ][1, ]
     fixed <- d[d$multiple == 1, ][1, ]
     out <- data.frame(source = d$source[1], base = d$base[1], id = d$id[1], landscape = d$landscape[1],
@@ -159,7 +169,8 @@ judge <- function(null_p, alt_e4, alt_s0, which_half) {
   alt <- rbind(a4[c("true_multiple", "pick")], a0[c("true_multiple", "pick")])
   within4 <- mean(abs(log2(alt$pick / alt$true_multiple)) <= 2 + 1e-9)
   # Datasets whose fits failed at every candidate (no cell in the model domain)
-  # have no ratio; a rule cannot change them, so they are left out.
+  # have no pick and no ratio; apply_rule() leaves them out, here and in
+  # within4 (up to 2026-11-18 they counted as picking x1 there).
   e4_high <- if (nrow(a4)) max(stats::median(a4$ratio_d0, na.rm = TRUE), stats::median(a4$ratio_d1, na.rm = TRUE),
                                stats::median(a4$ratio_d2, na.rm = TRUE)) else NA
   s0_high <- stats::median(a0$dr[a0$true_multiple >= 4], na.rm = TRUE)
@@ -213,6 +224,28 @@ why <- do.call(rbind, lapply(results, function(x) {
              stringsAsFactors = FALSE)
 }))
 
+# Knowing the rate (README, step 2): median RMSE ratio at distance 1 of the
+# fit at 4x too low and 4x too high a rate against the fit at the true rate;
+# two-time-point fits (ends) of e1 (truth x1) and e4 (x4, x16), every dataset.
+knowing <- local({
+  cand <- rbind(null[null$source == "e1" & null$base == "ends", ], e4)
+  rows <- lapply(split(cand, paste(cand$source, cand$id)), function(d) {
+    at <- function(m) {
+      v <- d$rmse_d1[abs(d$multiple - m) < 1e-9]
+      if (length(v)) v[[1L]] else NA_real_
+    }
+    t <- d$true_multiple[[1L]]
+    data.frame(truth = paste0("x", t), low = at(t / 4) / at(t), high = at(t * 4) / at(t))
+  })
+  k <- do.call(rbind, rows)
+  out <- do.call(rbind, lapply(split(k, k$truth), function(g) {
+    data.frame(truth = g$truth[[1L]], datasets = sum(is.finite(g$low) & is.finite(g$high)),
+               assumed_4x_too_low = stats::median(g$low, na.rm = TRUE),
+               assumed_4x_too_high = stats::median(g$high, na.rm = TRUE))
+  }))
+  out[order(as.numeric(sub("x", "", out$truth))), ]
+})
+
 # Picks on the Salehi trajectories of the Fig. 4d check (fits at the six rates;
 # interval and cells as there): in full under R0 and the chosen rule, and as
 # shares under every rule (criterion 3).
@@ -249,13 +282,22 @@ salehi_range <- if (!is.null(salehi)) {
   stats::aggregate(cbind(interval, cells) ~ landscape, r, function(v) stats::median(v))
 } else NULL
 
+fitted_any <- function(cand) {
+  if (is.null(cand)) return(0L)
+  ok <- tapply(is.finite(cand$objective), paste(cand$source, cand$base, cand$id), any)
+  sum(ok)
+}
 writeLines(c("# Short-interval plan, step 3: rules for leaving the default rate", "",
              sprintf("Datasets: null %d, e4 %d, step 0 %d (each with its candidates).",
                      length(unique(paste(null$source, null$base, null$id))),
-                     length(unique(paste(e4$source, e4$base, e4$id))), length(unique(step0$id))), "",
+                     length(unique(paste(e4$source, e4$base, e4$id))), length(unique(step0$id))),
+             sprintf("With a fit at one candidate or more (the others are left out): null %d, e4 %d, step 0 %d.",
+                     fitted_any(null), fitted_any(e4), fitted_any(step0)), "",
              "## Tuning half", "", md(tune), "",
              sprintf("Chosen on the tuning half: %s", chosen), "",
              "## Test half (the chosen rule)", "", md(test), "",
+             "## Knowing the rate (ends, distance 1): median RMSE ratio against the fit at the true rate", "",
+             md(knowing), "",
              "## Why the alternatives fail (tuning half; e1 = true rate x1, ends)", "",
              "Share of datasets moved off the default; e4 better / worse = RMSE ratio at distance 1 below 0.97 / above 1.03.",
              "", md(why), "",

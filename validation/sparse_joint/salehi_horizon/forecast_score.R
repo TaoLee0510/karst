@@ -4,8 +4,12 @@
 # first and the last passage of a trajectory). Its forecast is run from the
 # trajectory's last passage, as the paper benchmark runs it
 # (forecast_salehi_dir(): alfakR::predict_evo, ABM, 5 replicates), but up to
-# the furthest of the parent's descendants within MAX_DEPTH passages, and
-# scored against every one of them.
+# the furthest of the parent's descendants within MAX_DEPTH levels of the
+# metadata's parent links, and scored against every one of them. A level is
+# a sampled passage, not one passage: adjacent levels are one passage (15
+# days) apart in most PDX lines, but 5 to 21 passages (25 to 105 days) in
+# SA906 and SA039. Each row has `depth` (levels), `passages_ahead` (passages,
+# from the time point labels) and `days`; analyses stratify by days.
 #
 # Scores for each descendant passage d, on the karyotypes of the fit's
 # landscape (as the paper's Fig. 2d axis) with the share of d's cells there:
@@ -14,6 +18,17 @@
 #                  each mixed with a uniform distribution over the landscape
 #                  with weight EPS (1e-3 and 1e-2): a proper score, in which
 #                  sampling noise does not favour a forecast that moves more.
+#                  Persistence is the parent's raw frequencies; the forecast
+#                  (an ABM run with missegregation) spreads some probability to
+#                  one-step neighbours even with no selection, which alone can
+#                  score above persistence (README.md).
+#   ll_fc_s, ll_p0_s  the same on a common support: the union of the
+#                  landscapes of every fit of this trajectory and minobs, both
+#                  designs ("ends", "all"), under the task's support roots
+#                  (column support_roots, ";"-separated; default the task's
+#                  root). The uniform floor, d's counts and the persistence
+#                  baseline are then the same for every fit of the trajectory,
+#                  so fits of the two designs can be compared.
 #   w_fc, w_p0     Wasserstein distance from the forecast and from the parent
 #                  to d.
 #   noise          Wasserstein distance between two random halves of d's
@@ -52,7 +67,8 @@ li <- lineages[[task$id]]
 parent <- utils::tail(li$ids, 1)
 tp <- function(uid) as.numeric(sub("X", "", meta$timepoint[match(uid, meta$uid)]))
 days_per_p <- ifelse(meta$PDX_id[match(parent, meta$uid)] %in% c("SA906", "SA039"), 5, 15)
-# Descendants of the parent, generation by generation.
+# Descendants of the parent, level by level of the metadata's parent links
+# (depth = number of links, not of passages).
 desc <- list()
 frontier <- parent
 for (depth in seq_len(max_depth)) {
@@ -62,7 +78,8 @@ for (depth in seq_len(max_depth)) {
 }
 if (!length(desc)) done("no descendants")
 desc <- do.call(rbind, desc)
-desc$days <- (tp(desc$uid) - tp(parent)) * days_per_p
+desc$passages_ahead <- tp(desc$uid) - tp(parent)
+desc$days <- desc$passages_ahead * days_per_p
 # A passage's counts: the last column of a trajectory that ends with it (file
 # names begin with the passage's data set and time point, then "_l_").
 counts_of <- function(uid) {
@@ -81,6 +98,20 @@ last <- yi$x[rownames(yi$x) %in% k, ncol(yi$x)]
 x0[names(last)] <- last
 if (sum(x0) <= 0) done("parent outside landscape")
 x0 <- x0 / sum(x0)
+# Common support: the union of the landscapes of every fit of this trajectory
+# and minobs, in both designs, under the support roots (always including this
+# fit's own).
+support_roots <- if (is.null(task$support_roots) || is.na(task$support_roots) || !nzchar(task$support_roots)) {
+  task$root
+} else strsplit(task$support_roots, ";", fixed = TRUE)[[1]]
+support_globs <- as.vector(outer(support_roots, c("ends", "all"), function(r, d)
+  file.path(r, task$id, d, "*", paste0("minobs_", task$minobs), "landscape.Rds")))
+support_files <- unique(Sys.glob(support_globs))
+ks <- sort(unique(c(k, unlist(lapply(support_files, function(f) as.character(readRDS(f)$k))))))
+x0s <- stats::setNames(numeric(length(ks)), ks)
+last_s <- yi$x[rownames(yi$x) %in% ks, ncol(yi$x)]
+x0s[names(last_s)] <- last_s
+x0s <- x0s / sum(x0s)
 settings <- bench_settings$forecast_salehi
 horizon <- max(desc$days)
 started <- proc.time()[["elapsed"]]
@@ -124,9 +155,15 @@ rows <- lapply(seq_len(nrow(desc)), function(i) {
   t_index <- vapply(fc, function(f) which.min(abs(f$time - desc$days[i])), integer(1))
   f <- Reduce(`+`, Map(function(f, j) f$m[j, ], fc, t_index)) / length(fc)
   f <- f / sum(f)
+  # on the common support: the forecast is zero outside its own landscape
+  ys <- stats::setNames(numeric(length(ks)), ks)
+  ins <- names(y)[names(y) %in% ks]
+  ys[ins] <- y[ins]
+  fs <- stats::setNames(numeric(length(ks)), ks)
+  fs[k] <- f
   data.frame(id = task$id, design = design, method = task$method, minobs = task$minobs, parent = parent,
              uid = desc$uid[i],
-             depth = desc$depth[i], days = desc$days[i],
+             depth = desc$depth[i], passages_ahead = desc$passages_ahead[i], days = desc$days[i],
              forecast_day = fc[[1]]$time[t_index[[1]]],
              treat_parent = meta$on_treatment[match(parent, meta$uid)],
              treat_desc = meta$on_treatment[match(desc$uid[i], meta$uid)],
@@ -134,6 +171,9 @@ rows <- lapply(seq_len(nrow(desc)), function(i) {
              landscape_size = length(k),
              ll_fc_e3 = loglik(yl, f, 1e-3), ll_p0_e3 = loglik(yl, x0, 1e-3),
              ll_fc_e2 = loglik(yl, f, 1e-2), ll_p0_e2 = loglik(yl, x0, 1e-2),
+             support_size = length(ks), coverage_s = sum(ys) / sum(y),
+             ll_fc_s_e3 = loglik(ys, fs, 1e-3), ll_p0_s_e3 = loglik(ys, x0s, 1e-3),
+             ll_fc_s_e2 = loglik(ys, fs, 1e-2), ll_p0_s_e2 = loglik(ys, x0s, 1e-2),
              w_fc = wd(k, f, k, yl), w_p0 = wd(k, x0, k, yl), noise = halves(yl[yl > 0]),
              forecast_seconds = seconds, stringsAsFactors = FALSE)
 })

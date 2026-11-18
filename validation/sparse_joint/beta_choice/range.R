@@ -11,7 +11,10 @@
 #             the standard deviation whose symmetric interval about the point
 #             contains it (as predict.karst_sparse_joint_rate_fit()).
 # Each is scored against the truth exactly as a fit (stt_score_predictions),
-# and compared with the fit at the default rate alone.
+# and compared with the fit at the default rate alone. The truth is the net
+# growth rate at the dataset's true rate (sm_true_net_rate()), the quantity
+# the fits report; up to 2026-11-18 it was the birth rate, which at a true
+# rate of 16x is 1 / 0.931 times the net rate.
 #
 #   Rscript validation/sparse_joint/beta_choice/range.R [--workers=3] [--report-only]
 #
@@ -52,7 +55,8 @@ score_set <- function(set) {
     if (any(vapply(fits, is.null, logical(1)))) return(NULL)
     dataset <- readRDS(stt_dataset_path(config, dataset_id))
     nodes <- mt_dataset_nodes(config, dataset)
-    truth <- sm_true_growth_rate(nodes$karyotype, dataset$truth)
+    # net growth at the true rate, as the fits report it (not the birth rate)
+    truth <- sm_true_net_rate(nodes$karyotype, dataset$truth, dataset$beta)
     do.call(rbind, lapply(names(ranges), function(nm) {
       r <- ranges[[nm]]
       at <- fits[r$rates]

@@ -7,6 +7,11 @@
 #
 # `--grid=typical` runs the full grid; `--grid=ends` only the extremes, for
 # use on every scenario. Each fit is cached under results/sweeps/rate.
+# The fits take the arguments of the benchmark's `karst_sparse_joint` entry
+# (config.R: `initial_state = "free"`, the package default when the README's
+# tables were made), so that a change of the package default does not change
+# what is fitted; `--arguments` adds to or overrides them. Give a different
+# `--tag` with other arguments, since the cached fits are named by it.
 # Set STT_R_LIB to the library holding the karst build under test.
 
 library_dir <- Sys.getenv("STT_R_LIB", unset = "")
@@ -22,7 +27,9 @@ option <- function(name, default) {
 config <- stt_config()
 index <- utils::read.csv(file.path(config$output_dir, "dataset_index_dev.csv"), stringsAsFactors = FALSE)
 index <- index[index$scoreboard & grepl(option("scenarios", config$cohort_scenario), index$scenario), ]
-extra <- eval(parse(text = option("arguments", "list()")))
+extra <- utils::modifyList(config$methods$karst_sparse_joint$arguments,
+                           eval(parse(text = option("arguments", "list()"))))
+cat("Arguments:", paste(names(extra), vapply(extra, deparse, ""), sep = " = ", collapse = ", "), "\n")
 tag <- option("tag", "default")
 
 # Factors multiply the benchmark's settings: one division per day assumed

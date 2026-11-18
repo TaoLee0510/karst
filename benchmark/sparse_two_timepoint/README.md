@@ -56,6 +56,9 @@ selection between two clones, passaging, and reproducibility.
 A landscape has 8 "patients": independent trajectories from the diploid founder
 on the same landscape. Patient 1 makes the single-dataset scoreboard (96
 development datasets); all eight form the cohort for cross-dataset learning.
+The control cohort of a landscape (`other_landscapes`) is patient 1 of the
+next seven, cyclically, of the twelve landscapes of the four original
+wavelength classes of its split, so that the 0.2 class does not change it.
 
 | Scenario | Cells at t0 / t1 | Interval (days) |
 | --- | --- | --- |
@@ -83,9 +86,17 @@ In the last four, truth is the landscape between the time points.
 
 Scored nodes are defined from the counts alone: every observed karyotype
 (distance 0) and uniform samples of up to 2000 one-step and 2000 two-step
-neighbours with copy numbers 1–8. All methods are scored on the same nodes; a
-node a method cannot predict is scored as "no fitness difference" and counted
-in `prediction_fraction`.
+neighbours with copy numbers 1–8. The one-step shell of a near-monoclonal
+dataset can be smaller (33 of the 96 held-out datasets, all 24 at wavelength
+0.4, and 36 of the 96 development datasets have fewer than 2000 one-step
+neighbours; at least 118); the two-step shell always has more. All methods
+are scored on the same nodes; a node a method cannot predict is scored as "no
+fitness difference" and counted in `prediction_fraction`. A failed fit, or one
+without a prediction for every reference karyotype, is scored as the
+no-information answer on the whole dataset: its error is that answer's, and
+its Spearman correlation is zero, the rank correlation of a prediction that
+orders nothing (`stt_rank_correlation()`; `stt_null_rank()` in `report.R`
+applies this to metrics scored before 2026-11-18).
 
 Truth is the per-day growth rate the simulated counts follow,
 `log(1 + fitness * delta_t) / delta_t`. Truth and prediction are both centred
@@ -107,14 +118,22 @@ distances 0, 1 and 2:
 
 1. RMSE below the no-information answer (95% interval of the paired
    difference below zero);
-2. Spearman correlation above the original ALFA-K (interval above zero).
+2. Spearman correlation above the original ALFA-K with `minobs = 20`
+   (`acceptance$alfak`, the setting fitted on both splits; interval above
+   zero).
 
 Coverage is reported separately, with 90–98% as the target. The bar for error
 is the no-information answer rather than ALFA-K because ALFA-K's RMSE is
 dominated by a few unconstrained fits and is far above it. `run.R
 --stage=report` evaluates the rule for the candidates named in the
 configuration (`acceptance$candidates`), and reports only the methods the
-configuration lists.
+configuration lists. A criterion is evaluated only when the candidate and its
+baseline are compared on every landscape of the split; one whose baseline was
+not fitted, or was fitted on fewer landscapes, is reported as "not evaluated",
+never counts as passed, and keeps the candidate from passing the rule. Other
+ALFA-K settings (`acceptance$original`) appear in the paired tables only.
+Cohort methods are compared, on the cohort scenario, with the single-dataset
+model of the same initial state (`acceptance$cohort`).
 
 ## Running
 
@@ -126,13 +145,16 @@ R=benchmark/sparse_two_timepoint/run.R
 Rscript $R --stage=validate
 Rscript $R --stage=truth    --split=dev --cohort
 Rscript $R --stage=datasets --split=dev --cohort
-Rscript $R --stage=fit      --split=dev --methods=zero,alfak_minobs5,karst_sparse_joint_balance
+Rscript $R --stage=fit      --split=dev --methods=zero,alfak_minobs20,karst_sparse_joint_balance
 Rscript $R --stage=score    --split=dev
 Rscript $R --stage=report   --split=dev
 ```
 
 Results go to `benchmark/results/sparse_two_timepoint/` (not tracked). Fits are
 cached per dataset and method, so a stage can be rerun after adding a method.
+`--stage=score --methods=a,b` replaces those methods' rows of
+`metrics_<split>.csv` and keeps the others'; if the scoring has gained or
+lost a column since, the kept rows get NA there and a warning says so.
 
 `--workers` defaults to 2. `alfak` needs up to 4.5 GB and 15 minutes on the
 largest datasets (`minobs = 5` at 3000 cells), so raise the worker count only
@@ -177,6 +199,18 @@ predicted fitness and its sd). The distance 3-4 sweep
 (`validation/sparse_joint/far_distance.R`) runs the same way, one fit per
 task (`--ids=<dataset> --methods=<method> --fit-only=yes`; `hpc/submit.sh
 far`), then once without these options to score every fit.
+
+## Reproducibility
+
+The simulator draws its random numbers while iterating over a
+`std::unordered_map` of clones and through `std::binomial_distribution`, both
+of which the C++ standard leaves to the implementation. The same seed
+therefore gives different populations with different compilers or standard
+libraries (the Mac's libc++ against the HPC's libstdc++). The generated truth
+populations and datasets, not the seeds, are the record: generate them once
+and copy them. Every fit starts from its dataset's seed (`run.R --stage=fit`,
+`validation/sparse_joint/far_distance.R`), so `alfak`'s bootstrap does not
+depend on the worker; sparse joint fits draw no random numbers.
 
 ## Limits
 

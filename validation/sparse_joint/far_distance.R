@@ -18,7 +18,9 @@
 # --fit-only=yes; a final run without these options scores every fit, all
 # loaded from fits/). Scoring with --methods replaces those methods' rows in
 # metrics_far_<split>.csv and keeps the others', as run.R --stage=score does,
-# and fits only what is missing for those methods.
+# and fits only what is missing for those methods. Every fit starts from the
+# dataset's seed, as in run.R --stage=fit, so a refit gives the same alfak
+# bootstrap on any worker.
 
 library_dir <- Sys.getenv("STT_R_LIB", unset = "")
 if (nzchar(library_dir)) .libPaths(c(library_dir, .libPaths()))
@@ -88,6 +90,9 @@ run_dataset <- function(id) {
     method <- config$methods[[name]]
     path <- file.path(out, "fits", sprintf("%s__%s.rds", id, name))
     result <- if (file.exists(path)) readRDS(path) else {
+      # The dataset's seed, as for the scoreboard's fits (run.R --stage=fit),
+      # so that alfak's bootstrap does not depend on the worker or the order.
+      set.seed(dataset$seed)
       r <- if (identical(method$type, "karst_sparse_joint")) {
         tryCatch(fit_sparse_joint_kept(dataset, nodes, method, file.path(out, "objects", sprintf("%s__%s.rds", id, name))),
                  error = function(e) list(status = "failed", detail = conditionMessage(e), seconds = NA_real_, prediction = NULL))

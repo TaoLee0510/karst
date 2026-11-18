@@ -17,4 +17,7 @@ print(noquote(matrix(sprintf("%.2f (%.2f)", a, b), nrow = nrow(a), dimnames = di
 cat("\n== coverage of 95% intervals ==\n"); print(round(tapply(cand$coverage95, list(cand$scenario, cand$stratum), mean, na.rm = TRUE), 2))
 d0 <- cand[cand$stratum == "d0", ]
 cat("\n== fit status / seconds ==\n"); print(table(d0$scenario, d0$status)); print(round(tapply(d0$seconds, d0$scenario, median)))
-cat("\nnot converged or Hessian not positive definite:", sum(grepl("conv=1|pdHess=FALSE", d0$detail)), "of", nrow(d0), "\n")
+# The fit's detail (methods.R) reads "... convergence=<0|1> finite_sd=<TRUE|FALSE> ...", with
+# convergence 1 when fit_sparse_joint() did not accept the point it reports.
+cat("\npoint not accepted (convergence=1) or uncertainty not finite:",
+    sum(grepl("convergence=[^0]|finite_sd=FALSE", d0$detail)), "of", nrow(d0), "\n")

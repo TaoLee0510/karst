@@ -69,8 +69,10 @@ optimisation was accepted and, if not, why and along which latent variables
 the Laplace approximation is flat. Build cv1 also searched the scales again
 and chose the history among accepted candidates; that is off from cv2 on.
 cv2 still searched again when nlminb itself failed, which changed 3 of 144
-reference fits (`convergence/results/ff13cf4_cv2/evaluate_partial/`); cv3
-keeps the prior-centred scales there, as ff13cf4 did.
+reference fits (`convergence/results/ff13cf4_cv2/evaluate_partial/`; counted
+by `evaluate.R` before 2026-11-18, which also counted fits whose kept
+candidate was unchanged; not recomputed with the current code); cv3 keeps
+the prior-centred scales there, as ff13cf4 did.
 
 ## Stage 2: simulation study
 
@@ -80,6 +82,9 @@ handoff. On HPC each (arm, dataset) is one array task:
 ```sh
 hpc/submit.sh fit cv3 validation/sparse_joint/multi_timepoint/hpc/tasks/<list>.tsv MEM TIME
 ```
+
+`hpc/` (`submit.sh`, `sync.sh`, the task lists in `hpc/tasks/`) is not in
+the repository, so this HPC route cannot be reproduced from it.
 
 ### Results (2026-11-14)
 
@@ -161,4 +166,5 @@ Checks:
 A task list has one line per fit, `study<TAB>method<TAB>dataset_id`, with
 study `series` (this study) or `patient` (the patient regrowth study, which
 takes the build from the submission). `hpc/sync.sh` copies the code and the
-simulated inputs of both studies; fits come back with rsync.
+simulated inputs of both studies; fits come back with rsync. (None of these
+HPC scripts or task lists are in the repository.)
