@@ -9,9 +9,9 @@
 % ---- input and checks ---------------------------------------------------
 \node[box=cIn, w=15.1cm] (in) at (7.85,0) {%
   \textbf{Input}\quad \code{fit\_sparse\_joint(counts, dt | times, beta, \ldots)}, also reached from
-  \code{fit\_KARST()}, \code{alfak\_compat()} and, once per rate of a birth-rate or $\beta$ range,
+  \code{fit\_karst()}, \code{alfak\_compat()} and, once per rate of a birth-rate or $\beta$ range,
   \code{fit\_sparse\_joint\_rates()}. counts: cells per karyotype (rows) and time point (columns),
-  time points $t_0<t_1<\dots<t_K$ in time order, $K\ge1$; $\beta$: missegregation rate per chromosome copy and
+  time points $t_0<t_1<\dots<t_K$ in time order, $K\ge1$; $\beta>0$: missegregation rate per chromosome copy and
   division.\\[2pt]
   \textbf{Checks and settings}\quad copy numbers within $[c_{\min},c_{\max}]$ ($c_{\max}$: largest observed
   $+1$); every time point has a cell; candidate histories of the balance prior
@@ -90,11 +90,13 @@
   \code{diagnostics} (\code{series}, \code{dropped\_samples}, \code{history\_profile},
   \code{convergence})};
 \node[box=cOut, w=4.55cm, anchor=north, font=\footnotesize] (o2) at (7.85, 0 |- outtop) {%
-  \textbf{\code{predict()}}\quad in $\mathcal D$: the posterior; observed but outside $\mathcal D$:
-  level of the observed non-majors; otherwise the trend plus its residual};
+  \textbf{\code{predict()}}\quad in $\mathcal D$: the posterior; observed (also only at a time point
+  left out) but outside $\mathcal D$: level of the observed non-majors; otherwise the trend plus its
+  residual};
 \node[box=cOut, w=4.55cm, anchor=north, font=\footnotesize] (o3) at (13.25, 0 |- outtop) {%
   \textbf{\code{as\_alfak()}, \code{alfak\_compat()}}\quad the files of \code{alfakR::alfak()}:
-  landscape, posterior draws for bootstrap replicates, cross-validation};
+  landscape, posterior draws for bootstrap replicates, cross-validation; \code{correct\_efflux}
+  converts to birth rates as \code{alfak} does};
 \draw[arr] (core.south -| o1.north) -- (o1.north);
 \draw[arr] (o1.east |- o2.west) -- (o2.west);
 \draw[arr] (o2.east |- o3.west) -- (o3.west);

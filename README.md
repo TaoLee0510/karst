@@ -240,9 +240,11 @@ jump between explanations of its counts. Every fit checks the optimum it
 reports (`diagnostics$optimisation`: whether it was accepted, and if not why)
 and warns when it is not accepted, naming the latent variables along which
 the approximation is flat (for instance the initial abundance of a karyotype
-seen once). The fit itself is not changed by the check; on simulated data,
-refitting such fits until they were accepted did not change their accuracy
-([convergence study](validation/sparse_joint/README.md)).
+seen once). The fit itself is not changed by the check. Whether refitting such fits
+until they are accepted changes their accuracy is open: the earlier
+evaluation, which found no change, also counted unchanged fits as changed
+([convergence study](validation/sparse_joint/README.md); not recomputed with
+the current code).
 
 ### More than two time points
 
@@ -273,7 +275,7 @@ drift (bottleneck 20000) but up to 2.4 times less accurate with strong drift
 fit; it suits large populations passaged through large bottlenecks only. The
 default takes 2-4 times as long as two time points, `"all"` up to 20 times
 ([stage 2](validation/sparse_joint/multi_timepoint/README.md)). Cohort fits
-and the two older pipelines take two time points.
+take two time points.
 
 `series` chooses how the time points are tied together. All three methods share
 one landscape, and with two time points all three give the same fit.
@@ -343,9 +345,11 @@ majors.
 
 ### Outputs in the format of alfak
 
-`alfak_compat()` takes the arguments of `alfakR::alfak()` (branch `dev`), fits
-the sparse joint model, writes the same files to `outdir` and returns the
-cross-validation R-squared invisibly. A pipeline switches by calling it where
+`alfak_compat()` takes the arguments of `alfakR::alfak()` (branch `dev2`,
+commit f93b2d2), fits the sparse joint model, writes the same files to
+`outdir` and returns the cross-validation R-squared invisibly. Its `xval.Rds`
+is the list that dev2 saves; branch `dev` (9d3eece) saves the R-squared
+alone. A pipeline switches by calling it where
 it called `alfak()`:
 
 ```r
@@ -367,9 +371,14 @@ readRDS(file.path(outdir, "landscape.Rds"))   # k, mean, median, sd, fq, nn
 described [above](#more-than-two-time-points).
 
 The scale is alfak's: net growth rate per unit of time, with the
-count-weighted mean of the major karyotypes set to `log(nb / n0) / dt`, `dt`
-the first interval between time points as in alfak.
-`correct_efflux = TRUE` reports birth rates. `minobs` only chooses which
+count-weighted mean of the major karyotypes set to `g0 = log(nb / n0) / dt`,
+`dt` the first interval between time points as in alfak.
+`correct_efflux = TRUE` reports birth rates, converted as alfak converts them:
+`(f - k) / (2 P_ii - 1)`, with the constant `k` chosen so that the mean over
+the frequent karyotypes, weighted by their frequencies at time 0, is `g0`.
+Up to KARST cfabe12 the level was added before dividing, which put that mean
+at about `g0 / (2 P_ii - 1)`: for 44 copies, 0.4% above `g0` at a
+missegregation rate of 5e-5 per copy and 9% above at 1e-3. `minobs` only chooses which
 karyotypes are listed as frequent; the fit uses every cell. The
 cross-validation holds out each frequent karyotype with its neighbours, as in
 alfak's folds, but by removing their counts and refitting the model, so its

@@ -18,7 +18,7 @@
   time point and every time point counts for every state.};
 \node[dec, below=0.45cm of major] (cover) {Do $t_0$ and $t_K$ each have a cell in $\mathcal D$?};
 \node[err, w=3.9cm, right=0.6cm of cover] (stop) {%
-  \textbf{Stop}: {\ttfamily\scriptsize KARST\_domain\_coverage\_error}};
+  \textbf{Stop}: {\ttfamily\scriptsize karst\_domain\_coverage\_error}};
 \draw[arr] (in) -- (major);
 \draw[arr] (major) -- (cover);
 \draw[arr, draw=cErrB] (cover) -- node[lab, above] {no} (stop);
@@ -54,7 +54,7 @@
   \textbf{4 One trajectory from $t_0$}\quad
   $y_{ki}\sim\mathrm{Poisson}\bigl(e^{\theta_k-d_rt_k}\,n_i(t_k)\bigr)$, $k=1,\dots,K$, the closed form
   started at $t_0$ and never restarted; one depth offset $\theta_k$ per later time point. A state not seen
-  at $t_0$ is centred on its frequency at the earliest time point that saw it; the history is at least
+  at $t_0$ is centred on its frequency at the earliest time point that saw it (a non-major: $t_K$); the history is at least
   $t_K$. TMB template \code{sparse\_joint\_series}.};
 \draw[arr] (used) -- (model);
 

@@ -17,19 +17,23 @@ All three run the same model, the sparse joint count model.
 | `fit_sparse_joint(counts, dt, beta, ...)` | The same model with its arguments given directly | The same |
 | `alfak_compat(yi, outdir, ...)` | The arguments of `alfakR::alfak()`; writes alfak's files | The cross-validation R-squared, invisibly, and the files in `outdir` |
 
-`fit_karst()` passes `counts`, `dt`, `beta` and the list
-`sparse_joint_control` on to `fit_sparse_joint()`; any other argument is an
-error.
+`fit_karst()` passes `counts`, `dt` and `beta` (the last two only when
+given, so that a prepared `karst_data` object keeps its own rate) and the
+list `sparse_joint_control` on to `fit_sparse_joint()`; giving an argument
+both ways, or any other argument, is an error.
 
 ## Part 1. Fitting (`fit_sparse_joint`)
 
 1. **Prepare the input.** A two-column matrix of integer counts, one column
-   per time point, with karyotype labels such as `"2.2.3.2"` as row names. Rows
-   with no cells are dropped. `dt` is the time between the two time points (days for
-   the GBM inputs) and `beta` the missegregation probability per chromosome
-   copy and division. Copy numbers must lie between `min_cn` (default 1) and
-   `max_cn` (default one above the largest observed), and both time points need
-   cells.
+   per time point, with karyotype labels such as `"2.2.3.2"` as row names:
+   unsigned integers separated by single dots. Labels are rewritten without
+   leading zeros (`"2.02.3.2"` is `"2.2.3.2"`); two rows that name the same
+   karyotype, or a malformed label (`"2.2.3.2."`, `" 2.2.3.2"`), are an error.
+   Rows with no cells are dropped. `dt` is the time between the two time points
+   (days for the GBM inputs) and `beta` the missegregation probability per
+   chromosome copy and division, which must be positive. Copy numbers must lie
+   between `min_cn` (default 1) and `max_cn` (default one above the largest
+   observed), and both time points need cells.
 
 2. **Find the major karyotypes and the domain.**
    - A karyotype is *major* if it holds at least 1% of the cells at either time
@@ -63,9 +67,14 @@ error.
    - Never seen: a frequency near 1e-5 with a wide spread.
    - Default `initial_state = "balance"`: every non-major state is centred
      instead on its mutation-selection balance with the majors next to it,
-     what they would have fed it over a history `h` (by default the interval
-     between the time points), with spread `balance_sd = 1` on the log scale. Its
-     count at the first time point then informs its fitness. Majors stay free.
+     what they would have fed it over a history `h`, with spread
+     `balance_sd = 1` on the log scale. Its count at the first time point then
+     informs its fitness. Majors stay free.
+   - By default `h` is chosen by marginal likelihood among the interval and
+     30, 100, 300, 1000 and 3000 divisions at `birth_rate` that are longer
+     than the interval: the model (steps 6-8) is fitted at each and the fit
+     with the lowest objective is kept (`diagnostics$history_profile`). A
+     given `history` fixes it.
 
 6. **Assemble the count model (compiled with TMB).**
    - Latent variables: per state, the log expected count at the first time point
@@ -85,9 +94,14 @@ error.
 7. **Estimate the scale hyperparameters.** The dosage, curvature and residual
    scales maximise the Laplace-approximated marginal likelihood (`nlminb`
    within [1e-4, 0.5]). For each trial value an inner Newton solve finds the
-   posterior mode of all latent variables. If the optimisation fails, the
-   prior-centred scales (about 1% per step) are used and `convergence = 99`
-   is recorded.
+   posterior mode of all latent variables. The point `nlminb` returns is
+   checked (a healthy inner Hessian, the same objective from its own mode, no
+   better inner mode from the initial values, a small finite-difference
+   gradient): `diagnostics$convergence` is 0 when it is accepted, and 1 with a
+   warning when not. If `nlminb` fails, the prior-centred scales (about 1% per
+   step) are used, and `convergence` is 1 with the reason "nlminb failed" in
+   `diagnostics$optimisation`. If the inner solve fails at the scales kept,
+   the fit stops with an error.
 
 8. **Compute the posterior.** The posterior mode at those scales, with the
    covariance taken as the inverse of the *expected* information: the Hessian
@@ -103,9 +117,14 @@ error.
    - `relative_sd_model`: the model's own posterior standard deviation, too
      small on its own.
    - `relative_sd`: calibrated,
-     `sqrt(model_sd^2 + (0.6 * relative)^2 + (0.009 * birth_rate * (1 + shell))^2)`.
-     The constants were fitted on the development landscapes; held-out 95%
-     coverage was 0.94-0.98.
+     `sqrt(model_sd^2 + (deficit * relative)^2 + (0.009 * birth_rate * (1 + shell))^2)`,
+     with `deficit` 0.6 for a karyotype the likelihood has a cell of and 1.1
+     for one it has none of (with more than two time points and
+     `intermediate = "majors"`, a non-major counts as seen only at the first
+     or the last time point). The constants were fitted on the development
+     landscapes, and the unobserved one on simulated regimes where the
+     predicted drop below the majors was too shallow; the 95% intervals then
+     covered at least 90% of the karyotypes in every simulated regime tested.
 
 10. **Store the fit.** `summary` (one row per domain state), `trend`
     (coefficients and covariance, centre, majors, scales, observed level,
@@ -125,20 +144,26 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
 
 ## Part 3. alfak outputs (`alfak_compat` = fit + `as_alfak` + `write_alfak_outputs`)
 
-11. **Read alfak's input.** `yi$x` must have two columns. The interval is
-    `diff(passage_times)` or `diff(as.numeric(colnames(yi$x))) * yi$dt`, as
-    in alfak. The model of Part 1 is fitted with `beta = pm`; further
-    arguments, such as `birth_rate`, go to `fit_sparse_joint()`.
+11. **Read alfak's input.** `yi$x` has two or more columns, one per time
+    point. The times are `passage_times` or `as.numeric(colnames(yi$x)) *
+    yi$dt`, as in alfak, and the model of Part 1 is fitted to the intervals
+    between them (more than two time points: see Variants) with
+    `beta = pm`; further arguments, such as `birth_rate`, go to
+    `fit_sparse_joint()`. The time of the first time point sets time 0 of the
+    reported frequencies (step 15).
 
 12. **Choose karyotypes as alfak does.** `fq`: at least `minobs` cells over
-    both time points. `nn`: their one-step neighbours without nullisomy. The
+    all time points of the input. `nn`: their one-step neighbours without nullisomy. The
     landscape covers `fq`, `nn` and the neighbours of `nn`, in alfak's
     order. `minobs` changes only this choice, not the fit.
 
 13. **Put fitness on alfak's scale.** `mean` is relative fitness plus
-    `log(nb / n0) / dt`, the growth rate alfak assigns to the population.
-    With `correct_efflux = TRUE` it is divided by `2 P_ii - 1`, giving birth
-    rates.
+    `g0 = log(nb / n0) / dt`, the growth rate alfak assigns to the population
+    (`dt` the first interval). With `correct_efflux = TRUE` it is the birth
+    rate as alfak converts it, `(relative - k) / (2 P_ii - 1)`, where `k`
+    makes the mean over `fq`, weighted by their frequencies at time 0
+    (step 15, at the posterior mode), equal `g0`. The same `k` is used for
+    the draws, the cross-validation and `landscape_data`.
 
 14. **Draw from the posterior in place of the bootstrap.** The posterior is
     rebuilt from the stored settings and mode and all latent variables are
@@ -148,8 +173,9 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
     noise for the part of its calibrated standard deviation the model does
     not explain. Draws come in mirrored pairs and each row is scaled to the
     calibrated standard deviation, so every row's mean and median equal the
-    prediction and its standard deviation equals `relative_sd`, while the
-    model's correlations between karyotypes are kept.
+    prediction and its standard deviation equals `relative_sd` (divided by
+    `2 P_ii - 1` with `correct_efflux`), while the model's correlations
+    between karyotypes are kept.
 
 15. **Assemble the files.**
     - `landscape_posterior_samples.Rds`: one row per landscape karyotype,
@@ -157,14 +183,19 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
     - `landscape.Rds`: `k`, `mean`, `median`, `sd`, `fq`, `nn`, the row
       summaries of the draws.
     - `bootstrap_res.Rds`: `final_fitness` (draws for `fq`), `nn_fitness`
-      (draws for `nn`), initial frequencies from the drawn initial
-      abundances; `initial_*` equal `final_*`; alfak's retry attributes.
+      (draws for `nn`), frequencies among `fq` from the drawn abundances at
+      the first time point, moved back to time 0 of alfak's time axis with
+      each draw's fitness, so that `x0 * exp(f * t)` gives them back at the
+      first time point; `initial_*` equal `final_*`; alfak's retry
+      attributes.
 
-16. **Cross-validate.** alfak's folds: each `fq` karyotype with those of its
-    one-step neighbours not in an earlier fold. For each fold, the counts of
-    its domain states leave the likelihood, they get the prior of a
-    never-seen karyotype, the trend's centre and majors are recomputed
-    without them, and the posterior mode is found again with the scales
+16. **Cross-validate.** alfak's folds: each `fq` karyotype with its one-step
+    neighbours, each karyotype in the first fold that contains it. For each
+    fold, the counts of its domain states leave the likelihood; those whose
+    initial abundance has the free prior (majors, or every state under
+    `initial_state = "free"`) get the prior of a never-seen karyotype, while
+    the others keep the balance prior, which does not use their counts; the
+    trend's centre and majors are recomputed without them, and the posterior mode is found again with the scales
     fixed. The predictions, aligned to the full fit on the majors outside
     the fold, are compared with the full fit:
     `R2R = 1 - sum((p - o)^2) / sum(o^2)` with both series centred. This
@@ -179,8 +210,9 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
 
 ## Variants
 
-- `fit_sparse_joint_rates()`: when the birth rate is unknown, fits at a few
-  rates across a range (default three, evenly spaced on the log scale). Point
+- `fit_sparse_joint_rates()`: when the birth rate or the missegregation rate
+  is unknown, fits at a few rates across a range (`birth_rate_range` or
+  `beta_range`; default three, evenly spaced on the log scale). Point
   predictions are at the lowest rate, intervals cover the whole range, and
   the agreement of rankings across rates is reported.
 - `fit_sparse_joint_cohort()`: several two-time-point datasets at once. Each keeps its domain

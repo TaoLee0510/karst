@@ -232,8 +232,8 @@ The share of karyotype $v$ is its larger frequency over the two time points,
 \end{equation}
 A karyotype is classified as \emph{major} if
 \begin{equation}
-  \phi_v\ge\phi_{\min}\quad\text{and}\quad y_{0v}+y_{1v}\ge c_{\min},
-  \qquad \phi_{\min}=0.01,\ c_{\min}=3 .
+  \phi_v\ge\phi_{\min}\quad\text{and}\quad y_{0v}+y_{1v}\ge n_{\min},
+  \qquad \phi_{\min}=0.01,\ n_{\min}=3 .
   \label{eq:major}
 \end{equation}
 The share criterion adapts the classification to the number of cells, since a
@@ -251,14 +251,16 @@ domain is
 where $e_c$ is the unit vector of chromosome $c$, $c_{\min}=1$, and
 $c_{\max}$ defaults to one above the largest observed copy number. If
 $|\mathcal{D}|$ would exceed an upper bound (5000 states), $\phi_{\min}$ is
-raised to the smallest share for which the bound holds.
+raised to the smallest share for which the bound holds; if even the
+karyotypes with the highest share give a larger domain, that domain is
+fitted.
 
 Observed karyotypes outside $\mathcal{D}$ are excluded from the likelihood
 together with their cells. Such a karyotype would otherwise be included only
 because it was observed, whereas its unobserved counterparts at the same
 distance would not, and its count would then be attributed to high fitness.
-It is instead predicted at the mean level of the observed karyotypes within
-the domain (Section~\ref{sec:sj-predict}).
+It is instead predicted at the mean level of the observed non-major
+karyotypes within the domain (Section~\ref{sec:sj-predict}).
 
 \subsection{Missegregation Kernel}
 \label{sec:sj-division}
@@ -342,7 +344,8 @@ prior,
   \end{cases}
   \label{eq:free-prior}
 \end{equation}
-with $f_0=10^{-5}$ and $\sigma_0=3$. The prior is essentially uninformative
+with $f_0=10^{-5}$ and $\sigma_0=3$; here $N_0,N_1$ are the cells inside
+$\mathcal D$. The prior is essentially uninformative
 for karyotypes observed at the first time point, centred on the later frequency
 for karyotypes observed only at the second time point, and concentrated at low
 frequency for karyotypes not observed. It is specified on the frequency scale
@@ -457,7 +460,7 @@ with covariates
   z_i=\Bigl(1,\ (x_i-\bar x)^\top,\ \bigl((x_i-\bar x)^{\circ2}\bigr)^\top,\
   \operatorname{dist}(x_i,\mathcal{M})^{0.85}\Bigr)^\top,
   \qquad
-  \bar x=\frac{\sum_v(y_{0v}+y_{1v})x_v}{\sum_v(y_{0v}+y_{1v})},
+  \bar x=\frac{\sum_{v\in\mathcal D}(y_{0v}+y_{1v})x_v}{\sum_{v\in\mathcal D}(y_{0v}+y_{1v})},
   \label{eq:design}
 \end{equation}
 where $\operatorname{dist}(x,\mathcal{M})=\min_{m\in\mathcal{M}}\|x-x_m\|_1$
@@ -486,7 +489,8 @@ accommodate effects between 0.05\% and 20\%.
 \subsection{Posterior Inference}
 \label{sec:sj-inference}
 
-The latent variables are $u=(\zeta,g,\gamma,\theta_1)$ and the
+The latent variables are $u=(\zeta,g,\gamma,\theta_1)$ (and the log level
+of (\ref{eq:balance-level}) when it is free) and the
 hyperparameters are $\psi=(\log\sigma_d,\log\sigma_c,\log\sigma_r)$. The
 negative log joint density $\ell(u,\psi)$ combines (\ref{eq:poisson}),
 (\ref{eq:free-prior}) or (\ref{eq:balance-prior}), and
@@ -527,8 +531,9 @@ reported by latent variable, with the karyotype, its counts and its share of
 the direction; on the development benchmark it was at least 90\% the initial
 abundance of karyotypes with very few cells. Searching the hyperparameters
 again, with near-singular points excluded, raised the share of accepted
-candidate fits from 73\% to 77\% without changing accuracy (median RMSE ratio
-1.00), and integrating the initial abundance of non-major karyotypes out by
+candidate fits from 73\% to 77\%; whether it changes accuracy is open (the
+median RMSE ratio of 1.00 reported earlier also counted fits whose kept fit
+was unchanged; not recomputed with the current code), and integrating the initial abundance of non-major karyotypes out by
 quadrature moved the flat direction to the next sparse quantity; neither is
 used.
 
@@ -591,7 +596,11 @@ close to zero and omitted. On landscapes not used for estimation, the nominal
 95\% intervals covered between 95\% and 100\% of true values, depending on
 wavelength and distance (Section~\ref{sec:validation}). Both $\tilde s_i$ and
 $s_i$ are returned. For karyotypes seen at neither time point, $\kappa$ is 1.1:
-zero counts do not identify how far below the majors they lie.
+zero counts do not identify how far below the majors they lie. With more than
+two time points, a karyotype counts as seen when the likelihood uses one of
+its cells: under the default for the time points in between
+(Section~\ref{sec:sj-series}), a non-major karyotype seen only between the
+first and the last time point counts as unseen.
 
 Since $\tilde s_i\ge\kappa|\rho_i|$, $|\rho_i|/\tilde s_i\le1/\kappa$, which is
 1.67 for observed karyotypes and 0.91 for unobserved ones. The calibrated
@@ -613,8 +622,11 @@ A karyotype $x$ outside $\mathcal{D}$ is predicted from the trend,
 with $\hat d(x)=(2P_{xx}-1)e^{\hat g(x)}$; relative fitness and its variance
 follow from (\ref{eq:relative})--(\ref{eq:relative-var}), using the covariance
 between $\gamma$ and the reference. An observed karyotype excluded from the
-domain is predicted at the mean level of the observed non-major karyotypes
-within it, $\mathcal{L}=\{i\in\mathcal{D}\setminus\mathcal{M}:y_{0i}+y_{1i}>0\}$:
+domain, also one seen only at a time point left out
+(Section~\ref{sec:sj-series}), is predicted at the mean level of the observed non-major karyotypes
+within it, $\mathcal{L}=\{i\in\mathcal{D}\setminus\mathcal{M}:y_{0i}+y_{1i}>0\}$
+(with more than two time points, those seen in the sense of
+Section~\ref{sec:sj-calibration}):
 \begin{equation}
   \hat g=\frac{1}{|\mathcal{L}|}\sum_{i\in\mathcal{L}}\hat g_i,\qquad
   \operatorname{Var}=\frac{1}{|\mathcal{L}|}\sum_{i\in\mathcal{L}}\operatorname{Var}(g_i)
@@ -800,7 +812,9 @@ with one depth offset $\theta_k$ per later time point. Fitness is constant over
 the series, the dynamics are not restarted at intermediate time points, and the
 history of the balance prior is at least $t_K$. The initial-abundance prior of
 a karyotype not seen at the first time point is centred on its frequency at the
-earliest time point at which it is seen. With two time points the model is
+earliest time point at which it is seen (for a non-major karyotype under the
+default use of the time points in between, below, the first or the last). With
+two time points the model is
 (\ref{eq:poisson}).
 
 The time points between the first and the last are used, by default, for the
@@ -830,7 +844,9 @@ $-\mathrm{e}^{\theta_k}\sum_i n_i(t_k)\,\mathrm{e}^{-d_rt_k}$ to the
 log-likelihood. This is largest as $\theta_k\to-\infty$, where the term
 vanishes, and its integral over $\theta_k$ diverges. Such a time point carries no
 information about the landscape. It is left out, which is that limit, and
-the fit is the fit to the other time points. A clonal sweep produces such a
+the fit is the fit to the other time points; karyotypes seen only at it are,
+outside the domain of that fit, predicted as observed karyotypes outside the
+domain (\ref{eq:predict-level}), and inside it are states without counts. A clonal sweep produces such a
 time point when the population in the middle lies two or more steps from the
 majors of both ends. The first and the last time point must each have a count in
 the domain. Figure~\ref{fig:flow-anchored} shows the steps of this method.
@@ -912,14 +928,15 @@ where $f_{ki}=\tfrac12\bigl(y_{k-1,i}/N_{k-1}+y_{ki}/N_k\bigr)+1/(N_{k-1}+N_k)$ 
 mean share at the two time points plus half a cell. The variance is that of
 neutral drift in frequency, on the log scale, and it is capped smoothly. The
 drift $\sigma^2_{\mathrm{drift}}$ is a fifth scale of the outer optimisation.
-Its prior is log-normal with median $10^{-4}$ per day and standard deviation
+Its prior is log-normal with median $10^{-4}$ per unit of time (per day
+when \texttt{dt} is in days) and standard deviation
 $2.5$ on the log scale, and its bounds are $10^{-9}$ and $1$. As
 $\sigma^2_{\mathrm{drift}}\to0$ the method becomes the anchored model with
 every time point used for every karyotype, except that the closed form composed
 over the intervals keeps part of the second order in $M$. At
 $\sigma^2_{\mathrm{drift}}=10^{-8}$ the two fits correlate at $0.997$. The
-expected information (\ref{eq:laplace}) is taken with the transitions'
-residuals at their fitted values. Figure~\ref{fig:flow-state-space} shows the
+expected information $H_E$ (Section~\ref{sec:sj-inference}) is taken with the
+transitions' residuals set to zero, as for the balance prior. Figure~\ref{fig:flow-state-space} shows the
 steps of this method.
 
 \begin{figure}[htbp]
@@ -974,31 +991,44 @@ The rule is therefore not part of the package: the method is named in
 \label{sec:sj-alfak}
 
 \texttt{as\_alfak()} and \texttt{alfak\_compat()} generate the objects saved
-by \texttt{alfakR::alfak()} (Section~\ref{sec:alfak}), with identical names,
+by \texttt{alfakR::alfak()} (branch \texttt{dev2}, commit \texttt{f93b2d2}) (Section~\ref{sec:alfak}), with identical names,
 columns and karyotype sets.
 
 \paragraph{Karyotype sets and scale.}
 The frequent set, its one-step neighbours without nullisomy, and the
 landscape are defined as
 \begin{equation}
-  F=\{v:y_{0v}+y_{1v}\ge\texttt{minobs}\},\qquad
+  F=\Bigl\{v:\textstyle\sum_t y_{tv}\ge\texttt{minobs}\Bigr\},\qquad
   N=\partial F\setminus F,\qquad
   K=F\cup N\cup\partial N,
   \label{eq:alfak-sets}
 \end{equation}
 where $\partial A$ denotes the set of one-step neighbours of $A$ with all copy
-numbers at least one, in the order used by \texttt{alfak}. The value of
-\texttt{minobs} affects these sets only, not the fit. Reported fitness is
+numbers at least one, in the order used by \texttt{alfak}; the sum runs over
+all time points of the input. The value of
+\texttt{minobs} affects these sets only, not the fit. With
+$g_0=\log(N_b/N_0^{\mathrm{pop}})/T$, reported fitness is
 \begin{equation}
-  f_v=\rho_v+\frac{\log(N_b/N_0^{\mathrm{pop}})}{T}
+  f_v=\rho_v+g_0
   \quad\text{or, with \texttt{correct\_efflux},}\quad
-  f_v=\frac{\rho_v+\log(N_b/N_0^{\mathrm{pop}})/T}{2P_{vv}-1},
+  f_v=\frac{\rho_v-k}{2P_{vv}-1},\qquad
+  k:\ \sum_{v\in F}x_{0v}f_v=g_0,
   \label{eq:alfak-scale}
 \end{equation}
 where $N_0^{\mathrm{pop}}$ and $N_b$ are the population sizes \texttt{n0} and
-\texttt{nb} of \texttt{alfak}; the mean fitness of the major karyotypes is
-thereby set to the population growth rate assumed by \texttt{alfak}. With
+\texttt{nb} of \texttt{alfak}. In the first case the count-weighted mean
+fitness of the major karyotypes equals $g_0$, the population growth rate
+assumed by \texttt{alfak}; with \texttt{correct\_efflux} the $x_0$-weighted
+mean over $F$ does, as in \texttt{alfak}. With
 more than two time points $T$ is the first interval $t_1$, as in \texttt{alfak}.
+The efflux correction converts net growth rates to birth rates as
+\texttt{alfak} does: $x_{0v}$ are the reported frequencies of $F$ among
+themselves at time 0 of \texttt{alfak}'s time axis (at the posterior mode;
+below), and $k=\bigl(\sum_Fx_{0v}\rho_v/(2P_{vv}-1)-g_0\bigr)/\sum_Fx_{0v}/(2P_{vv}-1)$,
+solved jointly with $x_0$ when the first time point is not at time 0, since
+$x_0$ is moved back with $f$. The same $k$ is used for the draws, the
+cross-validation and \texttt{landscape\_data}. \texttt{alfak} takes
+$2(1-p_m)^{N_v}-1$ for $2P_{vv}-1$, which differs by terms of order $p_m^2$.
 
 \paragraph{Posterior draws.}
 In place of bootstrap replicates, $B$ draws are generated for every
@@ -1020,15 +1050,18 @@ posterior mean when $B$ is odd, and rescale each row to standard deviation
 $\tilde s_v$.
 \end{enumerate}
 The mean and median of each row then equal the prediction exactly, and its
-standard deviation equals $\tilde s_v$, while the correlations between
+standard deviation equals $\tilde s_v$ (divided by $2P_{vv}-1$ with
+\texttt{correct\_efflux}), while the correlations between
 karyotypes are those implied by the model. \texttt{landscape.Rds} contains
 these row summaries; \texttt{bootstrap\_res.Rds} contains the columns of $F$
-and $N$, together with initial frequencies of $F$ derived from the drawn
-$\zeta$.
+and $N$, together with frequencies of $F$ among themselves derived from the
+drawn $\zeta$ and moved back from the first time point to time 0 with each
+draw's $f$, so that $x_{0v}e^{f_vt}$ gives them back at the first time point.
 
 \paragraph{Cross-validation.}
 The folds follow \texttt{alfak}: each frequent karyotype together with those
-of its one-step neighbours not assigned to an earlier fold. For a fold $Q$,
+of its one-step neighbours, each karyotype in the first fold that contains
+it. For a fold $Q$,
 the states of $Q$ within the domain are treated as unobserved: $w_i=0$ in
 (\ref{eq:poisson}); a $\zeta_i$ with prior (\ref{eq:free-prior}) takes its
 third case (under the balance prior, non-major states retain
@@ -1060,7 +1093,9 @@ Kriging interpolates first-stage estimates.
 
 \subsection{The \texttt{alfak} Model}
 
-\texttt{alfak} (ALFA-K; branch \texttt{dev}, commit \texttt{eddeb5e})
+\texttt{alfak} (ALFA-K; described as of branch \texttt{dev}, commit
+\texttt{eddeb5e}; the benchmarks fit branch \texttt{dev2}, commit
+\texttt{f93b2d2})
 estimates the landscape in four stages.
 
 \paragraph{Frequent karyotypes.}
@@ -1074,7 +1109,10 @@ under selection without mutation among themselves,
 that is, a multinomial likelihood for the counts of $F$ renormalised within
 $F$; cells of other karyotypes do not contribute. Initial values are obtained
 from a quadratic programme on frequency derivatives. Fitness is subsequently
-shifted such that $\sum_ix_{0i}f_i=\log(N_b/N_0^{\mathrm{pop}})/\Delta t$.
+shifted such that $\sum_ix_{0i}f_i=\log(N_b/N_0^{\mathrm{pop}})/\Delta t$. With
+\texttt{correct\_efflux} (branch \texttt{dev2}, commit \texttt{f93b2d2}) it is
+instead set to $(f_i-k)/v_i$, $v_i=2(1-p_m)^{N_i}-1$, with $k$ chosen so that
+the same weighted sum holds.
 
 \paragraph{Neighbouring karyotypes.}
 Each $p\in F$ is assigned an emergence time $t_p$, at which the fitted
@@ -1147,6 +1185,12 @@ distance, largely because of a small number of poorly constrained fits,
 whereas the sparse joint model reduced it to 0.46--0.74 of that value.
 
 \subsection{Forecasts on the Salehi Passages}
+
+The forecasts of this and the next section start from \texttt{karst}'s
+landscapes in \texttt{alfak}'s format with \texttt{correct\_efflux}, as
+written by round e7e32f8. The conversion to birth rates changed after that
+round (Section~\ref{sec:sj-alfak}); the numbers of both sections have not been
+recomputed with the current code.
 \label{sec:salehi-noise}
 
 The ALFA-K paper scores forecasts on the passages of the Salehi data by the
@@ -1242,8 +1286,11 @@ starting passages. No fit was made for this test: the fits of the paper
 benchmark (round e7e32f8, the same as \texttt{alfak2} round 05a8855) were
 forecast from their last passage with the benchmark's engine
 (\texttt{alfakR::predict\_evo}, agent-based, five replicates, $\beta=5\times
-10^{-5}$, population $10^7$) up to every descendant within four passages, and
-scored against it.
+10^{-5}$, population $10^7$) up to every descendant within four levels of the
+metadata's parent links, and scored against it. A level is a sampled passage:
+adjacent levels are one passage (15 days) apart in most PDX lines but 5 to 21
+passages (25 to 105 days) apart in the p53 lines SA906 and SA039, so horizons
+are given in days.
 
 \paragraph{Score.} For a later passage with counts $y_k$ on the karyotypes $k$
 of the fitted landscape ($K$ of them; the set is the same for both methods),
@@ -1268,11 +1315,12 @@ twelve samples).
 \begin{center}
 \begin{tabular}{L{0.16\textwidth}L{0.17\textwidth}L{0.17\textwidth}L{0.2\textwidth}L{0.13\textwidth}}
 \toprule
-Passages ahead & \texttt{karst} & \texttt{alfak} & \texttt{karst} $-$ \texttt{alfak} & Rows \texttt{karst} better \\
+Days ahead & \texttt{karst} & \texttt{alfak} & \texttt{karst} $-$ \texttt{alfak} & Rows \texttt{karst} better \\
 \midrule
-1 & $+0.47$ ($0.17$, $0.67$) & $-0.16$ ($-0.76$, $0.22$) & $+0.63$ ($0.35$, $0.99$) & 65\% \\
-2 & $+0.27$ ($-0.44$, $0.79$) & $-1.10$ ($-2.17$, $-0.20$) & $+1.37$ ($0.90$, $2.04$) & 70\% \\
-3--4 & $-0.81$ ($-1.96$, $0.43$) & $-2.14$ ($-3.53$, $-0.73$) & $+1.33$ ($1.10$, $1.63$) & 71\% \\
+$\le 15$ & $+0.57$ ($0.25$, $0.74$) & $+0.09$ ($-0.46$, $0.31$) & $+0.48$ ($0.26$, $0.91$) & 57\% \\
+16--30 & $+0.50$ ($-0.03$, $0.86$) & $-0.55$ ($-1.64$, $-0.01$) & $+1.05$ ($0.55$, $1.91$) & 71\% \\
+31--60 & $+0.02$ ($-0.91$, $0.55$) & $-1.32$ ($-2.39$, $-0.55$) & $+1.35$ ($1.04$, $1.62$) & 74\% \\
+$> 60$ & $-1.69$ ($-2.36$, $-1.41$) & $-3.31$ ($-4.24$, $-2.99$) & $+1.61$ ($0.64$, $2.83$) & 75\% \\
 All & & & $+1.01$ ($0.67$, $1.40$) & 68\% \\
 \bottomrule
 \end{tabular}
@@ -1281,9 +1329,15 @@ All & & & $+1.01$ ($0.67$, $1.40$) & 68\% \\
 \texttt{karst} scored higher at every minobs (5, 10 and 20: $+1.53$, $+1.02$
 and $+0.26$, every interval above zero), whether or not the treatment changed
 between the parent and the later passage, and for inputs of one interval and
-of more. One passage ahead its forecast beat persistence and
-\texttt{alfak}'s did not; two or more passages ahead neither beat
-persistence, and \texttt{alfak} fell below it. The same fits with
+of more. Within 15 days (one passage of the PDX lines) its forecast beat
+persistence and \texttt{alfak}'s did not; from 16 to 60 days neither beat it
+significantly and \texttt{alfak} fell below it; beyond 60 days, rows mostly of
+the p53 knock-out line, both fell below it. Persistence is the parent's raw
+frequencies, whereas the forecast is an agent-based run with missegregation,
+which moves some probability to the neighbours of the parent's karyotypes
+even without selection; part of a forecast's margin over persistence may come
+from that alone. The difference between the two methods, which share the
+engine, does not depend on it. The same fits with
 independent initial abundances scored no higher than with the balance prior
 ($-0.06$ per cell, interval $-0.16$ to $0.09$). Much of the difference is the
 size of \texttt{alfak}'s forecasts, which move the population further than
@@ -1297,33 +1351,37 @@ way, on 677 rows from 99 trajectories that every compared method shares:
 \begin{center}
 \begin{tabular}{L{0.14\textwidth}L{0.16\textwidth}L{0.16\textwidth}L{0.16\textwidth}L{0.16\textwidth}}
 \toprule
-Passages ahead & Anchored & Pairwise & State space & \texttt{alfak} \\
+Days ahead & Anchored & Pairwise & State space & \texttt{alfak} \\
 \midrule
-1 & $+0.78$ ($0.35$, $1.01$) & $+0.78$ ($0.31$, $1.02$) & $+0.77$ ($0.26$, $1.01$) & $+0.25$ ($-0.15$, $0.61$) \\
-2 & $+0.74$ ($-0.24$, $1.38$) & $+0.69$ ($-0.35$, $1.37$) & $+0.63$ ($-0.37$, $1.28$) & $-0.66$ ($-1.35$, $-0.25$) \\
-3--4 & $-0.01$ ($-1.86$, $1.39$) & $-0.22$ ($-2.05$, $1.22$) & $-0.55$ ($-2.08$, $0.70$) & $-2.18$ ($-2.79$, $-1.80$) \\
+$\le 15$ & $+0.92$ ($0.57$, $1.07$) & $+0.93$ ($0.56$, $1.08$) & $+0.93$ ($0.56$, $1.07$) & $+0.38$ ($0.31$, $0.62$) \\
+16--30 & $+0.96$ ($0.22$, $1.44$) & $+0.94$ ($0.20$, $1.43$) & $+0.91$ ($0.25$, $1.33$) & $-0.21$ ($-0.57$, $0.12$) \\
+31--60 & $+0.61$ ($-0.10$, $1.30$) & $+0.47$ ($-0.27$, $1.14$) & $+0.18$ ($-0.25$, $0.67$) & $-1.40$ ($-2.09$, $-0.68$) \\
+$> 60$ & $-1.62$ ($-2.01$, $-1.56$) & $-1.84$ ($-2.63$, $-1.71$) & $-1.98$ ($-3.03$, $-1.81$) & $-2.58$ ($-2.67$, $-2.57$) \\
 \midrule
 Minus \texttt{alfak} & $+1.12$ ($0.55$, $1.47$) & $+1.06$ ($0.47$, $1.44$) & $+0.96$ ($0.40$, $1.31$) & \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Each method of \texttt{karst} scored higher than \texttt{alfak} at every
-horizon (one passage ahead $+0.51$ to $+0.53$, two $+1.29$ to $+1.41$, three
-or four $+1.63$ to $+2.17$, every interval above zero) and in 69\% of the
-rows. The anchored method, the default, scored highest; the state-space
+Each method of \texttt{karst} scored higher than \texttt{alfak} within 15
+days ($+0.53$ to $+0.55$), at 16--30 days ($+1.11$ to $+1.17$) and at 31--60
+days ($+1.58$ to $+2.01$), every interval above zero; beyond 60 days (66 rows
+of two lineage types) by $+0.60$ to $+0.96$, the state-space method's interval
+reaching below zero ($-0.36$ to $0.75$); and in 69\% of the rows. The anchored method, the default, scored highest; the state-space
 method $0.15$ lower (interval $-0.20$ to $-0.05$), the pairwise method $0.06$
 lower ($-0.10$ to $-0.03$), and independent initial abundances $0.15$ lower
 ($-0.24$ to $-0.01$). This reverses the ranking of the paper's Fig.~2d with
 all time points (Section~\ref{sec:salehi-noise}), in which \texttt{alfak}
 ranked the size of the change at 0.55 and the anchored method at 0.23.
 
-Fitting every passage instead of the first and the last raised the anchored
-method's score by $0.36$ per cell (interval $0.14$ to $0.49$; higher in 90\%
-of the rows, at every horizon), and did not change \texttt{alfak}'s ($+0.01$,
-interval $-0.71$ to $0.91$). The two designs choose the landscape's
-karyotypes from different time points, so these comparisons are of each
-fit's score over persistence on its own karyotypes.
+Whether fitting every passage instead of the first and the last helps is not
+established. Scored on each fit's own landscape, the anchored method's score
+rose by $0.36$ per cell (interval $0.14$ to $0.49$) and \texttt{alfak}'s by
+$+0.01$ ($-0.71$ to $0.91$); but the landscape of the fit of every passage is
+larger, so the uniform floor $\epsilon/K$ and the persistence baseline differ
+between the designs (by $0.52$ per cell on average in these rows), and part
+of the difference can be mechanical. A comparison on a common support needs
+the forecasts to be run again.
 
 
 The analyses are in validation/sparse\_joint/salehi\_horizon.
@@ -1348,9 +1406,11 @@ $R^2_{\mathrm{xv}}$ (invisible) \\
 \end{tabular}
 \end{center}
 
-\texttt{fit\_karst()} passes \texttt{counts}, \texttt{dt}, \texttt{beta} and
-the list \texttt{sparse\_joint\_control} to \texttt{fit\_sparse\_joint()};
-any other argument raises an error. A plain-text version of this section is
+\texttt{fit\_karst()} passes \texttt{counts}, \texttt{dt} and \texttt{beta}
+(the last two only when given, so that a prepared \texttt{karst\_data} object
+keeps its own rate) and the list \texttt{sparse\_joint\_control} to
+\texttt{fit\_sparse\_joint()}; giving an argument both ways, or any other
+argument, raises an error. A plain-text version of this section is
 provided in \texttt{doc/karst\_workflow.md}.
 
 \subsection{Procedure}
@@ -1371,9 +1431,11 @@ those of the two-time-point fit.
 \begin{enumerate}
 \item \textbf{Input.} A matrix of integer counts indexed by karyotype, with
 one column per time point (two, or more in time order;
-Section~\ref{sec:sj-series}); rows without cells are removed.
-$T=\texttt{dt}$ and $\beta=\texttt{beta}$; copy numbers must lie within
-$[c_{\min},c_{\max}]$.
+Section~\ref{sec:sj-series}); rows without cells are removed. Karyotype
+labels are unsigned integers separated by single dots; they are rewritten
+without leading zeros, and two rows naming the same karyotype are an error.
+$T=\texttt{dt}$ and $\beta=\texttt{beta}\in(0,1)$; copy numbers must lie
+within $[c_{\min},c_{\max}]$.
 \item \textbf{Domain construction}, (\ref{eq:share})--(\ref{eq:domain});
 observed karyotypes outside the domain are set aside with their cells.
 \item \textbf{Missegregation kernel}, (\ref{eq:pij})--(\ref{eq:Pij}), for
@@ -1408,17 +1470,19 @@ can be reconstructed; and diagnostics.
 \begin{enumerate}
 \setcounter{enumi}{10}
 \item \textbf{Input in the \texttt{alfak} convention}: \texttt{yi\$x} with
-two columns; $T$ from \texttt{passage\_times} or from the column names
-multiplied by \texttt{yi\$dt}; $\beta=\texttt{pm}$. Steps 1--10 are then
-performed.
+two or more columns; the times from \texttt{passage\_times} or from the
+column names multiplied by \texttt{yi\$dt}; the fit uses the intervals
+between them, and the first time sets time 0 of the reported frequencies;
+$\beta=\texttt{pm}$. Steps 1--10 are then performed.
 \item \textbf{Karyotype sets}, (\ref{eq:alfak-sets}).
 \item \textbf{Scale}, (\ref{eq:alfak-scale}).
 \item \textbf{Posterior draws} in place of bootstrap replicates
 (Section~\ref{sec:sj-alfak}).
 \item \textbf{Output objects}: the posterior draws
 (\texttt{landscape\_posterior\_samples.Rds}), the landscape summary
-(\texttt{landscape.Rds}) and the replicate estimates
-(\texttt{bootstrap\_res.Rds}).
+(\texttt{landscape.Rds}), the replicate estimates
+(\texttt{bootstrap\_res.Rds}) and, on request, models that predict any
+karyotype (\texttt{landscape\_data.Rds}).
 \item \textbf{Cross-validation}, (\ref{eq:xval-align})--(\ref{eq:r2r}),
 stored in \texttt{xval.Rds}.
 \item \textbf{Output}: the files and the fit object (\texttt{karst\_fit.Rds})
@@ -1437,7 +1501,7 @@ Argument & Default & Definition \\
 \texttt{birth\_rate} & 1 & $b_0$, per unit of \texttt{dt} \\
 \texttt{birth\_rate\_log\_sd} & 0.05 & Prior standard deviation of $\gamma_0$ \\
 \texttt{major\_frequency} & 0.01 & $\phi_{\min}$ in (\ref{eq:major}) \\
-\texttt{major\_count} & 3 & $c_{\min}$ in (\ref{eq:major}) \\
+\texttt{major\_count} & 3 & $n_{\min}$ in (\ref{eq:major}) \\
 \texttt{max\_states} & 5000 & Upper bound on $|\mathcal{D}|$ \\
 \texttt{min\_cn} & 1 & Lowest viable copy number \\
 \texttt{max\_cn} & Largest observed $+1$ & Highest viable copy number \\
@@ -1493,7 +1557,8 @@ are written in R.
 
 \begin{sloppypar}
 \texttt{fit\_sparse\_joint\_rates()} fits the model across a range of birth
-rates (Section~\ref{sec:sj-rate}), and \texttt{fit\_sparse\_joint\_cohort()}
+or missegregation rates (\texttt{birth\_rate\_range} or \texttt{beta\_range};
+Sections~\ref{sec:sj-rate} and~\ref{sec:sj-beta}), and \texttt{fit\_sparse\_joint\_cohort()}
 analyses multiple datasets jointly (Section~\ref{sec:sj-cohort}). A simulated
 dataset with 22 chromosomes required between a few seconds and approximately
 four minutes; a GBM dataset fitted at three birth rates required a median of
@@ -1601,8 +1666,12 @@ the scored karyotypes at that distance, each weighted equally,
   \bigl(\rho^{\mathrm{pred}}_x-\rho^{\mathrm{true}}_x\bigr)^2\Bigr)^{1/2},
   \label{eq:rmse}
 \end{equation}
-where $n_d$ is the number of observed karyotypes (median 103 per dataset) for
-$d=0$ and 2000 for $d=1,2$. Because fitness differences on rugged landscapes
+where $n_d$ is the number of scored karyotypes at distance $d$: every
+observed karyotype for $d=0$ (median 103 per dataset), and a uniform sample of
+up to 2000 karyotypes of the shell for $d=1,2$. The one-step shell held fewer
+than 2000 karyotypes in 33 of the 96 held-out datasets (all 24 at
+$\lambda=0.4$; at least 118) and in 36 of the 96 development datasets; the
+two-step shell always held more. Because fitness differences on rugged landscapes
 ($\lambda=0.4$) are about ten times larger than on smooth ones
 ($\lambda=1.6$), results are reported separately for each wavelength. For
 wavelength $\lambda$, with $\Lambda_\lambda$ its three landscapes, errors are
@@ -1726,7 +1795,7 @@ Sparse joint, balance & 0.054 & 0.108 & 0.159 & 0.020 & 0.039 & 0.062 & 0.014 & 
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
  & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ \\
 \midrule
-\texttt{alfak} (\texttt{minobs = 20}) & 0.031 & 0.023 & 0.026 & 0.033 & 0.013 & 0.015 & 0.242 & 0.201 & 0.168 & 0.334 & 0.294 & 0.277 \\
+\texttt{alfak} (\texttt{minobs = 20}) & 0.031 & 0.023 & 0.026 & 0.033 & 0.013 & 0.015 & 0.242 & 0.201 & 0.168 & 0.257 & 0.227 & 0.215 \\
 Sparse joint, independent & 0.392 & 0.193 & 0.145 & 0.387 & 0.276 & 0.199 & 0.524 & 0.465 & 0.381 & 0.351 & 0.510 & 0.461 \\
 Sparse joint, balance & 0.471 & 0.235 & 0.172 & 0.407 & 0.286 & 0.209 & 0.531 & 0.473 & 0.391 & 0.339 & 0.500 & 0.457 \\
 \bottomrule
@@ -1789,11 +1858,17 @@ ranged from 0.95 to 1.00: close to nominal on landscapes of intermediate
 ruggedness ($\lambda=0.8$: 0.95 to 0.97) and conservative on the smoother
 ones (0.99 to 1.00 at $\lambda\ge1.2$).
 The intervals of \texttt{alfak} covered 17--68\% of reference values and
-were thus overconfident. The acceptance criteria, specified before the
-held-out landscapes were evaluated, were applied to values averaged over all
-twelve landscapes and were all met; they included a lower error than the null
-predictor and a higher rank correlation than \texttt{alfak} at every
-distance.
+were thus overconfident. The acceptance rule, a lower error than the null
+predictor and a higher rank correlation than \texttt{alfak}
+(\texttt{minobs = 20}) at every distance, each with a landscape-bootstrap
+95\% interval of the paired difference excluding zero, was applied to values
+averaged over all twelve landscapes and was met by the sparse joint model with
+and without the balance prior. The criteria specified before the held-out
+landscapes were evaluated also compared with \texttt{alfak} at
+\texttt{minobs = 5}, which was not run on the held-out landscapes and was
+therefore not evaluated, and with a KARST pipeline since removed, against
+which the model with independent initial abundances fell short in one
+sampling design (3000/100 cells).
 
 \subsection{Results by Sampling Design}
 \label{sec:val-sampling}
@@ -1887,8 +1962,8 @@ Rank correlations of the sparse joint model at distances 1 and 2 increased
 with the number of cells on smooth landscapes ($\lambda=1.6$, distance 1: 0.28 at 50
 cells per time point against 0.55 to 0.61 at 500/700) but remained between 0.12
 and 0.32 on the most rugged landscapes in every design. The sparse joint model ranked karyotypes better than
-\texttt{alfak} in 87 of the 93 combinations in which \texttt{alfak} produced
-a ranking; the exceptions were observed karyotypes in four designs at
+\texttt{alfak} in 90 of the 96 combinations, a failed fit of \texttt{alfak}
+counting as the null predictor, whose rank correlation is zero; the exceptions were observed karyotypes in four designs at
 $\lambda=1.6$ and two small differences at $\lambda=0.4$. Coverage of the
 sparse joint model ranged from 0.85 to 1.00; it was lowest at
 $\lambda=0.8$ and distance 2 for few cells at the first time point (100/3000;
@@ -1973,7 +2048,7 @@ independent initial states.
 its Kriging mean surface, without an uncertainty. Its error was 2.35, 1.32,
 1.50 and 18.2 times that of the null predictor at distance 3 and 2.28, 1.26,
 1.42 and 15.3 times at distance 4, its direction accuracy was 0.45 to 0.53,
-and its rank correlation ranged from 0.01 to 0.25.
+and its rank correlation ranged from 0.01 to 0.19.
 
 The development landscapes gave the same results: ratios of 0.42 to 0.60,
 direction accuracy of 0.76 to 0.81 and rank correlations of 0.14 to 0.49 for

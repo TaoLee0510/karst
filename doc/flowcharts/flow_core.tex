@@ -1,7 +1,7 @@
 % KARST sparse joint model: the two-time-point fit, whose steps every path shares.
 % Mirrors fit_sparse_joint(), sparse_joint_problem(), sparse_joint_domain(),
 % sparse_joint_optimise_scales(), sparse_joint_posterior() and
-% predict.KARST_sparse_joint_fit() in R/. Build: pdflatex flow_core.tex
+% predict.karst_sparse_joint_fit() in R/. Build: pdflatex flow_core.tex
 \documentclass[tikz,border=4pt]{standalone}
 \input{flowstyle}
 \begin{document}
@@ -22,7 +22,7 @@
   set aside with their cells; \code{predict()} places them later.};
 \node[dec, below=0.45cm of domain] (cover) {Does each time point have a cell in $\mathcal D$?};
 \node[err, w=4.5cm, right=0.6cm of cover] (stop) {%
-  \textbf{Stop} with an error of class\\ {\ttfamily\scriptsize KARST\_domain\_coverage\_error};\\ the time points may differ too much.};
+  \textbf{Stop} with an error of class\\ {\ttfamily\scriptsize karst\_domain\_coverage\_error};\\ the time points may differ too much.};
 \draw[arr] (major) -- (domain);
 \draw[arr] (domain) -- (cover);
 \draw[arr, draw=cErrB] (cover) -- node[lab, above] {no} (stop);
@@ -34,7 +34,7 @@
 \draw[arr] (cover) -- node[lab, right] {yes} (kernel);
 
 \node[box, w=12.0cm, below=0.85cm of kernel] (prior) {%
-  \textbf{4 Priors}\quad initial log abundances $\zeta_i$: nearly flat for the majors; every other
+  \textbf{4 Priors}\quad initial log abundances $\zeta_i$: nearly flat for majors seen at $t_0$; every other
   state centred on the mutation--selection balance with its major neighbours, built up over the history
   $h$ (sd 1). (With \code{initial\_state = "free"}: nearly flat if seen at $t_0$, at the later frequency
   if seen later, at frequency $10^{-5}$ if never seen.) Log birth rates

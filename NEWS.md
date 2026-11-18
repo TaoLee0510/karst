@@ -1,3 +1,153 @@
+# karst 1.1.0 (2026-11-18)
+
+Fixes from the code review of 2026-11-18. Fits of valid input are unchanged
+except where noted; `as_alfak()` and `alfak_compat()` with
+`correct_efflux = TRUE` report different birth rates.
+
+## Changed results
+
+- `correct_efflux = TRUE` converts fitness to birth rates as alfak does
+  (ALFA-K.R, dev2@f93b2d2): `(f - k) / (2 P_ii - 1)`, where `f` is relative
+  fitness and the constant `k` makes the mean over the frequent karyotypes,
+  weighted by their frequencies at time 0 (`final_frequencies` at the
+  posterior mode), equal `log(nb / n0) / dt`. The landscape, the replicates,
+  the cross-validation and `landscape_data` use the same `k`. Up to cfabe12
+  the level was added first and the sum divided by `2 P_ii - 1`, which put
+  that mean about `1 / (2 P_ii - 1)` times too high: 0.4% for 44 copies at a
+  missegregation rate of 5e-5, 9% at 1e-3. With `n0 = nb = NULL` the model's
+  own net growth rates are divided, as before.
+- With more than two time points and `intermediate = "majors"`, a karyotype
+  that is not major and was seen only at time points in between counts as
+  unobserved both in the calibration of `relative_sd` (as before) and in the
+  observed level that `predict()` gives observed karyotypes outside the
+  domain (it counted as observed there).
+- The pairwise and state-space cross-validation: a held-out state of the
+  state-space method takes the drift weight of a state seen at no time
+  point; its own counts set it before.
+- The first fit that estimates `intermediate_weight` uses the shortest
+  candidate history, as documented, also when `history` is not sorted.
+- `simulate_sparse_counts()` draws each step's divisions with the mean that
+  gives a karyotype its continuous-time growth over the step. The old mean,
+  `count * b * step`, grew 5% slower than the birth rate `b` near 1 at the
+  default step, and fitness differences came out 8-9% smaller than
+  `truth_observed`. Simulations with the same seed differ.
+
+## Errors where results were silently wrong
+
+- `fit_karst()` passes `dt` and `beta` on only when given, so an
+  `karst_data` object is fitted at its own missegregation rate; the default
+  5e-5 replaced it before. Giving an argument both directly and in
+  `sparse_joint_control` is an error.
+- Karyotype labels must be unsigned integers separated by single dots.
+  `prepare_karst_data()` and `predict()` rewrite them without leading zeros
+  (`"2.02.3"` is `"2.2.3"`); two rows naming the same karyotype, or labels
+  such as `"2.2.3."`, `" 2.2.3"` and `"+2.2.3"`, are an error. A trailing
+  dot was read as a valid label and, matched as a string, made the karyotype
+  a different one from its own counts.
+- The missegregation rate of a fit must be positive. At zero the division
+  kernel has no edges and the balance prior had no effect, while the fit
+  still reported it.
+- `balance_level = "free"` is an error for the pairwise and state-space
+  methods, as for the anchored one; it was ignored there and stored as
+  `"free"`.
+- A failed inner optimisation when the posterior is computed or rebuilt is an
+  error (class `karst_inner_failure`). The last point tried was used as the
+  mode; in the cross-validation such a fold now fails instead of returning a
+  point near the full-data mode.
+- A fit with several candidate histories none of which has a finite
+  objective stops with an error; it returned an object without a class.
+- `fit_sparse_joint_cohort()`: `history` must give one time or one per
+  dataset.
+
+## Time points left out
+
+- `summary` names its count columns after the time points of the input:
+  `count_t0`, `count_t2` when `t1` was left out (they were numbered by
+  position, so `count_t1` held `t2`).
+- Karyotypes seen only at time points left out are in `dropped`, and
+  `predict()` places them at the observed level; they were predicted from the
+  trend as never seen.
+- For the pairwise and state-space methods, `diagnostics$dropped_samples`
+  has the same columns whether or not a time point was left out.
+
+## Smaller fixes
+
+- `predict()`, also for cohort fits, accepts a factor of labels and
+  repeated karyotypes, also outside the domain, and reads labels as the fit
+  writes them.
+- `predict()` of `landscape_data` warns when it rounds non-integer copy
+  numbers.
+- `simulate_grf_landscape()`: a copy of a landscape whose parameters are
+  changed no longer reads the cached fitness of the original;
+  `centroid_min == centroid_max` and a karyotype with a single copy no
+  longer hit `sample()` on a vector of length one.
+- `simulate_sparse_counts()`: `detection_threshold = 0` no longer keeps
+  karyotypes without a cell; an `overdispersion` so small that the
+  Dirichlet proportions underflow is an error, and the argument is
+  documented as the Dirichlet concentration it is (smaller values are more
+  overdispersed).
+- `print()` of a pairwise or state-space fit names the pair of each coverage
+  row.
+- Documentation: `alfak_compat()` follows alfak branch dev2 (f93b2d2), whose
+  `xval.Rds` is a list; `major_count`, `max_states`, `dt`/`times` for
+  prepared data, the state-space initial prior, `intermediate` and
+  `intermediate_weight` with the other methods, and the pairwise expected
+  counts are described as the code behaves.
+
+## Development benchmark (`benchmark/sparse_two_timepoint`)
+
+- The acceptance rule is an RMSE below the null predictor and a Spearman
+  correlation above alfak (`minobs = 20`) at every distance. A criterion
+  whose baseline was not compared on every landscape of the split is
+  reported as not evaluated, not as passed: held-out had no alfak
+  `minobs = 5` fits, and that criterion was skipped silently.
+- A failed fit's rank correlation is 0, the null predictor's, as the method
+  document states; it was left out of the mean (held-out, wavelength 1.6:
+  alfak's Spearman 0.334 / 0.294 / 0.277 becomes 0.257 / 0.227 / 0.215 at
+  distances 0 / 1 / 2).
+- Rescoring merges with the other methods' rows by column instead of
+  dropping them; the comparison cohorts keep the members of the original 12
+  landscapes; the document generators read the wavelength classes from the
+  data; a missing fit is NA in the direction accuracy, not a tie.
+- `forward_prediction.R` and `rate_sensitivity.R` fit with the method's
+  arguments (`initial_state = "free"` for `karst_sparse_joint`) instead of
+  the package default.
+
+## ALFA-K paper benchmark (`benchmark/paper`)
+
+- Fig. 5b fits KARST on one minobs per trajectory, as Fig. 4 does: its three
+  minobs come from one fit, and each karyotype counted up to three times. On
+  the tables of round e7e32f8 the WGD interaction of KARST with all time
+  points turns opposite to the paper's.
+- A Salehi fit fails by its run status, not by a missing cross-validation
+  score, in every table: 66 fits that ran and had forecasts but no CV score
+  were left out of the paired forecasts (two time points: 371 pairs become
+  394).
+- The agreement with the paper's conclusions leaves out intercepts, compares
+  only significance when neither side is significant, and describes Fig. 6
+  instead of counting it (16 statements per arm).
+- Fig. 4d records the share of frequent karyotypes the paper's `var(deltaf)`
+  drops, and an `na.rm` version beside the paper's.
+- The removed `karst_auto` no longer labels a fit; collecting checks every
+  fit of the task tables and stops on a missing one; files are written under
+  a temporary name and renamed; only complete forecasts are scored; a rerun
+  of a task fits only the minobs not done.
+
+## Validation scripts (`validation/sparse_joint`)
+
+- The Salehi horizon test bins later passages by days, not by levels of the
+  metadata's parent links, which in the p53 lines are 5 to 21 passages apart;
+  the pooled results are unchanged. The comparison of the two designs on a
+  common support needs the forecasts to be run again.
+- The truth of the beta-choice and series-method studies is the net growth
+  rate the model estimates, not the birth rate (factor 0.93 at 16 times and
+  0.74 at 64 times the default missegregation rate); their results are marked
+  as not recomputed.
+- Several scripts stop instead of falling back silently: a missing build
+  library, a missing score file, an expected error that no longer occurs.
+- Numbers that need a rerun to change are marked "not recomputed with the
+  current code" in the READMEs.
+
 # karst 1.0.0 (2026-11-17)
 
 alfak2 is renamed KARST (Karyotype Abundance-based Reconstruction of fitness
