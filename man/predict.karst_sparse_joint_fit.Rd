@@ -9,7 +9,9 @@
 \arguments{
 \item{object}{An \code{karst_sparse_joint_fit}.}
 
-\item{karyotypes}{Character labels or an integer matrix of karyotypes.}
+\item{karyotypes}{Character labels (or a factor of them) or an integer
+matrix of karyotypes. Labels are rewritten as the fit writes them, without
+leading zeros (\code{"2.03"} is \code{"2.3"}), and are returned that way.}
 
 \item{...}{Unused.}
 }

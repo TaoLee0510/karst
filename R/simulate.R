@@ -42,12 +42,20 @@ grf_initial_karyotypes <- function(founder, depth, min_cn, max_cn) {
   all_nodes
 }
 
+# Multinomial draw, or with `overdispersion` > 0 Dirichlet-multinomial: the
+# proportions are first drawn from a Dirichlet with parameters
+# `overdispersion * prob`, so `overdispersion` is the Dirichlet's total
+# concentration and smaller values scatter the draw more.
 grf_multinomial_draw <- function(prob, size, overdispersion = 0) {
   if (length(prob) == 0L) return(integer(0))
   prob <- prob / sum(prob)
   if (overdispersion > 0) {
     alpha <- pmax(1e-10, overdispersion * prob)
     prob <- stats::rgamma(length(prob), shape = alpha, rate = 1)
+    if (!is.finite(sum(prob)) || sum(prob) <= 0) {
+      stop("`overdispersion` is too small: every Dirichlet proportion underflowed to zero. ",
+           "It is a concentration; larger values are less overdispersed.", call. = FALSE)
+    }
     prob <- prob / sum(prob)
   }
   as.integer(stats::rmultinom(1L, size = size, prob = prob)[, 1L])
@@ -91,7 +99,9 @@ grf_missegregate_daughters <- function(karyotype, beta) {
   while (k == 0L && beta > 0) {
     k <- stats::rbinom(1L, total, beta)
   }
-  picked <- sample(copies, size = k, replace = FALSE)
+  # Indexing rather than sample(copies): with a single copy sample() would
+  # draw from 1:copies. Same draws otherwise.
+  picked <- copies[sample.int(length(copies), size = k, replace = FALSE)]
   signs <- sample(c(-1L, 1L), size = k, replace = TRUE)
   delta <- integer(length(karyotype))
   for (i in seq_len(k)) delta[picked[i]] <- delta[picked[i]] + signs[i]
@@ -121,21 +131,40 @@ grf_sample_counts <- function(population, size, overdispersion = 0) {
 #' the lazy GRF oracle with `predict_landscape_fitness()`.
 #'
 #' @param landscape Object returned by `simulate_grf_landscape()`.
-#' @param beta Per-chromosome missegregation probability.
+#' @param beta Missegregation probability per chromosome copy and division:
+#'   a division is faithful with probability `(1 - beta)^N` for a karyotype of
+#'   `N` copies.
 #' @param dt Time interval between the two sampled count columns.
 #' @param n0,n1 Sampling depths at the start and end of the interval.
-#' @param detection_threshold Minimum total observed count retained.
+#' @param detection_threshold Minimum total observed count retained. A
+#'   karyotype with no cell in either sample is never retained, also with `0`.
 #' @param dropout_prob Random node dropout probability after sampling.
 #' @param seed Reproducibility seed.
 #' @param init_concentration Concentration around the founder for the initial
 #'   local population.
-#' @param overdispersion Dirichlet-multinomial concentration; `0` means
-#'   multinomial.
+#' @param overdispersion Sampling noise beyond the multinomial. `0`, the
+#'   default, samples cells multinomially. A positive value is the total
+#'   concentration of a Dirichlet-multinomial: the sampled proportions are
+#'   drawn from a Dirichlet with parameters `overdispersion * p`, so that
+#'   *smaller* values are *more* overdispersed (at about `overdispersion = n`
+#'   the variance is twice the multinomial's for `n` cells), and values far
+#'   below 1 put nearly all cells on one karyotype; too small a value is an
+#'   error.
 #' @param initial_population Number of cells in the simulated population before
-#'   the first time point. Defaults to `5 * max(n0, n1)`.
+#'   the first time point. Defaults to `max(100, 5 * max(n0, n1))`.
 #' @param initial_shell_depth Initial population support around the founder in
 #'   one-missegregation steps.
-#' @param time_step Internal ABM time step.
+#' @param time_step Internal ABM time step. In each step a karyotype with
+#'   `count` cells, birth rate `b` and faithful-division probability `p`
+#'   divides a Poisson number of times with mean
+#'   `count * expm1(b * (2 p - 1) * step) / (2 p - 1)`, so that its own
+#'   expected growth over the step is `exp(b * (2 p - 1) * step)`, as in
+#'   continuous time, whatever the step. `truth_observed` holds `b`; the
+#'   model's `fitness_mean` estimates the net rate `b * (2 P_ii - 1)`. Up to
+#'   karst cfabe12 the mean was `count * b * step`, which grows by
+#'   `1 + b * step` per step: about 5% slower than `b` at the default step and
+#'   `b` near 1, and so fitness differences were 8-9% smaller than
+#'   `truth_observed`.
 #' @param carrying_capacity Optional population cap. Use `Inf` to disable.
 #' @param passage_fraction Fraction retained if `carrying_capacity` is exceeded.
 #' @param max_unique Maximum number of unique live karyotypes allowed during
@@ -217,14 +246,18 @@ simulate_sparse_counts <- function(landscape,
         count <- as.integer(round(population[i]))
         if (count <= 0L) next
         division_rate <- fitness[i]
-        divisions <- min(count, stats::rpois(1L, count * division_rate * step))
+        x <- karyotypes[i, ]
+        faithful_prob <- (1 - beta)^sum(x)
+        # Divisions with the mean that gives the karyotype its continuous-time
+        # growth over the step (see `time_step`).
+        net <- 2 * faithful_prob - 1
+        mean_divisions <- if (abs(net) > 1e-8) expm1(division_rate * net * step) / net else division_rate * step
+        divisions <- min(count, stats::rpois(1L, count * mean_divisions))
         if (divisions <= 0L) next
 
         label <- labels[i]
-        x <- karyotypes[i, ]
         grf_add_count(next_env, label, -divisions)
 
-        faithful_prob <- (1 - beta)^sum(x)
         faithful <- stats::rbinom(1L, divisions, faithful_prob)
         if (faithful > 0L) grf_add_count(next_env, label, 2L * faithful)
 
@@ -265,7 +298,7 @@ simulate_sparse_counts <- function(landscape,
     counts[names(y1), "t1"] <- as.integer(y1)
 
     totals <- rowSums(counts)
-    keep <- totals >= detection_threshold
+    keep <- totals > 0 & totals >= detection_threshold
     if (dropout_prob > 0) keep <- keep & (stats::runif(length(keep)) >= dropout_prob)
     if (!any(keep)) keep[which.max(totals)] <- TRUE
     counts <- counts[keep, , drop = FALSE]

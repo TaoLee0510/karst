@@ -80,9 +80,15 @@ test_that("as_alfak keeps the model's level or reports birth rates on request", 
   expect_equal(own$landscape$mean, prediction$relative_fitness + fit$trend$reference$fitness, tolerance = 1e-12)
   expect_true(is.na(own$xval$R2R))
   expect_equal(nrow(own$xval$tmp), 0L)
-  births <- as_alfak(fit, minobs = 20, nboot = 3, correct_efflux = TRUE, xval = FALSE)
+  # Birth rates as alfak converts them: (f - k) / v, with k such that the mean
+  # over the frequent karyotypes weighted by their frequencies at time 0 is
+  # alfak's population growth (see test-review-fixes-2.R).
+  births <- as_alfak(fit, minobs = 20, nboot = 1, correct_efflux = TRUE, xval = FALSE)
   self <- 2 * sparse_joint_self_probability(parse_karyotypes(births$landscape$k), sim$beta) - 1
-  expect_equal(births$landscape$mean, (prediction$relative_fitness + log(100) / sim$dt) / self, tolerance = 1e-12)
+  k <- prediction$relative_fitness - births$landscape$mean * self
+  expect_lt(diff(range(k)), 1e-10)
+  boot <- births$bootstrap_res
+  expect_equal(sum(boot$final_frequencies * boot$final_fitness), log(100) / sim$dt, tolerance = 1e-10)
   single <- as_alfak(fit, minobs = 20, nboot = 1, xval = FALSE)
   expect_true(all(is.na(single$landscape$sd)))
   expect_error(as_alfak(fit, first_time = NA), "first_time")
@@ -95,7 +101,11 @@ test_that("as_alfak reports frequencies at time 0 as alfak does", {
   at_first <- as_alfak(fit, minobs = 20, nboot = 4, correct_efflux = TRUE, xval = FALSE)$bootstrap_res
   set.seed(6)
   shifted <- as_alfak(fit, minobs = 20, nboot = 4, correct_efflux = TRUE, xval = FALSE, first_time = 40)$bootstrap_res
-  expect_equal(shifted$final_fitness, at_first$final_fitness)
+  # The efflux correction's constant k is set at time 0, so it moves with
+  # `first_time`; the draws about it do not.
+  self <- 2 * sparse_joint_self_probability(parse_karyotypes(colnames(at_first$final_fitness)), sim$beta) - 1
+  moved <- sweep(shifted$final_fitness - at_first$final_fitness, 2L, self, "*")
+  expect_lt(diff(range(moved)), 1e-10)
   # alfak's projection to the first time point, x0 * exp(f * t), gives back the
   # frequencies at the first time point.
   projected <- shifted$final_frequencies * exp(shifted$final_fitness * 40)

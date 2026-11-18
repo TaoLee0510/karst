@@ -66,6 +66,9 @@ test_that("prediction takes the best-informed source", {
   expect_equal(predict(fit, targets, sample = 1L), in_a)
   expect_true(all(is.finite(in_a$fitness_mean)) && all(in_a$fitness_sd > 0))
   expect_error(predict(fit, targets, sample = "C"), "sample")
+  # labels are read as the fit writes them; factors and repeats are accepted
+  padded <- c("02.2.2.2", only_b, "4.4.4.04", "4.4.3.3", "2.2.2.2")
+  expect_equal(predict(fit, factor(padded), sample = "A"), rbind(in_a, in_a[1L, ]), ignore_attr = TRUE)
 })
 
 test_that("invalid cohort inputs are rejected", {

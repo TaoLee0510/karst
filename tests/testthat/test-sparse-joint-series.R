@@ -225,8 +225,11 @@ test_that("a time point in between with no counted cell is left out", {
     # The same as the fit to the other time points.
     rest <- fit_sparse_joint(counts[, -2L], times = sim$times[-2L], beta = sim$beta, max_cn = 4, history = 60,
                              intermediate = mode, intermediate_weight = if (mode == "majors") 1)
-    expect_equal(fit$summary, rest$summary)
+    expect_identical(names(fit$summary)[2:4], c("count_t0", "count_t2", "count_t3"))
+    expect_equal(fit$summary, renamed_like(rest$summary, fit$summary))
     expect_equal(fit$diagnostics$objective, rest$diagnostics$objective)
+    # seen only at the time point left out: observed, outside the domain
+    expect_true(far %in% fit$dropped)
     expect_equal(fit$diagnostics$times, c(0, 40, 60))
     dropped <- fit$diagnostics$dropped_samples
     expect_equal(dropped$sample, 2L)
@@ -245,7 +248,8 @@ test_that("a time point in between with no counted cell is left out", {
     pair <- fit_sparse_joint(ends, times = sim$times, beta = sim$beta, max_cn = 4, history = 60),
     "Left out 2 of 4 time points (t1, t2)", fixed = TRUE)
   two <- fit_sparse_joint(sim$counts[, c(1L, 4L)], dt = 60, beta = sim$beta, max_cn = 4, history = 60)
-  expect_equal(pair$summary, two$summary)
+  expect_equal(pair$summary, renamed_like(two$summary, pair$summary))
+  expect_identical(names(pair$summary)[2:3], c("count_t0", "count_t3"))
   expect_null(two$diagnostics$dropped_samples)
   expect_equal(pair$diagnostics$dropped_samples$sample, 2:3)
   # as_alfak() takes its karyotypes and level from the input as given.

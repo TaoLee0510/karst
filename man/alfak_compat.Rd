@@ -43,8 +43,8 @@ warning instead of stopping.}
 The cross-validation R-squared, invisibly.
 }
 \description{
-A replacement for \code{alfakR::alfak()} (branch dev) that fits the sparse
-joint model, \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}, instead. It takes the same input,
+A replacement for \code{alfakR::alfak()} (branch dev2, commit f93b2d2) that
+fits the sparse joint model, \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}, instead. It takes the same input,
 writes the same files to \code{outdir} (see \code{\link[=as_alfak]{as_alfak()}} for how each is
 obtained) and returns the cross-validation R-squared invisibly, so that a
 pipeline built on alfak can switch by calling this function. The fit

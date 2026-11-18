@@ -26,13 +26,16 @@ simulate_sparse_counts(
 \arguments{
 \item{landscape}{Object returned by \code{simulate_grf_landscape()}.}
 
-\item{beta}{Per-chromosome missegregation probability.}
+\item{beta}{Missegregation probability per chromosome copy and division:
+a division is faithful with probability \code{(1 - beta)^N} for a karyotype of
+\code{N} copies.}
 
 \item{dt}{Time interval between the two sampled count columns.}
 
 \item{n0, n1}{Sampling depths at the start and end of the interval.}
 
-\item{detection_threshold}{Minimum total observed count retained.}
+\item{detection_threshold}{Minimum total observed count retained. A
+karyotype with no cell in either sample is never retained, also with \code{0}.}
 
 \item{dropout_prob}{Random node dropout probability after sampling.}
 
@@ -41,16 +44,32 @@ simulate_sparse_counts(
 \item{init_concentration}{Concentration around the founder for the initial
 local population.}
 
-\item{overdispersion}{Dirichlet-multinomial concentration; \code{0} means
-multinomial.}
+\item{overdispersion}{Sampling noise beyond the multinomial. \code{0}, the
+default, samples cells multinomially. A positive value is the total
+concentration of a Dirichlet-multinomial: the sampled proportions are
+drawn from a Dirichlet with parameters \code{overdispersion * p}, so that
+\emph{smaller} values are \emph{more} overdispersed (at about \code{overdispersion = n}
+the variance is twice the multinomial's for \code{n} cells), and values far
+below 1 put nearly all cells on one karyotype; too small a value is an
+error.}
 
 \item{initial_population}{Number of cells in the simulated population before
-the first time point. Defaults to \code{5 * max(n0, n1)}.}
+the first time point. Defaults to \code{max(100, 5 * max(n0, n1))}.}
 
 \item{initial_shell_depth}{Initial population support around the founder in
 one-missegregation steps.}
 
-\item{time_step}{Internal ABM time step.}
+\item{time_step}{Internal ABM time step. In each step a karyotype with
+\code{count} cells, birth rate \code{b} and faithful-division probability \code{p}
+divides a Poisson number of times with mean
+\verb{count * expm1(b * (2 p - 1) * step) / (2 p - 1)}, so that its own
+expected growth over the step is \verb{exp(b * (2 p - 1) * step)}, as in
+continuous time, whatever the step. \code{truth_observed} holds \code{b}; the
+model's \code{fitness_mean} estimates the net rate \verb{b * (2 P_ii - 1)}. Up to
+karst cfabe12 the mean was \code{count * b * step}, which grows by
+\code{1 + b * step} per step: about 5\% slower than \code{b} at the default step and
+\code{b} near 1, and so fitness differences were 8-9\% smaller than
+\code{truth_observed}.}
 
 \item{carrying_capacity}{Optional population cap. Use \code{Inf} to disable.}
 

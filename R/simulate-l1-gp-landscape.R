@@ -115,7 +115,8 @@ raw_grf_values <- function(karyotypes, centroids, lambda) {
 #'   centroids.
 #' @param min_cn,max_cn Viability bounds used by lazy simulators.
 #' @param cache Whether to attach an environment cache for repeated fitness
-#'   queries.
+#'   queries. The cache is shared by copies of the object; a copy whose
+#'   parameters are changed does not use it.
 #'
 #' @return An `karst_grf_landscape` object.
 #' @export
@@ -164,8 +165,11 @@ simulate_grf_landscape <- function(
   }
 
   centroids <- with_grf_seed(seed, {
+    # Indexing rather than sample(values): with centroid_min == centroid_max
+    # sample() would draw from 1:centroid_min. Same draws otherwise.
+    values <- seq.int(centroid_min, centroid_max)
     matrix(
-      sample(seq.int(centroid_min, centroid_max), n_centroids * n_chr, replace = TRUE),
+      values[sample.int(length(values), n_centroids * n_chr, replace = TRUE)],
       nrow = n_centroids,
       ncol = n_chr
     )
@@ -193,9 +197,20 @@ simulate_grf_landscape <- function(
     covariance = NA_character_,
     formula = "founder_fitness + scale * (sum_i sin(||k-r_i||_2/lambda)/(pi*sqrt(M)) - raw(founder))"
   )
-  if (isTRUE(cache)) out$cache <- new.env(parent = emptyenv())
   class(out) <- c("karst_grf_landscape", "karst_landscape")
+  if (isTRUE(cache)) {
+    out$cache <- new.env(parent = emptyenv())
+    assign(".signature", grf_cache_signature(out), envir = out$cache)
+  }
   out
+}
+
+# What the cached values depend on. The cache is an environment, shared by
+# reference among copies of a landscape: a copy whose parameters were changed
+# must not read the values of the original. Labels never begin with a dot.
+grf_cache_signature <- function(landscape) {
+  paste(c(landscape$lambda, landscape$scale, landscape$founder_fitness, landscape$founder_raw,
+          dim(landscape$centroids), landscape$centroids), collapse = ",")
 }
 
 #' Simulate a lazy GRF truth landscape
@@ -275,7 +290,9 @@ predict_landscape_fitness <- function(landscape, karyotypes, use_cache = TRUE) {
   out <- rep(NA_real_, nrow(mat))
 
   cache <- landscape$cache
-  can_cache <- isTRUE(use_cache) && is.environment(cache)
+  # Only a cache made for these parameters (see grf_cache_signature()).
+  can_cache <- isTRUE(use_cache) && is.environment(cache) &&
+    identical(get0(".signature", envir = cache, inherits = FALSE), grf_cache_signature(landscape))
   missing <- rep(TRUE, length(out))
   if (can_cache) {
     for (i in seq_along(labels)) {

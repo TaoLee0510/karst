@@ -105,6 +105,28 @@ test_that("predictions and alfak outputs work for every series method", {
     out <- as_alfak(fit, minobs = 20, nboot = 5, n0 = 1e5, nb = 1e7)
     expect_true(all(out$landscape$k[out$landscape$fq] %in% rownames(sim$counts)))
     expect_true(is.finite(out$xval$R2R))
+    # alfak's level: relative fitness plus the population growth over the
+    # first interval
+    g0 <- log(1e7 / 1e5) / diff(sim$times)[[1L]]
+    expect_equal(out$landscape$mean, predict(fit, out$landscape$k)$relative_fitness + g0, tolerance = 1e-10)
+    # frequencies at the posterior mode: the fitted abundances at the first
+    # time point (observed counts outside the domain)
+    one <- as_alfak(fit, minobs = 20, nboot = 1, xval = FALSE)$bootstrap_res$final_frequencies
+    fq <- colnames(one)
+    zeta <- sparse_joint_first_sample_zeta(fit)[match(fq, fit$summary$karyotype)]
+    level <- ifelse(is.na(zeta), log(pmax(fit$data$counts[fq, 1L], .Machine$double.xmin)), zeta)
+    expect_equal(as.numeric(one), unname(exp(level - max(level)) / sum(exp(level - max(level)))), tolerance = 1e-10)
+    # and the fitness differences are the simulated ones
+    truth <- sim$net[match(fit$summary$karyotype, sim$labels)]
+    major <- fit$summary$major
+    weight <- sparse_joint_summary_total(fit$summary)[major]
+    truth_relative <- truth - sum(truth[major] * weight) / sum(weight)
+    # (the majors differ by 0.03 per step; at this seed both methods are
+    # within 0.003 of the truth)
+    expect_lt(max(abs(fit$summary$relative_fitness[major] - truth_relative[major])), 0.006)
+    seen <- !major & sparse_joint_summary_total(fit$summary) > 0 & !is.na(truth)
+    expect_lt(mean(fit$summary$relative_fitness[seen]), 0)
+    expect_gt(stats::cor(fit$summary$relative_fitness[seen], truth[seen]), 0.4)
   }
 })
 
@@ -145,7 +167,9 @@ test_that("a time point in between with no cell in its pair's domain is left out
                    class = "karst_samples_left_out_warning")
     direct <- fit_sparse_joint(kept, times = sim$times[-3L], beta = sim$beta, max_cn = 4, history = 60,
                                series = method)
-    expect_identical(fit$summary, direct$summary)
+    # The same fit; its columns are named after the time points of the input.
+    expect_identical(names(fit$summary)[2:4], c("count_t0", "count_t1", "count_t3"))
+    expect_identical(fit$summary, renamed_like(direct$summary, fit$summary))
     expect_identical(fit$diagnostics$dropped_samples$sample, 3L)
     expect_identical(fit$diagnostics$dropped_samples$uncovered, "t2")
     expect_equal(fit$input$counts, counts)

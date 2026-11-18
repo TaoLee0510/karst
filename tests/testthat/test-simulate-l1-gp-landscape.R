@@ -29,7 +29,7 @@ test_that("GRF oracle anchors founder and is deterministic", {
 
   expect_equal(f1, f2)
   expect_equal(f1[1], 1.25, tolerance = 1e-12)
-  expect_equal(f1, predict_landscape_fitness(x, k), tolerance = 1e-12)
+  expect_equal(f1, predict_landscape_fitness(x, k, use_cache = FALSE), tolerance = 1e-12)
 })
 
 test_that("legacy landscape constructor now returns lazy GRF", {
@@ -72,6 +72,6 @@ test_that("lazy GRF sparse simulator returns valid observed truth", {
   expect_equal(sum(sim$counts[, 2]), 60)
   expect_gt(sim$sparsity$observed_nodes, 0)
 
-  truth <- predict_landscape_fitness(land, rownames(sim$counts))
+  truth <- predict_landscape_fitness(land, rownames(sim$counts), use_cache = FALSE)
   expect_equal(sim$truth_observed, truth, tolerance = 1e-12)
 })

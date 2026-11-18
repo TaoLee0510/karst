@@ -29,7 +29,7 @@ karyotype.}
 \code{NULL} to keep the model's level.}
 
 \item{correct_efflux}{Logical; report birth rates instead of net growth
-rates.}
+rates, converted as alfak converts them (see Details).}
 
 \item{xval}{Logical; run the cross-validation. With \code{FALSE}, \code{xval} holds
 no pairs and \code{R2R} is \code{NA}.}
@@ -51,8 +51,8 @@ alfak versions), \code{landscape_data} (\code{NULL} unless requested) and \code{
 }
 \description{
 Produces, from a fit of \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}, the objects that
-\code{alfakR::alfak()} (branch dev) saves, with the same names, columns and
-layout, so that code written for alfak results can read them.
+\code{alfakR::alfak()} (branch dev2, commit f93b2d2) saves, with the same
+names, columns and layout, so that code written for alfak results can read them.
 \code{\link[=write_alfak_outputs]{write_alfak_outputs()}} saves them under alfak's file names, and
 \code{\link[=alfak_compat]{alfak_compat()}} does both in one call with alfak's arguments.
 }
@@ -85,13 +85,24 @@ the two coincide.
 
 The scale is alfak's. Fitness is the net growth rate per unit of time,
 shifted so that the count-weighted mean of the major karyotypes is
-\code{log(nb / n0) / dt}, the growth rate alfak assigns to the population,
+\code{g0 = log(nb / n0) / dt}, the growth rate alfak assigns to the population,
 with \code{dt} the first interval between time points, as in alfak.
 alfak weights by the estimated initial frequencies of the frequent
 karyotypes instead. With \code{n0 = NULL} and \code{nb = NULL} the model's own level
-at its assumed birth rate is kept. \code{correct_efflux = TRUE} divides by
-\verb{2 P_ii - 1}, the share of divisions that return the parent's karyotype,
-and so reports birth rates, as alfak's efflux correction does.
+at its assumed birth rate is kept.
+
+\code{correct_efflux = TRUE} reports birth rates, converted as alfak's efflux
+correction converts them: \code{(f - k) / v}, where \code{f} is relative fitness,
+\verb{v = 2 P_ii - 1} the share of divisions that return the parent's karyotype
+less the share that leave it, and the constant \code{k} makes the mean over the
+frequent karyotypes, weighted by their reported frequencies at time 0
+(\code{final_frequencies} at the posterior mode), equal \code{g0}. alfak takes \code{v}
+as \code{2 (1 - pm)^N - 1} for a karyotype of \code{N} copies; the model's own
+\code{P_ii} differs from \code{(1 - pm)^N} by terms of order \code{pm^2}. The landscape,
+the replicates, the cross-validation and \code{landscape_data} use the same
+\code{k}. With \code{n0 = NULL} and \code{nb = NULL} the model's own net growth rates are
+divided by \code{v}. Up to karst cfabe12 the level was added first and the sum
+divided by \code{v}, which shifts the major karyotypes' mean away from \code{g0}.
 
 The cross-validation uses alfak's folds: each frequent karyotype with its
 one-step neighbours, each karyotype in the first fold that contains it. The

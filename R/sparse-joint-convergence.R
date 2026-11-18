@@ -360,7 +360,8 @@ sparse_joint_optimise_scales <- function(objective, control, lower = log(1e-4), 
     if (check$pass) return(record(first, "first", check, 0L, first_evaluations))
     # Searching again is internal and off by default: on the development
     # benchmark it accepted few more points (77% of candidates against 73%)
-    # at twice the time, and did not change accuracy.
+    # at twice the time; whether it changes accuracy is open
+    # (validation/sparse_joint/convergence).
     if (!isTRUE(getOption("karst.convergence_restarts", FALSE))) {
       return(record(first, "first", check, 0L, first_evaluations))
     }

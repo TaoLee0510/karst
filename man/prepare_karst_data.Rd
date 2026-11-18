@@ -14,13 +14,17 @@ prepare_karst_data(
 }
 \arguments{
 \item{counts}{Matrix or data frame with one column per timepoint, at least
-two, in time order, and dot-separated karyotype labels as row names.}
+two, in time order, and dot-separated karyotype labels as row names
+(unsigned integers separated by single dots, such as \code{"2.3.2"}). Labels
+are rewritten without leading zeros (\code{"2.03.2"} becomes \code{"2.3.2"}); two
+rows that then name the same karyotype are an error.}
 
 \item{dt}{With two timepoints, the positive time between them. With more,
 either \code{times} or the positive time between each pair of consecutive
 timepoints (one value fewer than there are timepoints).}
 
-\item{beta}{Missegregation rate per chromosome copy and division.}
+\item{beta}{Missegregation rate per chromosome copy and division, in
+(0, 1).}
 
 \item{metadata}{Optional list stored on the returned object.}
 

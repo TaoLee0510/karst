@@ -59,6 +59,32 @@ fit
 head(fit$summary[, c("karyotype", "major", "shell", "relative_fitness", "relative_sd")])
 ```
 
+Compare with the truth. The simulator's truth is the birth rate, and the
+model reports net growth rates, which are smaller by the factor
+`2 P_ii - 1` (about 0.9992 for 2.2.2.2 at this missegregation rate); relative to the majors'
+count-weighted mean the two agree up to that factor.
+
+```{r truth}
+s <- fit$summary
+cells <- s$count_t0 + s$count_t1
+truth <- predict_landscape_fitness(landscape, s$karyotype)
+truth <- truth - weighted.mean(truth[s$major], cells[s$major])
+group <- ifelse(s$major, "major", ifelse(cells > 0, "observed, not major", "unobserved"))
+aggregate(cbind(fitted = s$relative_fitness, truth = truth, relative_sd = s$relative_sd) ~ group,
+          data = data.frame(group, s, truth), FUN = median)
+shell <- length(fit$trend$coefficients)
+c(shell_coefficient = fit$trend$coefficients[[shell]],
+  sd = sqrt(fit$trend$covariance[shell, shell]))
+```
+
+With 150 cells per time point and one unit of time between them, the counts
+say little about the unobserved neighbours. Their fitness comes mostly from
+the shell term of the trend, the distance to the nearest major, whose
+coefficient is uncertain: a single cell of a neighbour at the second time
+point can move it, and with it every unobserved neighbour, even above the
+clones. Their `relative_sd` is correspondingly wide. More cells per time
+point or a longer interval constrain them better.
+
 Predict the fitness of any karyotype: inside the fitted domain from the
 posterior, outside it from the fitted trend.
 

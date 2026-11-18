@@ -97,3 +97,11 @@ simulate_series_counts <- function(seed = 21, depth = 1500, times = c(0, 20, 40,
   list(counts = counts[rowSums(counts) > 0, , drop = FALSE], labels = labels, birth = birth,
        net = (2 * exp(kernel$log_self) - 1) * birth, times = times, beta = beta)
 }
+
+# `summary` with the column names of `like`: a fit that left time points out
+# names its count columns after the time points of its input (count_t0,
+# count_t2, ...), a direct fit to the same columns after their positions.
+renamed_like <- function(summary, like) {
+  names(summary) <- names(like)
+  summary
+}

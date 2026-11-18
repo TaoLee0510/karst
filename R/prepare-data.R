@@ -1,11 +1,15 @@
 #' Prepare karyotype count data
 #'
 #' @param counts Matrix or data frame with one column per timepoint, at least
-#'   two, in time order, and dot-separated karyotype labels as row names.
+#'   two, in time order, and dot-separated karyotype labels as row names
+#'   (unsigned integers separated by single dots, such as `"2.3.2"`). Labels
+#'   are rewritten without leading zeros (`"2.03.2"` becomes `"2.3.2"`); two
+#'   rows that then name the same karyotype are an error.
 #' @param dt With two timepoints, the positive time between them. With more,
 #'   either `times` or the positive time between each pair of consecutive
 #'   timepoints (one value fewer than there are timepoints).
-#' @param beta Missegregation rate per chromosome copy and division.
+#' @param beta Missegregation rate per chromosome copy and division, in
+#'   (0, 1).
 #' @param metadata Optional list stored on the returned object.
 #' @param times Optional sampling times, one per column, strictly increasing,
 #'   instead of `dt`. Only differences matter.
@@ -19,9 +23,17 @@ prepare_karst_data <- function(counts, dt = 1, beta = 0.00005, metadata = list()
   n_time <- ncol(counts)
   colnames(counts) <- paste0("t", seq_len(n_time) - 1L)
   times <- resolve_sample_times(n_time, dt, times, dt_given = !missing(dt))
-  validate_scalar(beta, "beta", lower = 0, upper = 1)
+  validate_beta(beta)
   if (is.null(metadata)) metadata <- list()
   if (!is.list(metadata)) stop("`metadata` must be a list.", call. = FALSE)
+  # Labels are matched as strings later on: one way of writing each karyotype.
+  canonical <- canonical_karyotype_labels(rownames(counts))
+  if (anyDuplicated(canonical)) {
+    same <- rownames(counts)[canonical == canonical[duplicated(canonical)][[1L]]]
+    stop(sprintf("Karyotype labels %s are the same karyotype; give each karyotype one row.",
+                 paste0("'", same, "'", collapse = " and ")), call. = FALSE)
+  }
+  rownames(counts) <- canonical
   parse_karyotypes(rownames(counts))
   new_karst_data(counts = counts, dt = times[[n_time]], beta = beta, metadata = metadata,
                   times = if (n_time > 2L) times else NULL)

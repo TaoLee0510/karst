@@ -12,9 +12,11 @@ an \code{karst_data} object.}
 
 \item{dt}{Time interval if \code{counts} is not already prepared; with more than
 two timepoints, one per pair of consecutive timepoints (or give \code{times}
-in \code{sparse_joint_control}).}
+in \code{sparse_joint_control}). Not used for an \code{karst_data} object.}
 
-\item{beta}{Missegregation rate per chromosome copy and division.}
+\item{beta}{Missegregation rate per chromosome copy and division. For an
+\code{karst_data} object, a rate given here replaces the one stored in the
+data; without it the data's own rate is used.}
 
 \item{sparse_joint_control}{Named list of further arguments for
 \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}, such as \code{birth_rate}, \code{min_cn} and \code{max_cn}.}

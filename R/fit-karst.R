@@ -9,8 +9,10 @@
 #'   an `karst_data` object.
 #' @param dt Time interval if `counts` is not already prepared; with more than
 #'   two timepoints, one per pair of consecutive timepoints (or give `times`
-#'   in `sparse_joint_control`).
-#' @param beta Missegregation rate per chromosome copy and division.
+#'   in `sparse_joint_control`). Not used for an `karst_data` object.
+#' @param beta Missegregation rate per chromosome copy and division. For an
+#'   `karst_data` object, a rate given here replaces the one stored in the
+#'   data; without it the data's own rate is used.
 #' @param sparse_joint_control Named list of further arguments for
 #'   [fit_sparse_joint()], such as `birth_rate`, `min_cn` and `max_cn`.
 #' @param ... Not used; any argument given here is an error. The two-layer and
@@ -42,5 +44,15 @@ fit_karst <- function(counts,
       (is.null(names(sparse_joint_control)) || any(!nzchar(names(sparse_joint_control)))))) {
     stop("`sparse_joint_control` must be a named list.", call. = FALSE)
   }
-  do.call(fit_sparse_joint, c(list(counts, dt = dt, beta = beta), sparse_joint_control))
+  # Only what was given: for an `karst_data` object, a `beta` passed on would
+  # replace the rate stored in the data.
+  arguments <- list(counts)
+  if (!missing(dt)) arguments$dt <- dt
+  if (!missing(beta)) arguments$beta <- beta
+  clash <- intersect(names(sparse_joint_control), c("counts", names(arguments)))
+  if (length(clash)) {
+    stop(sprintf("Give %s either as an argument of fit_karst() or in `sparse_joint_control`, not both.",
+                 paste0("`", clash, "`", collapse = ", ")), call. = FALSE)
+  }
+  do.call(fit_sparse_joint, c(arguments, sparse_joint_control))
 }

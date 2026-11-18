@@ -35,9 +35,9 @@ or of \code{karst_data} objects. Names identify the datasets.}
 \item{dt}{Time between the two time points: one value, or one per dataset.
 Used for count matrices only.}
 
-\item{beta}{Missegregation rate per chromosome copy and division. For
-\code{karst_data}, a rate given here replaces the one stored in the data;
-without it the data's own rate is fitted.}
+\item{beta}{Missegregation rate per chromosome copy and division, in
+(0, 1). For \code{karst_data}, a rate given here replaces the one stored in
+the data; without it the data's own rate is used.}
 
 \item{birth_rate}{Assumed baseline birth (division) rate per unit of \code{dt}.}
 
@@ -51,11 +51,15 @@ rate around \code{log(birth_rate)}.}
 \item{major_frequency}{Minimum share of the cells at any time point for a karyotype to
 anchor the domain as a major karyotype.}
 
-\item{major_count}{Minimum number of cells, over all time points, for a major
-karyotype. A single cell must not be enough.}
+\item{major_count}{Minimum number of cells for a major karyotype, over the
+time points the majors are chosen from: all of them, or with
+\code{intermediate = "majors"} and more than two time points the first and the
+last. A single cell must not be enough.}
 
 \item{max_states}{Largest domain to fit. If the domain would be larger,
-the share required of a major karyotype is raised until it fits.}
+the share required of a major karyotype is raised until it fits. If even
+the karyotypes with the highest share give a larger domain, that domain
+is fitted (\code{diagnostics$n_states}).}
 
 \item{min_cn, max_cn}{Copy-number bounds of viable karyotypes. \code{max_cn}
 defaults to one above the largest observed copy number.}
@@ -72,7 +76,12 @@ is a frequency, not a count: a domain has thousands of unseen
 karyotypes, and a prior in counts would give them a large share of a
 time point with few cells. A karyotype seen only later is centred on its frequency at
 the earliest timepoint it was seen, with the same standard deviation:
-absent other evidence its frequency is taken not to have changed.}
+absent other evidence its frequency is taken not to have changed (with
+\code{intermediate = "majors"}, a karyotype that is not major is seen only at
+the first or the last time point for this prior). The
+state-space method gives every karyotype not seen at the first time point
+the prior of one seen at none: its abundances at later time points are
+latent states of their own.}
 
 \item{initial_state}{\code{"free"} or \code{"balance"}; see \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}.
 Unlike a single dataset, a cohort starts free by default: with balance,

@@ -154,7 +154,8 @@ sparse_joint_check_coverage <- function(counts, major_frequency, major_count, ma
 
 # "t0 812 of 1000 (81%), t1 640 of 1000 (64%)", optionally prefixed by dataset.
 sparse_joint_format_coverage <- function(coverage) {
-  label <- if (is.null(coverage$sample)) coverage$timepoint else paste(coverage$sample, coverage$timepoint)
+  label <- if (!is.null(coverage$sample)) paste(coverage$sample, coverage$timepoint) else
+    if (!is.null(coverage$pair)) paste0("pair ", coverage$pair, ": ", coverage$timepoint) else coverage$timepoint
   paste(sprintf("%s %d of %d (%.0f%%)", label, as.integer(coverage$cells_in_domain), as.integer(coverage$cells),
                 100 * coverage$fraction), collapse = ", ")
 }
@@ -196,6 +197,19 @@ sparse_joint_initial_prior_matrix <- function(y, initial_frequency, depth = colS
 
 # Scale parameters: sparse_joint_optimise_scales() in sparse-joint-convergence.R.
 
+# Finds the posterior mode of the latent variables at the scales `par_fixed`
+# (left in `objective$env$last.par`). When TMB's inner Newton search fails,
+# the objective is not finite and `last.par` holds the last point tried, not a
+# mode: that is an error (class karst_inner_failure), not a result.
+sparse_joint_inner_mode <- function(objective, par_fixed) {
+  value <- objective$fn(par_fixed)
+  if (length(value) != 1L || !is.finite(value)) {
+    stop(errorCondition("The inner optimisation (the posterior mode at the fitted scales) failed.",
+                        class = "karst_inner_failure", call = NULL))
+  }
+  invisible(value)
+}
+
 # Posterior covariance of the latent variables given the scales, as a solver.
 #
 # The covariance is the inverse of the expected information at the mode: the
@@ -210,7 +224,7 @@ sparse_joint_initial_prior_matrix <- function(y, initial_frequency, depth = colS
 # latent variables, draws of all latent variables about the mode, the names of
 # the latent variables, and the fitted expected counts.
 sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random, par_fixed, inner_control) {
-  objective$fn(par_fixed)
+  sparse_joint_inner_mode(objective, par_fixed)
   mode <- objective$env$last.par
   latent <- objective$env$random
   report <- objective$report(mode)
@@ -234,7 +248,7 @@ sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random,
   factor <- Matrix::Cholesky(information, LDL = FALSE)
   n <- nrow(information)
   solve <- function(rhs) as.matrix(Matrix::solve(factor, rhs))
-  expected_counts <- if (series_method) computed$counts else if (is.null(expected$y)) cbind(expected$y0, expected$y1) else expected$y
+  expected_counts <- if (series_method) computed$counts else if (is.null(expected[["y"]])) cbind(expected$y0, expected$y1) else expected[["y"]]
   list(
     mode = unname(mode[latent]), names = names(mode)[latent], solve = solve,
     # Fitted expected counts, for comparison with the observed ones: one
@@ -354,8 +368,11 @@ sparse_joint_relative_outside <- function(reference, fitness, log_birth_sd, desi
 # Level of the observed karyotypes that are not major: used to predict the
 # observed karyotypes left out of the domain. An observed karyotype is much
 # closer in fitness to the majors than an unobserved one at the same distance.
-sparse_joint_observed_level <- function(summary) {
-  observed_minor <- !summary$major & sparse_joint_summary_total(summary) > 0
+# `observed`: whether the likelihood uses a cell of each karyotype (with
+# `intermediate = "majors"`, cells of other karyotypes at the time points in
+# between do not count), as for the calibration.
+sparse_joint_observed_level <- function(summary, observed = sparse_joint_summary_total(summary) > 0) {
+  observed_minor <- !summary$major & observed
   if (!any(observed_minor)) return(NULL)
   c(log_birth = mean(summary$log_birth_mean[observed_minor]),
     sd = sqrt(mean(summary$log_birth_sd[observed_minor]^2) +
@@ -490,6 +507,10 @@ sparse_joint_used_counts <- function(domain, settings) {
 # the fit and to rebuild a fit's posterior later from its stored settings.
 sparse_joint_problem <- function(data, settings) {
   template <- sparse_joint_template(data, settings)
+  level_free <- identical(settings$balance_level, "free") && settings$initial_state == "balance"
+  if (level_free && template != "pair") {
+    stop("`balance_level = \"free\"` is implemented for two time points only.", call. = FALSE)
+  }
   if (template == "pairwise") return(sparse_joint_pairwise_problem(data, settings))
   if (template == "state_space") return(sparse_joint_state_space_problem(data, settings))
   domain <- sparse_joint_domain(data$counts, settings$major_frequency, settings$major_count, settings$max_states,
@@ -541,14 +562,11 @@ sparse_joint_problem <- function(data, settings) {
   random <- c("zeta", "g", "coef", names(depth))
   # Level of the balance prior (two time points): fixed at the balance itself,
   # or one log factor for all fed states, estimated with the latent variables.
-  level_free <- identical(settings$balance_level, "free") && settings$initial_state == "balance"
   if (template == "pair") {
     tmb_data$level_free <- as.integer(level_free)
     tmb_data$level_sd <- if (is.null(settings$balance_level_sd)) 1 else settings$balance_level_sd
     parameters$balance_level <- 0
     if (level_free) random <- c(random, "balance_level") else map$balance_level <- factor(NA)
-  } else if (level_free) {
-    stop("`balance_level = \"free\"` is implemented for two time points only.", call. = FALSE)
   }
   list(domain = domain, kernel = kernel, total = total, centre = centre, design = design, used = used,
        tmb_data = tmb_data, parameters = parameters, free_scale = free_scale, template = template,
@@ -557,12 +575,12 @@ sparse_joint_problem <- function(data, settings) {
 
 # The posterior of a fitted model, rebuilt from its stored settings and mode
 # with the scales fixed at their fitted values. `weight`,
-# `zeta_prior_mean`/`zeta_prior_sd` and `design` replace the defaults, for
-# instance to hold out the counts of some states. Returns the problem, the solver of
+# `zeta_prior_mean`/`zeta_prior_sd`, `design` and (state space) `drift_weight`
+# replace the defaults, for instance to hold out the counts of some states. Returns the problem, the solver of
 # `sparse_joint_posterior()` and the TMB objective; with `posterior = FALSE`
 # only the mode, as a list of the latent parameters.
 sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zeta_prior_sd = NULL,
-                                 design = NULL, posterior = TRUE) {
+                                 design = NULL, posterior = TRUE, drift_weight = NULL) {
   if (is.null(fit$settings) || is.null(fit$posterior)) {
     stop("This fit predates stored settings; refit it with the current karst.", call. = FALSE)
   }
@@ -574,6 +592,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
   if (!is.null(zeta_prior_mean)) tmb_data$zeta_prior_mean <- keep_shape(zeta_prior_mean, tmb_data$zeta_prior_mean)
   if (!is.null(zeta_prior_sd)) tmb_data$zeta_prior_sd <- keep_shape(zeta_prior_sd, tmb_data$zeta_prior_sd)
   if (!is.null(design)) tmb_data$design <- design
+  if (!is.null(drift_weight)) tmb_data$drift_weight <- keep_shape(drift_weight, tmb_data$drift_weight)
   # Parameters a fit did not store keep their starting values: the level of
   # the balance prior (fixed at zero) of fits made before it existed.
   parameters <- problem$parameters
@@ -585,7 +604,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
   objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = problem$random, DLL = "karst",
                               silent = TRUE, inner.control = inner_control)
   if (!posterior) {
-    objective$fn(numeric(0))
+    sparse_joint_inner_mode(objective, numeric(0))
     mode <- objective$env$last.par
     return(lapply(stats::setNames(nm = problem$random), function(name) unname(mode[names(mode) == name])))
   }
@@ -642,7 +661,7 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #' the likelihood, together with their cells. They would enter only because
 #' they were observed, while their unobserved siblings would not, which
 #' biases their fitness upwards. [predict()] places them at the level of the
-#' observed neighbours inside the domain.
+#' observed non-major karyotypes inside the domain.
 #'
 #' `diagnostics$domain_coverage` reports, for each timepoint, how many of its
 #' cells lie inside the domain. If a timepoint has none, typically because
@@ -680,9 +699,10 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #' (`variable`, `karyotype`, its `cells` at each time point, `major`, `share`),
 #' `flat_composition` its make-up by kind of latent variable (`variable`,
 #' `major`, `share`), and the warning names both when that Hessian is nearly
-#' singular. On simulated data, fits that searching again turned into
-#' accepted ones predicted fitness as well as before
-#' (validation/sparse_joint/convergence).
+#' singular. Searching again from other starting values (an internal option,
+#' off by default) was evaluated in validation/sparse_joint/convergence;
+#' whether the fits it changed predict fitness as well as before is open (the
+#' earlier evaluation also counted unchanged fits as changed).
 #'
 #' `relative_sd` is not the model's own posterior standard deviation, which
 #' is kept as `relative_sd_model`. That one takes the model to be exact, and
@@ -691,7 +711,9 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #' `sqrt(model sd^2 + (deficit * relative fitness)^2 +
 #' (floor * birth_rate * (1 + shell))^2)`, where `shell` is the distance to
 #' the nearest major karyotype. The deficit is 0.6 for karyotypes seen at a
-#' time point and 1.1 for those seen at none: zero counts do not tell how far
+#' time point and 1.1 for those seen at none (with `intermediate = "majors"`,
+#' a karyotype that is not major counts as seen only at the first or the last
+#' time point, whose cells the likelihood uses): zero counts do not tell how far
 #' below the major karyotypes an unobserved karyotype lies, and on moderately
 #' rugged simulated landscapes the predicted drop was up to 40% too shallow.
 #' On simulated landscapes the resulting 95% intervals covered at least 90%
@@ -709,19 +731,24 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   timepoint, at least two, in time order; or an `karst_data` object.
 #' @param dt Time between the time points, if `counts` is a matrix: one interval
 #'   for two timepoints, or one per pair of consecutive timepoints. See also
-#'   `times`.
-#' @param beta Missegregation rate per chromosome copy and division. For
-#'   `karst_data`, a rate given here replaces the one stored in the data;
-#'   without it the data's own rate is fitted.
+#'   `times`. Neither is used for an `karst_data` object, which holds its own
+#'   times.
+#' @param beta Missegregation rate per chromosome copy and division, in
+#'   (0, 1). For `karst_data`, a rate given here replaces the one stored in
+#'   the data; without it the data's own rate is used.
 #' @param birth_rate Assumed baseline birth (division) rate per unit of `dt`.
 #' @param birth_rate_log_sd Prior standard deviation of the log baseline birth
 #'   rate around `log(birth_rate)`.
 #' @param major_frequency Minimum share of the cells at any time point for a karyotype to
 #'   anchor the domain as a major karyotype.
-#' @param major_count Minimum number of cells, over all time points, for a major
-#'   karyotype. A single cell must not be enough.
+#' @param major_count Minimum number of cells for a major karyotype, over the
+#'   time points the majors are chosen from: all of them, or with
+#'   `intermediate = "majors"` and more than two time points the first and the
+#'   last. A single cell must not be enough.
 #' @param max_states Largest domain to fit. If the domain would be larger,
-#'   the share required of a major karyotype is raised until it fits.
+#'   the share required of a major karyotype is raised until it fits. If even
+#'   the karyotypes with the highest share give a larger domain, that domain
+#'   is fitted (`diagnostics$n_states`).
 #' @param min_cn,max_cn Copy-number bounds of viable karyotypes. `max_cn`
 #'   defaults to one above the largest observed copy number.
 #' @param shell_power Exponent of the distance to the nearest major karyotype
@@ -734,7 +761,12 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   karyotypes, and a prior in counts would give them a large share of a
 #'   time point with few cells. A karyotype seen only later is centred on its frequency at
 #'   the earliest timepoint it was seen, with the same standard deviation:
-#'   absent other evidence its frequency is taken not to have changed.
+#'   absent other evidence its frequency is taken not to have changed (with
+#'   `intermediate = "majors"`, a karyotype that is not major is seen only at
+#'   the first or the last time point for this prior). The
+#'   state-space method gives every karyotype not seen at the first time point
+#'   the prior of one seen at none: its abundances at later time points are
+#'   latent states of their own.
 #' @param initial_state How abundances at the first timepoint are treated.
 #'   `"balance"`, the default, starts every karyotype that is not major at
 #'   mutation-selection balance with the major karyotypes next to it, so that
@@ -807,32 +839,41 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   (`diagnostics$drift`); the pairs' domains are joined. Two time points
 #'   give the same fit with all three. The three are compared in
 #'   validation/sparse_joint/series_methods.
-#' @param intermediate With more than two time points, how the time points between
-#'   the first and the last are used. `"majors"`, the default: the majors and
+#' @param intermediate With more than two time points and `series =
+#'   "anchored"`, how the time points between the first and the last are used
+#'   (the other two methods do not use it). `"majors"`, the default: the majors and
 #'   the domain are chosen from the first and the last time point, as for two
 #'   time points, and the time points in between count for the majors only, with
 #'   weight `intermediate_weight`; the other karyotypes are fitted to the first
 #'   and the last time point. `"all"`: like the first and the last, for every
 #'   state, with the majors chosen from every time point. See Details.
-#' @param intermediate_weight With `intermediate = "majors"`, the weight of the
-#'   time points in between, in (0, 1]. `NULL` estimates it: the inverse of the
-#'   dispersion of the majors' counts at those time points in a first fit (at the
-#'   shortest history), at most 1, so that a population that drifts between
-#'   time points (small passaging bottlenecks) leans on the first and the last.
+#' @param intermediate_weight With `intermediate = "majors"` (anchored), the
+#'   weight of the time points in between, in (0, 1]. `NULL` estimates it: the
+#'   inverse of the dispersion of the majors' counts at those time points in a
+#'   first fit (at the shortest history), at most 1, so that a population that
+#'   drifts between time points (small passaging bottlenecks) leans on the
+#'   first and the last. Not used by the other two methods.
 #'
 #' @return An `karst_sparse_joint_fit` object. `summary` has one row per
 #'   domain karyotype, with its counts (`count_t0`, `count_t1`, ..., one
-#'   column per timepoint) and the counts the fit expects (`expected_t0`, ...);
+#'   column per time point fitted, named after the time points of the input,
+#'   so `count_t0`, `count_t2` when `t1` was left out) and the counts the fit
+#'   expects (`expected_t0`, ...; for the pairwise method, at a time point in
+#'   between, those of the pair that ends there, `NA` for a state outside that
+#'   pair's domain);
 #'   `fitness_mean` is the net growth rate per unit of `dt`,
 #'   and `relative_fitness` is that rate minus the count-weighted mean over
 #'   the major karyotypes, with `relative_sd` its uncertainty.
 #'   `diagnostics$domain_coverage` has one row per timepoint: `cells`,
 #'   `cells_in_domain` and their ratio `fraction`, `karyotypes`,
 #'   `major_candidates` (karyotypes with at least `major_frequency` of the cells at that
-#'   time point and `major_count` cells over both), `majors` (major karyotypes seen
-#'   at that timepoint), `shared` (karyotypes seen at both timepoints) and
+#'   time point and `major_count` cells over all time points), `majors` (major karyotypes seen
+#'   at that timepoint), `shared` (karyotypes seen at another timepoint) and
 #'   `median_distance_outside` (median distance from its cells outside the
-#'   domain to the nearest major karyotype). With more than two timepoints,
+#'   domain to the nearest major karyotype). For the pairwise and state-space
+#'   methods it has two rows per pair of consecutive time points (`pair`), each
+#'   against that pair's own domain; the state-space likelihood uses the union
+#'   of these domains. With more than two timepoints,
 #'   `diagnostics$times` are the times of the time points fitted and
 #'   `diagnostics$dropped_samples` the time points left out. It has one row per
 #'   time point left out (`sample`, its column in the input; `time`; and the
@@ -840,6 +881,9 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   state-space methods its columns are `sample`, `time`, `timepoint`,
 #'   `cells` and `uncovered`: the time point without a cell in its pair's domain,
 #'   which is the time point itself, or a first or last time point next to it.
+#'   Karyotypes seen only at time points left out and outside the domain of
+#'   the fit to the others are in `dropped`, as observed karyotypes outside
+#'   the domain; inside it they are states without counts.
 #' @export
 fit_sparse_joint <- function(counts,
                              dt = 1,
@@ -871,7 +915,7 @@ fit_sparse_joint <- function(counts,
     # A missegregation rate given explicitly replaces the one stored in the
     # data (fit_sparse_joint_rates() refits prepared data at each rate).
     if (!missing(beta)) {
-      validate_scalar(beta, "beta", lower = 0, upper = 1)
+      validate_beta(beta)
       counts$beta <- beta
     }
     counts
@@ -880,7 +924,7 @@ fit_sparse_joint <- function(counts,
   } else {
     prepare_karst_data(counts, beta = beta, times = times)
   }
-  # The rate fitted; the fits below that call this function again pass it on.
+  # The rate used (fixed); the fits below that call this function again pass it on.
   beta <- data$beta
   validate_scalar(birth_rate, "birth_rate", lower = .Machine$double.eps)
   validate_scalar(birth_rate_log_sd, "birth_rate_log_sd", lower = .Machine$double.eps)
@@ -928,6 +972,9 @@ fit_sparse_joint <- function(counts,
   }
   intermediate <- match.arg(intermediate)
   series <- match.arg(series)
+  if (!is.null(intermediate_weight)) {
+    validate_scalar(intermediate_weight, "intermediate_weight", lower = .Machine$double.eps, upper = 1)
+  }
   calibration <- sparse_joint_validate_calibration(calibration)
   if (is.null(history)) {
     history <- if (initial_state == "balance") sparse_joint_history_candidates(data$dt, birth_rate) else data$dt
@@ -1000,6 +1047,17 @@ fit_sparse_joint <- function(counts,
     # The input as given, for as_alfak(): alfak picks its karyotypes from
     # every time point.
     fit$input <- data
+    # Karyotypes seen only at the time points left out, and outside the domain
+    # of the fit to the others, were observed all the same: predict() places
+    # them at the observed level, as observed karyotypes outside the domain,
+    # not on the trend of karyotypes never seen. Inside that domain they are
+    # states without counts, as the likelihood treats them.
+    only_left_out <- setdiff(rownames(data$counts), c(rownames(arguments$counts$counts), fit$summary$karyotype))
+    if (length(only_left_out)) {
+      fit$dropped <- c(fit$dropped, only_left_out)
+      fit$diagnostics$dropped_karyotypes <- length(fit$dropped)
+      fit$diagnostics$dropped_cells <- fit$diagnostics$dropped_cells + sum(data$counts[only_left_out, ])
+    }
     return(fit)
   }
   # With intermediate time points for the majors only, their weight: the inverse of
@@ -1009,7 +1067,7 @@ fit_sparse_joint <- function(counts,
     if (is.null(intermediate_weight)) {
       arguments <- mget(names(formals(sys.function())), envir = environment())
       arguments$counts <- data
-      arguments$history <- history[[1L]]
+      arguments$history <- min(history)
       arguments$intermediate_weight <- 1
       first <- withCallingHandlers(do.call(fit_sparse_joint, arguments),
                                    karst_convergence_warning = function(w) invokeRestart("muffleWarning"))
@@ -1032,7 +1090,13 @@ fit_sparse_joint <- function(counts,
     })
     objective <- vapply(fits, function(f) f$diagnostics$objective, numeric(1))
     convergence <- vapply(fits, function(f) f$diagnostics$convergence, numeric(1))
-    fit <- fits[[sparse_joint_choose_candidate(objective, convergence)]]
+    chosen <- sparse_joint_choose_candidate(objective, convergence)
+    if (is.na(chosen)) {
+      stop(sprintf(paste0("No candidate history (%s) has a finite marginal likelihood: the scale optimisation ",
+                          "failed at each. Give `history` to fit one of them."),
+                   paste(format(history), collapse = ", ")), call. = FALSE)
+    }
+    fit <- fits[[chosen]]
     fit$diagnostics$history_profile <- data.frame(history = history, objective = objective,
                                                   convergence = convergence)
     if (balance_level == "free" && initial_state == "balance") {
@@ -1114,11 +1178,13 @@ fit_sparse_joint <- function(counts,
 
   self <- 2 * exp(kernel$log_self) - 1
   n_time <- ncol(domain$y)
-  timepoint <- seq_len(n_time) - 1L
+  # Named after the time points of the input (t0, t1, ...), also when some
+  # were left out: count_t0 and count_t2 when t1 was.
+  timepoint <- if (is.null(colnames(data$counts))) paste0("t", seq_len(n_time) - 1L) else colnames(data$counts)
   summary <- cbind(
     data.frame(karyotype = domain$labels, stringsAsFactors = FALSE),
-    stats::setNames(as.data.frame(domain$y), paste0("count_t", timepoint)),
-    stats::setNames(as.data.frame(solver$expected), paste0("expected_t", timepoint)),
+    stats::setNames(as.data.frame(domain$y), paste0("count_", timepoint)),
+    stats::setNames(as.data.frame(solver$expected), paste0("expected_", timepoint)),
     data.frame(major = seq_len(n) <= domain$n_major,
                shell = sparse_joint_major_distance(domain$karyotypes, domain$major)),
     sparse_joint_fitness_columns(self, g_hat[, 1L], g_hat[, 2L])
@@ -1127,10 +1193,12 @@ fit_sparse_joint <- function(counts,
   relative <- sparse_joint_relative(solver, g_index, summary$fitness_mean,
                                     summary$log_birth_sd, ifelse(summary$major, total, 0))
   summary$relative_fitness <- relative$mean
+  # Observed: a cell the likelihood uses (see sparse_joint_used_counts()).
+  observed <- rowSums(problem$used) > 0
   summary$relative_sd <- sparse_joint_calibrate(relative$sd, relative$mean, summary$shell, birth_rate, calibration,
-                                                observed = rowSums(problem$used) > 0)
+                                                observed = observed)
   summary$relative_sd_model <- relative$sd
-  observed_level <- sparse_joint_observed_level(summary)
+  observed_level <- sparse_joint_observed_level(summary, observed)
   level_index <- which(solver$names == "balance_level")
   fit <- structure(list(
     data = data,
@@ -1167,8 +1235,14 @@ fit_sparse_joint <- function(counts,
       if (settings$series == "state_space") fit$diagnostics$drift <- scale[["drift"]]
     }
     fit$diagnostics$times <- karst_data_times(data)
-    # None left out here; a caller that left time points out replaces it.
-    fit$diagnostics$dropped_samples <- cbind(data.frame(sample = integer(0), time = numeric(0)), coverage[0L, ])
+    # None left out here; a caller that left time points out replaces it. The
+    # columns are those it would have (see the left-out time points above).
+    fit$diagnostics$dropped_samples <- if (is.null(settings$series)) {
+      cbind(data.frame(sample = integer(0), time = numeric(0)), coverage[0L, ])
+    } else {
+      data.frame(sample = integer(0), time = numeric(0), timepoint = character(0), cells = numeric(0),
+                 uncovered = character(0), stringsAsFactors = FALSE)
+    }
   }
   if (!is.null(settings$intermediate_weight)) fit$diagnostics$intermediate_weight <- settings$intermediate_weight
   if (is.finite(dispersion)) fit$diagnostics$intermediate_dispersion <- dispersion
@@ -1186,7 +1260,9 @@ fit_sparse_joint <- function(counts,
 #' residual scale as additional uncertainty.
 #'
 #' @param object An `karst_sparse_joint_fit`.
-#' @param karyotypes Character labels or an integer matrix of karyotypes.
+#' @param karyotypes Character labels (or a factor of them) or an integer
+#'   matrix of karyotypes. Labels are rewritten as the fit writes them, without
+#'   leading zeros (`"2.03"` is `"2.3"`), and are returned that way.
 #' @param ... Unused.
 #'
 #' @return Data frame with `karyotype`, `fitness_mean` (net growth rate per
@@ -1199,7 +1275,16 @@ fit_sparse_joint <- function(counts,
 #'   baseline birth rate, which is common to all karyotypes.
 #' @export
 predict.karst_sparse_joint_fit <- function(object, karyotypes, ...) {
-  labels <- if (is.character(karyotypes)) karyotypes else format_karyotypes(as.matrix(karyotypes))
+  if (is.factor(karyotypes)) karyotypes <- as.character(karyotypes)
+  labels <- if (is.character(karyotypes)) canonical_karyotype_labels(karyotypes) else
+    format_karyotypes(as.matrix(karyotypes))
+  # Each karyotype once; repeated ones take the same row.
+  if (anyDuplicated(labels)) {
+    unique_labels <- unique(labels)
+    out <- predict.karst_sparse_joint_fit(object, unique_labels)[match(labels, unique_labels), , drop = FALSE]
+    rownames(out) <- NULL
+    return(out)
+  }
   inside <- match(labels, object$summary$karyotype)
   out <- data.frame(karyotype = labels, fitness_mean = NA_real_, fitness_sd = NA_real_,
                     conf_low = NA_real_, conf_high = NA_real_, relative_fitness = NA_real_,

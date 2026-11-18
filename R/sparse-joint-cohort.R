@@ -95,7 +95,7 @@ fit_sparse_joint_cohort <- function(samples,
   # given to count matrices among them); the fits below that call this
   # function again pass it on.
   if (!missing(beta)) {
-    validate_scalar(beta, "beta", lower = 0, upper = 1)
+    validate_beta(beta)
     samples <- lapply(samples, function(d) {
       if (inherits(d, "karst_data")) d$beta <- beta
       d
@@ -187,8 +187,13 @@ fit_sparse_joint_cohort <- function(samples,
     stop("`initial_frequency` must give a finite mean and a positive standard deviation.", call. = FALSE)
   }
   intervals <- vapply(data, function(d) d$dt, numeric(1))
+  if (!is.null(history) && !length(history) %in% c(1L, n_sample)) {
+    stop(sprintf("`history` must give one time, or one per dataset (%d).", n_sample), call. = FALSE)
+  }
   history <- if (is.null(history)) intervals else rep_len(history, n_sample)
-  if (any(!is.finite(history)) || any(history <= 0)) stop("`history` must be positive.", call. = FALSE)
+  if (!is.numeric(history) || any(!is.finite(history)) || any(history <= 0)) {
+    stop("`history` must be positive.", call. = FALSE)
+  }
   started <- proc.time()[["elapsed"]]
 
   observed_cn <- lapply(data, function(d) parse_karyotypes(rownames(d$counts)))
@@ -423,7 +428,17 @@ fit_sparse_joint_cohort <- function(samples,
 #'   nearest major karyotype of the dataset, or of any dataset.
 #' @export
 predict.karst_sparse_joint_cohort_fit <- function(object, karyotypes, sample = NULL, ...) {
-  labels <- if (is.character(karyotypes)) karyotypes else format_karyotypes(as.matrix(karyotypes))
+  if (is.factor(karyotypes)) karyotypes <- as.character(karyotypes)
+  labels <- if (is.character(karyotypes)) canonical_karyotype_labels(karyotypes) else
+    format_karyotypes(as.matrix(karyotypes))
+  # Each karyotype once; repeated ones take the same row.
+  if (anyDuplicated(labels)) {
+    unique_labels <- unique(labels)
+    out <- predict.karst_sparse_joint_cohort_fit(object, unique_labels, sample = sample)
+    out <- out[match(labels, unique_labels), , drop = FALSE]
+    rownames(out) <- NULL
+    return(out)
+  }
   trend <- object$trend
   shared <- is.null(sample)
   if (!shared) {

@@ -62,7 +62,8 @@ GRF.}
 centroids.}
 
 \item{cache}{Whether to attach an environment cache for repeated fitness
-queries.}
+queries. The cache is shared by copies of the object; a copy whose
+parameters are changed does not use it.}
 }
 \value{
 An \code{karst_grf_landscape} object.

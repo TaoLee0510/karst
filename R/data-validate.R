@@ -26,3 +26,14 @@ validate_scalar <- function(x, name, lower = -Inf, upper = Inf) {
   }
   invisible(x)
 }
+
+# The missegregation rate of a fit. Zero would leave the division kernel
+# without edges: no karyotype would feed its neighbours, and the balance
+# prior, which sets the neighbours of the majors by that feeding, would have
+# no effect while the fit still reported it.
+validate_beta <- function(beta) {
+  if (!is.numeric(beta) || length(beta) != 1L || !is.finite(beta) || beta <= 0 || beta >= 1) {
+    stop("`beta` must be one number in (0, 1): the fit needs a positive missegregation rate.", call. = FALSE)
+  }
+  invisible(beta)
+}

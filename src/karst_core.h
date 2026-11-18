@@ -3,6 +3,7 @@
 
 #include <RcppEigen.h>
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <limits>
 #include <sstream>
@@ -22,15 +23,27 @@ inline std::string make_key(const std::vector<int>& x) {
   return out;
 }
 
+// Copy numbers are unsigned decimal integers separated by single dots: no
+// sign, no space, no empty field (also none at the end, which getline() would
+// drop). Leading zeros are read as the number they write; callers that match
+// labels as strings first rewrite them with canonical_karyotype_labels().
 inline std::vector<int> parse_label(const std::string& s) {
   std::vector<int> out;
+  if (s.empty()) Rcpp::stop("Malformed karyotype label: empty string.");
+  if (s.back() == '.') Rcpp::stop("Malformed karyotype label '%s': empty copy-number field.", s);
   std::string token;
   std::stringstream ss(s);
   while (std::getline(ss, token, '.')) {
-    if (token.empty()) Rcpp::stop("Malformed karyotype label: empty copy-number field.");
+    if (token.empty()) Rcpp::stop("Malformed karyotype label '%s': empty copy-number field.", s);
+    for (char c : token) {
+      if (c < '0' || c > '9') {
+        Rcpp::stop("Malformed karyotype label '%s': copy numbers must be integers.", s);
+      }
+    }
     char* end = nullptr;
+    errno = 0;
     long v = std::strtol(token.c_str(), &end, 10);
-    if (end == token.c_str() || *end != '\0') {
+    if (end == token.c_str() || *end != '\0' || errno == ERANGE) {
       Rcpp::stop("Malformed karyotype label '%s': copy numbers must be integers.", s);
     }
     if (v < 0 || v > std::numeric_limits<int>::max()) {
