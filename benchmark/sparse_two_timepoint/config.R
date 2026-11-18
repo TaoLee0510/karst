@@ -16,11 +16,15 @@
 # - Wavelengths 0.4, 0.8, 1.2 and 1.6. The 0.4 class is the frozen,
 #   near-monoclonal regime that about one real dataset in ten resembles; the
 #   others give ongoing adaptation with real-like diversity and turnover.
+#   Wavelength 0.2, the most rugged landscapes of the ALFA-K paper's
+#   simulations, was added later as a fifth class. Its landscapes come after
+#   the others (L13-L15 of each split), so that the identifiers and seeds of
+#   the first twelve stay as they were.
 
 stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_two_timepoint")) {
   wavelength_classes <- data.frame(
-    wavelength_class = c("w0.4", "w0.8", "w1.2", "w1.6"),
-    wavelength = c(0.4, 0.8, 1.2, 1.6),
+    wavelength_class = c("w0.4", "w0.8", "w1.2", "w1.6", "w0.2"),
+    wavelength = c(0.4, 0.8, 1.2, 1.6, 0.2),
     stringsAsFactors = FALSE
   )
   landscapes_per_class <- 3L
@@ -119,6 +123,8 @@ stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_tw
       zero = list(type = "zero"),
       alfak_minobs5 = list(type = "alfak", minobs = 5L, nboot = 45L, n0 = 5e4, nb = 2e6,
                             nn_prior = "empirical"),
+      alfak_minobs10 = list(type = "alfak", minobs = 10L, nboot = 45L, n0 = 5e4, nb = 2e6,
+                             nn_prior = "empirical"),
       alfak_minobs20 = list(type = "alfak", minobs = 20L, nboot = 45L, n0 = 5e4, nb = 2e6,
                              nn_prior = "empirical"),
       # Graph hyperparameters fixed at the centre of the package's default grid.

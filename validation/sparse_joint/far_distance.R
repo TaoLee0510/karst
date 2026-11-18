@@ -18,7 +18,9 @@
 # --methods fits only those methods; --fit-only=yes saves the fits and writes
 # no metrics (one fit per HPC task: --ids=<one dataset> --methods=<one>
 # --fit-only=yes; a final run without these options scores every fit, all
-# loaded from fits/).
+# loaded from fits/). Scoring with --methods replaces those methods' rows in
+# metrics_far_<split>.csv and keeps the others', as run.R --stage=score does,
+# and fits only what is missing for those methods.
 
 library_dir <- Sys.getenv("STT_R_LIB", unset = "")
 if (nzchar(library_dir)) .libPaths(c(library_dir, .libPaths()))
@@ -65,7 +67,7 @@ if (option("memo", "yes") == "yes") {
 method_names <- c("zero", "karst_sparse_joint", "karst_sparse_joint_balance", "karst_two_layer_fixed",
                   "karst_two_layer_nearfield_gmrf", "karst_two_layer_edge_effect", "karst_two_layer_path_ensemble",
                   "karst_two_layer_polynomial", "karst_two_layer_nngp", "karst_two_layer_delta_tree",
-                  "karst_two_layer_trend_filtering", "alfak_minobs20")
+                  "karst_two_layer_trend_filtering", "alfak_minobs5", "alfak_minobs10", "alfak_minobs20")
 only_methods <- option("methods", "")
 if (nzchar(only_methods)) {
   keep <- strsplit(only_methods, ",", fixed = TRUE)[[1L]]
@@ -77,7 +79,10 @@ far_nodes <- function(dataset) {
   path <- file.path(out, "nodes", paste0(dataset$dataset_id, ".rds"))
   if (file.exists(path)) return(readRDS(path))
   nodes <- stt_far_nodes(dataset$counts, config$scoring$min_cn, config$scoring$max_cn, 2000L, dataset$seed + 3L)
-  saveRDS(nodes, path)
+  # written whole and then renamed: tasks of one dataset may run at the same time
+  temporary <- paste0(path, ".tmp", Sys.getpid())
+  saveRDS(nodes, temporary)
+  file.rename(temporary, path)
   nodes
 }
 
@@ -150,6 +155,13 @@ for (split in splits) {
   }
   metrics <- merge(index, do.call(rbind, results[!failed]), by = "dataset_id")
   file <- if (nzchar(only_ids)) sprintf("metrics_far_%s_subset.csv", split) else sprintf("metrics_far_%s.csv", split)
+  # Scoring some methods replaces their rows and keeps those of the others.
+  if (nzchar(only_methods) && file.exists(file.path(out, file))) {
+    previous <- utils::read.csv(file.path(out, file), stringsAsFactors = FALSE)
+    previous <- previous[!previous$method %in% method_names, , drop = FALSE]
+    if (nrow(previous) && !setequal(names(previous), names(metrics))) stop("columns of ", file, " differ; not merged")
+    metrics <- rbind(previous[names(metrics)], metrics)
+  }
   utils::write.csv(metrics, file.path(out, file), row.names = FALSE)
   cat("Wrote", file.path(out, file), nrow(metrics), "rows\n")
 }

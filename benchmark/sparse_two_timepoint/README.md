@@ -37,7 +37,11 @@ Choices that follow from this comparison:
   later, the smoother landscapes freeze as well.
 - **Wavelengths 0.4, 0.8, 1.2, 1.6**, three landscapes each. The 0.4 class is
   the frozen, near-monoclonal regime that about one real dataset in ten
-  resembles. The others give ongoing adaptation.
+  resembles. The others give ongoing adaptation. A fifth class, **0.2**, the
+  most rugged landscapes of the ALFA-K paper's simulations, was added on
+  2026-11-18 after the others (landscapes L13-L15 of each split), so that the
+  first twelve keep their identifiers and seeds. So far it is generated and
+  fitted for the held-out split only.
 - **Nullisomy is lethal.** Daughters with a copy number outside 1–8 die. The
   original ALFA-K simulator lets nullisomic cells live; its populations then
   fix a zero-copy chromosome, which never occurs in the real inputs and which
@@ -140,6 +144,20 @@ one dataset with 97 observed karyotypes did not finish in 25 minutes, against
 10 seconds with the hyperparameters fixed.
 The held-out landscapes are for the final confirmation only and need
 `--split=heldout --unseal-heldout`.
+
+### Adding landscapes
+
+`add_landscapes.R` makes the truth population, the datasets and the scored
+nodes of named landscapes only, for a split whose other datasets exist (run.R
+would need the truth populations of every landscape of the split), and then
+adds them to the split's dataset index:
+
+```sh
+S=benchmark/sparse_two_timepoint/add_landscapes.R
+L=--landscapes=heldout_L13,heldout_L14,heldout_L15
+Rscript $S --split=heldout --unseal-heldout $L --task=1     # one landscape per task (or SLURM_ARRAY_TASK_ID)
+Rscript $S --split=heldout --unseal-heldout $L --index-only # once all are made
+```
 
 ### Rerunning the fits of an earlier run on the HPC
 
