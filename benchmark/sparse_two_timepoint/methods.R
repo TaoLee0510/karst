@@ -178,7 +178,8 @@ stt_method_karst_sparse_joint_cohort <- function(dataset, nodes, method) {
 }
 
 # Sparse joint model with the baseline birth rate known only as a range: the
-# prediction at the centre of the range, with an interval covering the range.
+# prediction at the lowest rate of the range (fit_sparse_joint_rates()'s
+# default point), with an interval covering the range.
 stt_method_karst_sparse_joint_rates <- function(dataset, nodes, method) {
   counts <- dataset$counts
   storage.mode(counts) <- "integer"

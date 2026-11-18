@@ -6,7 +6,7 @@
 #
 #   Rscript validation/sparse_joint/series_methods/auto_eval.R --build=cv10 --pkg=PATH [--workers=6]
 #
-# --pkg: an karst source tree to load (devtools::load_all) for the domain
+# --pkg: a karst source tree to load (devtools::load_all) for the domain
 # functions; they are those of the fits.
 #
 # Fixed before any rule was scored:

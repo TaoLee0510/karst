@@ -56,8 +56,12 @@ run <- function(items, fun) {
   parallel::mclapply(items, function(item) tryCatch(fun(item), error = function(e) conditionMessage(e)),
                      mc.cores = workers, mc.preschedule = FALSE)
 }
+# Every fit here uses the cohort fit's initial state, so that the comparisons
+# between single and cohort fits differ in the pooling only (the single-dataset
+# default is the balance prior, the cohort default independent abundances).
+initial_state <- "free"
 fit_one <- function(counts, dt, ...) {
-  fit_sparse_joint(counts, dt = dt, beta = beta, min_cn = min_cn, max_cn = max_cn, ...)
+  fit_sparse_joint(counts, dt = dt, beta = beta, min_cn = min_cn, max_cn = max_cn, initial_state = initial_state, ...)
 }
 
 # 1-3. Single-dataset fits across the range of birth rates.
@@ -67,7 +71,7 @@ solo <- if (file.exists(solo_path)) readRDS(solo_path) else {
     sample <- samples[[name]]
     started <- proc.time()[["elapsed"]]
     fit <- fit_sparse_joint_rates(sample$counts, dt = sample$dt, beta = beta, min_cn = min_cn, max_cn = max_cn,
-                                  birth_rate_range = rate_range)
+                                  initial_state = initial_state, birth_rate_range = rate_range)
     fit$seconds <- proc.time()[["elapsed"]] - started
     fit
   })
@@ -167,7 +171,8 @@ if (!isTRUE(option("skip-cohort", FALSE))) {
     started <- proc.time()[["elapsed"]]
     fit <- fit_sparse_joint_cohort(lapply(samples[ok], `[[`, "counts"),
                                    dt = vapply(samples[ok], `[[`, numeric(1), "dt"), beta = beta,
-                                   birth_rate = central_rate, min_cn = min_cn, max_cn = max_cn)
+                                   birth_rate = central_rate, min_cn = min_cn, max_cn = max_cn,
+                                   initial_state = initial_state)
     fit$seconds <- proc.time()[["elapsed"]] - started
     saveRDS(fit, cohort_path)
     fit

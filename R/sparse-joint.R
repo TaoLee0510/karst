@@ -710,8 +710,9 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #' @param dt Time between the time points, if `counts` is a matrix: one interval
 #'   for two timepoints, or one per pair of consecutive timepoints. See also
 #'   `times`.
-#' @param beta Missegregation rate per chromosome copy and division, if
-#'   `counts` is a matrix.
+#' @param beta Missegregation rate per chromosome copy and division. For
+#'   `karst_data`, a rate given here replaces the one stored in the data;
+#'   without it the data's own rate is fitted.
 #' @param birth_rate Assumed baseline birth (division) rate per unit of `dt`.
 #' @param birth_rate_log_sd Prior standard deviation of the log baseline birth
 #'   rate around `log(birth_rate)`.
@@ -867,12 +868,20 @@ fit_sparse_joint <- function(counts,
                              intermediate = c("majors", "all"),
                              intermediate_weight = NULL) {
   data <- if (inherits(counts, "karst_data")) {
+    # A missegregation rate given explicitly replaces the one stored in the
+    # data (fit_sparse_joint_rates() refits prepared data at each rate).
+    if (!missing(beta)) {
+      validate_scalar(beta, "beta", lower = 0, upper = 1)
+      counts$beta <- beta
+    }
     counts
   } else if (is.null(times)) {
     prepare_karst_data(counts, dt = dt, beta = beta)
   } else {
     prepare_karst_data(counts, beta = beta, times = times)
   }
+  # The rate fitted; the fits below that call this function again pass it on.
+  beta <- data$beta
   validate_scalar(birth_rate, "birth_rate", lower = .Machine$double.eps)
   validate_scalar(birth_rate_log_sd, "birth_rate_log_sd", lower = .Machine$double.eps)
   validate_scalar(major_frequency, "major_frequency", lower = 0, upper = 1)

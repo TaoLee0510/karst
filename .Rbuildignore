@@ -12,6 +12,7 @@
 ^src/symbols\.rds$
 ^benchmark/results(/|$)
 ^benchmark/data$
+^benchmark/paper$
 ^doc$
 ^Meta$
 ^build$

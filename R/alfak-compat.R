@@ -131,6 +131,8 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
   problem <- sparse_joint_problem(fit$data, fit$settings)
   depth_first <- if (is.null(problem$tmb_data$y)) sum(problem$tmb_data$y0) else sum(problem$tmb_data$y[, 1L])
   never_seen <- log(depth_first) + fit$settings$initial_frequency[[1L]]
+  never_seen_pair <- if (is.null(problem$tmb_data$y_start)) NULL else
+    log(colSums(problem$tmb_data$y_start)) + fit$settings$initial_frequency[[1L]]
   karyotypes <- problem$domain$karyotypes
   self <- 2 * exp(problem$kernel$log_self) - 1
   weight_major <- rowSums(as.matrix(summary[grep("^count_t[0-9]+$", names(summary))]))[seq_len(n_major)]
@@ -145,9 +147,10 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
     weight[state] <- 0
     prior_mean <- problem$tmb_data$zeta_prior_mean
     prior_sd <- problem$tmb_data$zeta_prior_sd
-    # A matrix (pairwise method): one column per pair.
+    # A matrix (pairwise method): one column per pair, each centred, as in the
+    # fit, on the depth at the start of its pair.
     if (is.matrix(prior_mean)) {
-      prior_mean[state, ] <- never_seen
+      prior_mean[state, ] <- matrix(never_seen_pair, length(state), ncol(prior_mean), byrow = TRUE)
       prior_sd[state, ] <- fit$settings$initial_frequency[[2L]]
     } else {
       prior_mean[state] <- never_seen

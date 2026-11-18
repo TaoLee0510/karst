@@ -123,6 +123,27 @@ add_alfak_scale_to_summary <- function(summary,
   summary
 }
 
+# The covariance of a fit's fitness over every row of its summary. A
+# covariance reported for part of the nodes only (truncated_nearfield_gmrf:
+# the near-field nodes, `fitness_covariance_labels`) is placed into a
+# diagonal matrix of the reported variances.
+full_fitness_covariance <- function(part) {
+  covariance <- part$fitness_covariance
+  if (is.null(covariance)) return(NULL)
+  covariance <- as.matrix(covariance)
+  summary <- part$summary
+  n <- nrow(summary)
+  labels <- part$fitness_covariance_labels
+  if (identical(dim(covariance), c(n, n)) || is.null(labels)) return(covariance)
+  at <- match(as.character(labels), as.character(summary$karyotype))
+  if (anyNA(at) || length(at) != nrow(covariance)) return(covariance)
+  variance <- as.numeric(summary$fitness_sd)^2
+  variance[!is.finite(variance)] <- 0
+  full <- diag(variance, n)
+  full[at, at] <- covariance
+  full
+}
+
 add_alfak_scale_to_fit <- function(fit,
                                     n0,
                                     nb,
@@ -145,7 +166,7 @@ add_alfak_scale_to_fit <- function(fit,
     n0 = n0,
     nb = nb,
     correct_efflux = correct_efflux,
-    fitness_covariance = fit$local$fitness_covariance
+    fitness_covariance = full_fitness_covariance(fit$local)
   )
   fit$global$summary <- add_alfak_scale_to_summary(
     fit$global$summary,
@@ -156,7 +177,7 @@ add_alfak_scale_to_fit <- function(fit,
     n0 = n0,
     nb = nb,
     correct_efflux = correct_efflux,
-    fitness_covariance = fit$global$fitness_covariance
+    fitness_covariance = full_fitness_covariance(fit$global)
   )
   fit$diagnostics$alfak_scale <- list(
     enabled = TRUE,

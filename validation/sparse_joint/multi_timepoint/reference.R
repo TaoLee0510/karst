@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Reference fits of an karst build, and their comparison between builds
+# Reference fits of a karst build, and their comparison between builds
 # (stage 0 and the regression check of stage 1 of the multi-timepoint work;
 # README.md in this directory).
 #

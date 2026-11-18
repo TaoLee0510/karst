@@ -1,0 +1,15 @@
+# Outputs, data and builds stay outside version control
+/results/
+/results_*/
+/tasks/
+/logs/
+/lib/
+/build/
+/src/
+*.Rds
+*.rds
+.Rhistory
+.RData
+.DS_Store
+/hpc/jobs/
+/hpc/locks/

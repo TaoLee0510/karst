@@ -137,7 +137,7 @@ si_devbench_tasks <- function(config, method_names) {
 si_devbench_fit <- function(config, workers, method_names, task = NULL) {
   index <- utils::read.csv(file.path(config$output_dir, sprintf("dataset_index_%s.csv", config$split)), stringsAsFactors = FALSE)
   builds <- unique(unlist(lapply(config$methods[method_names], function(m) m$build)))
-  if (length(builds) > 1L) stop("Methods of one run must share an karst build.", call. = FALSE)
+  if (length(builds) > 1L) stop("Methods of one run must share a karst build.", call. = FALSE)
   if (length(builds)) {
     .libPaths(c(si_library(builds, config$library_root), .libPaths()))
     loadNamespace("karst")

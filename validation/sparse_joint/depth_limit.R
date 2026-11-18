@@ -59,8 +59,12 @@ score_one <- function(id) {
   storage.mode(deep) <- "integer"
   method <- config$methods$karst_sparse_joint
   started <- proc.time()[["elapsed"]]
-  fit <- karst::fit_sparse_joint(deep, dt = dataset$interval, beta = dataset$beta, birth_rate = method$birth_rate,
-                                  min_cn = method$min_cn, max_cn = method$max_cn)
+  # the same arguments as the benchmark's fit (initial_state = "free"), so that
+  # only the depth differs
+  fit <- do.call(karst::fit_sparse_joint, c(
+    list(deep, dt = dataset$interval, beta = dataset$beta, birth_rate = method$birth_rate,
+         min_cn = method$min_cn, max_cn = method$max_cn),
+    method$arguments))
   seconds <- proc.time()[["elapsed"]] - started
   prediction <- stats::predict(fit, nodes$karyotype)
   benchmark_fit <- readRDS(file.path(config$output_dir, "fits", sprintf("%s__karst_sparse_joint.rds", id)))

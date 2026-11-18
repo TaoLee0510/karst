@@ -89,6 +89,26 @@ fit_sparse_joint_cohort <- function(samples,
     stop("`samples` must be a list of count matrices or `karst_data` objects.", call. = FALSE)
   }
   sparse_joint_cohort_check_pairs(samples)
+  # A missegregation rate given explicitly replaces the one stored in
+  # prepared datasets, as in fit_sparse_joint().
+  # Otherwise the prepared datasets' own rate is the one fitted (and the one
+  # given to count matrices among them); the fits below that call this
+  # function again pass it on.
+  if (!missing(beta)) {
+    validate_scalar(beta, "beta", lower = 0, upper = 1)
+    samples <- lapply(samples, function(d) {
+      if (inherits(d, "karst_data")) d$beta <- beta
+      d
+    })
+  } else {
+    own <- unlist(lapply(samples, function(d) if (inherits(d, "karst_data")) d$beta))
+    if (length(own)) {
+      if (any(!vapply(own, function(b) isTRUE(all.equal(b, own[[1L]])), logical(1)))) {
+        stop("All datasets must have the same missegregation rate.", call. = FALSE)
+      }
+      beta <- own[[1L]]
+    }
+  }
   trend_mode <- match.arg(trend)
   # With the balance prior and no history given, each dataset's history is
   # chosen as fit_sparse_joint() chooses it, once, before the trend.

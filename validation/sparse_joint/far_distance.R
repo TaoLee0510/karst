@@ -1,7 +1,8 @@
 # Extrapolation to distances 3 and 4 from the observed karyotypes.
 #
 #   Rscript validation/sparse_joint/far_distance.R [--split=dev|heldout|both] [--workers=2] [--ids=a,b]
-#                                                  [--memo=yes|no] [--out=DIR]
+#                                                  [--memo=yes|no] [--out=DIR] [--methods=a,b]
+#                                                  [--fit-only=yes]
 #
 # For every core dataset of the benchmark (patient 1), karyotypes three and
 # four steps from the observed ones are sampled (stt_far_nodes() in
@@ -14,6 +15,10 @@
 # scoreboard's own nodes, fits and metrics are not touched. Sparse joint fits
 # are saved whole (objects/), so that further distances need no refit.
 # Set STT_R_LIB to the library holding the karst build under test.
+# --methods fits only those methods; --fit-only=yes saves the fits and writes
+# no metrics (one fit per HPC task: --ids=<one dataset> --methods=<one>
+# --fit-only=yes; a final run without these options scores every fit, all
+# loaded from fits/).
 
 library_dir <- Sys.getenv("STT_R_LIB", unset = "")
 if (nzchar(library_dir)) .libPaths(c(library_dir, .libPaths()))
@@ -28,6 +33,7 @@ option <- function(name, default) {
 splits <- switch(option("split", "both"), both = c("dev", "heldout"), option("split", "both"))
 workers <- as.integer(option("workers", "2"))
 only_ids <- option("ids", "")
+fit_only <- identical(option("fit-only", "no"), "yes")
 config <- stt_config()
 out <- option("out", file.path(config$output_dir, "sweeps", "far"))
 for (sub_dir in c("nodes", "fits", "objects")) dir.create(file.path(out, sub_dir), recursive = TRUE, showWarnings = FALSE)
@@ -60,6 +66,12 @@ method_names <- c("zero", "karst_sparse_joint", "karst_sparse_joint_balance", "k
                   "karst_two_layer_nearfield_gmrf", "karst_two_layer_edge_effect", "karst_two_layer_path_ensemble",
                   "karst_two_layer_polynomial", "karst_two_layer_nngp", "karst_two_layer_delta_tree",
                   "karst_two_layer_trend_filtering", "alfak_minobs20")
+only_methods <- option("methods", "")
+if (nzchar(only_methods)) {
+  keep <- strsplit(only_methods, ",", fixed = TRUE)[[1L]]
+  stopifnot(all(keep %in% method_names))
+  method_names <- keep
+}
 
 far_nodes <- function(dataset) {
   path <- file.path(out, "nodes", paste0(dataset$dataset_id, ".rds"))
@@ -109,6 +121,7 @@ run_dataset <- function(id) {
       saveRDS(r, path)
       r
     }
+    if (fit_only) return(NULL)
     prediction <- if (is.null(result$prediction)) {
       data.frame(karyotype = character(), fitness = numeric(), stringsAsFactors = FALSE)
     } else result$prediction
@@ -130,6 +143,11 @@ for (split in splits) {
                                 mc.cores = workers, mc.preschedule = FALSE)
   failed <- vapply(results, is.character, logical(1))
   if (any(failed)) cat("Failed datasets:", paste(ids[failed], unlist(results[failed]), sep = ": ", collapse = "; "), "\n")
+  if (fit_only) {
+    cat("Fitted", paste(method_names, collapse = ","), "for", length(ids) - sum(failed), "dataset(s) of", split, "\n")
+    if (any(failed)) quit(save = "no", status = 1)
+    next
+  }
   metrics <- merge(index, do.call(rbind, results[!failed]), by = "dataset_id")
   file <- if (nzchar(only_ids)) sprintf("metrics_far_%s_subset.csv", split) else sprintf("metrics_far_%s.csv", split)
   utils::write.csv(metrics, file.path(out, file), row.names = FALSE)

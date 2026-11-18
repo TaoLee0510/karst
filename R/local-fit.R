@@ -499,7 +499,13 @@ fit_local_posterior <- function(data,
                                 initial_seed = NULL,
                                 structured_prior = NULL) {
   if (!inherits(data, "karst_data")) {
-    stop("`data` must be an karst_data object.", call. = FALSE)
+    stop("`data` must be a karst_data object.", call. = FALSE)
+  }
+  # The local model reads two time points, data$dt apart; data$dt of more
+  # time points is the first-to-last interval, which would rescale fitness.
+  if (ncol(data$counts) != 2L) {
+    stop(sprintf(paste0("The local posterior fits two time points; `data` has %d. Use fit_sparse_joint() ",
+                        "for more."), ncol(data$counts)), call. = FALSE)
   }
   observation_model <- match_observation_model(observation_model)
   observation_weight_mode <- match_observation_weight_mode(observation_weight_mode)

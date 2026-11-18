@@ -191,8 +191,10 @@ one four times too high predicts worse than no differences at all.
 ```r
 fit <- fit_sparse_joint_rates(counts, dt = 180, beta = 0.00005,
                               birth_rate_range = c(0.05, 1))
-predict(fit, karyotypes)   # relative fitness at the central rate, an interval
-                           # covering the range, and fitness per division
+predict(fit, karyotypes)   # relative fitness at the lowest rate of the range
+                           # (point = "lowest", the default; "centre" for the
+                           # central rate), an interval covering the range, and
+                           # fitness per division
 ```
 
 The missegregation rate `beta` acts the same way: it sets how many cells

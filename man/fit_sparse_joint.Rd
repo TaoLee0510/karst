@@ -41,8 +41,9 @@ timepoint, at least two, in time order; or an \code{karst_data} object.}
 for two timepoints, or one per pair of consecutive timepoints. See also
 \code{times}.}
 
-\item{beta}{Missegregation rate per chromosome copy and division, if
-\code{counts} is a matrix.}
+\item{beta}{Missegregation rate per chromosome copy and division. For
+\code{karst_data}, a rate given here replaces the one stored in the data;
+without it the data's own rate is fitted.}
 
 \item{birth_rate}{Assumed baseline birth (division) rate per unit of \code{dt}.}
 

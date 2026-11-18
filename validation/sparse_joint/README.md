@@ -369,6 +369,35 @@ Twelve landscapes simulated with seeds sealed until the methods were frozen
   default model and 0.98 / 0.98 / 0.96 / 0.94 with balance. The model's own
   intervals cover 0.50–0.79.
 
+## KARST 1.0.0 rerun (2026-11-17)
+
+The two tables above record the runs of their dates (2026-11-10/11). For
+KARST 1.0.0 every KARST fit of the development and held-out landscapes, and
+of the distance 3-4 sweep, was redone on the HPC, one fit per task, in the
+image of the paper benchmark (`alfak` and the null predictor reused);
+`benchmark/sparse_two_timepoint/README.md` describes the rerun. Pooled over
+the eight core scenarios, 96 datasets each:
+
+| Distance | No information | Two-layer | ALFA-K (minobs 20) | Sparse joint | With balance |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Development 0 | 0.046 | 0.045 (0.30) | 1.073 (0.23) | 0.033 (0.44), 0.97 | 0.026 (0.47), 0.98 |
+| Development 1 | 0.092 | 0.091 (0.24) | 1.186 (0.20) | 0.055 (0.43), 0.97 | 0.044 (0.45), 0.99 |
+| Development 2 | 0.137 | 0.136 (0.15) | 1.297 (0.18) | 0.079 (0.36), 0.95 | 0.066 (0.38), 0.98 |
+| Held-out 0 | 0.044 | 0.043 (0.22) | 0.277 (0.16) | 0.032 (0.41), 0.97 | 0.025 (0.44), 0.98 |
+| Held-out 1 | 0.090 | 0.090 (0.16) | 0.371 (0.13) | 0.058 (0.36), 0.98 | 0.046 (0.37), 0.99 |
+| Held-out 2 | 0.136 | 0.135 (0.09) | 0.454 (0.12) | 0.083 (0.30), 0.96 | 0.068 (0.31), 0.98 |
+
+- Errors and rank correlations are those of the earlier runs to within 0.002.
+- Coverage at distances 1 and 2 is higher: the earlier runs' fits predate
+  the deficit of karyotypes seen at no time point (kappa = 1.1, 2026-11-13),
+  which widens their intervals. The held-out rerun with alfak2 dbc35fe
+  (2026-11-16, same model code as 0.2.0) gives the same coverage as KARST
+  1.0.0 (0.977 / 0.989 / 0.982 with balance), and the same fits: of its 168
+  fits, 146 agree with KARST's within 1e-4 and all within 0.021, the
+  difference between the Mac it ran on and the HPC.
+- The method document's numbers (Section 5 and the supplements, and
+  `doc/generated/`) are from this rerun.
+
 ## Stress scenarios
 
 RMSE at distances 0 / 1 / 2 on the development landscapes (twelve datasets
@@ -465,7 +494,7 @@ RMSE, with Spearman correlation in brackets, at distances 0 / 1 / 2:
   +0.032 at distances 1 and 2, Spearman -0.16, both with intervals excluding
   zero. The trend's dosage and curvature then describe no dataset.
 - The trend is therefore chosen by marginal likelihood between one trend and
-  one per dataset. It chose separate trends for 11 of 12 control cohorts, and
+  one per dataset. It chose separate trends for 12 of 12 control cohorts, and
   for cohorts of one landscape the shared trend in 7 of 12 development and 8
   of 12 held-out landscapes; the others are the rugged landscapes (wavelength
   1.2–1.6), whose patients sit on different peaks. The control then costs
@@ -504,18 +533,18 @@ All 672 fits finished. By wavelength (`wavelength_tables.R`, as in Supplement
 S2.3 of `doc/karst_method.tex`):
 
 - Error: every second-layer method is 0.89 to 1.00 times the error of the null
-  predictor (`delta_tree_ensemble` 0.89 to 1.19), against 0.44 to 0.75 for the
+  predictor (`delta_tree_ensemble` 0.89 to 1.00), against 0.44 to 0.76 for the
   sparse joint model with balance. They all interpolate the same first-layer
   anchors, so the choice of second layer hardly matters.
 - Ranking: on the smoothest landscapes the second-layer methods rank observed
-  karyotypes better (wavelength 1.6, distance 0: 0.48 to 0.54 against 0.41)
+  karyotypes better (wavelength 1.6, distance 0: 0.48 to 0.54 against 0.42)
   and as well at wavelength 1.2 (0.47 to 0.50 against 0.49); everywhere else
   the sparse joint model ranks better. The held-out landscapes show the same
   exception (0.48 against 0.34 for `graph_gaussian_baseline`).
 - Intervals: near zero coverage for `local_polynomial_stencil` and
   `delta_tree_ensemble` at distances 1 and 2, near one for the graph Gaussian
   methods and `local_NNGP_or_GPnn`, below 0.6 for observed karyotypes except
-  the graph Gaussian methods; 0.90 to 1.00 for the sparse joint model.
+  the graph Gaussian methods; 0.95 to 1.00 for the sparse joint model.
 
 The benchmark's score stage now replaces the rows of the methods it scores and
 keeps the others; it previously rewrote `metrics_<split>.csv` with only those
@@ -527,11 +556,12 @@ Pooled over landscapes, errors are dominated by the rugged landscapes
 (wavelength 0.4), where fitness differences are about ten times larger than at
 1.6. The method document therefore reports results per wavelength. On the
 held-out landscapes the sparse joint model with balance is below the null
-predictor at every wavelength and distance (0.47 to 0.74 of its error), the
+predictor at every wavelength and distance (0.46 to 0.74 of its error), the
 two-layer pipeline at 0.92 to 1.00, and `alfak` above it everywhere (21% of
 its fits failed at wavelength 1.6). Coverage of the sparse joint model ranges
-from 0.89 (wavelength 0.8, distance 2) to 1.00 (wavelength 1.6): slightly
-narrow on intermediate, conservative on smooth landscapes. The pooled
+from 0.95 (wavelength 0.8, distance 2) to 1.00 (wavelength 1.6): close to
+nominal on intermediate (0.95 to 0.97 at wavelength 0.8), conservative on
+smooth landscapes. The pooled
 acceptance rule is unchanged.
 
 The one ranking exception, observed karyotypes on the smoothest landscapes
@@ -559,12 +589,12 @@ and tables in `doc/generated/`). Each cell holds three landscapes.
   cells at wavelength 0.4 and distance 0 (ratio 1.03), where three to seven
   karyotypes are observed and one landscape with three had twice the null
   error. In the 50/50 design it is otherwise 0.53 to 0.84; in all other
-  designs 0.41 to 0.83. On the development landscapes all 96 are below (0.39
-  to 0.88).
+  designs 0.41 to 0.82. On the development landscapes all 96 are below (0.39
+  to 0.86).
 - Most of the gain comes between 50 and 200 cells per time point; 500/700 adds
   little. A 1080-day interval is worse than 360 days at wavelengths 0.8 and
-  1.2 (0.62 to 0.75 against 0.49 to 0.61). 3000/100 is the weakest design at
-  wavelength 1.6 (0.83 at distance 1).
+  1.2 (0.62 to 0.74 against 0.49 to 0.61). 3000/100 is the weakest design at
+  wavelength 1.6 (0.82 at distance 1).
 - The two-layer pipeline is at 0.85 to 1.08 everywhere; `alfak` is below the
   null predictor in 4 of 96 combinations and up to 300 times above it (the
   error figure caps its ratios at 8 and labels the larger ones). The sparse
@@ -572,11 +602,11 @@ and tables in `doc/generated/`). Each cell holds three landscapes.
   87 of the 93 with an `alfak` ranking; the exceptions are observed
   karyotypes in four designs at wavelength 1.6 and two small ones at 0.4.
 - Rank correlation at distances 1 and 2 grows with depth on smooth landscapes
-  (wavelength 1.6, distance 1: 0.28 at 50/50, 0.55 to 0.62 at 500/700) and
-  stays at 0.12 to 0.33 on rugged ones. The two-layer pipeline ranks observed
+  (wavelength 1.6, distance 1: 0.28 at 50/50, 0.55 to 0.61 at 500/700) and
+  stays at 0.12 to 0.32 on rugged ones. The two-layer pipeline ranks observed
   karyotypes better in 7 of 8 designs at wavelength 1.6 and 2 of 8 at 1.2.
-- Coverage 0.77 to 1.00; below 0.90 mostly at distance 2 with the long
-  interval (0.81 to 0.83) or a shallow first time point (100/3000: 0.77 to 0.86),
+- Coverage 0.85 to 1.00; below 0.90 mostly at distance 2 with the long
+  interval (0.91 to 0.99) or a shallow first time point (100/3000: 0.85 to 0.98),
   at wavelengths up to 0.8.
 
 ## Distances 3 and 4
@@ -605,16 +635,16 @@ identical predictions for all but `alfak`, whose bootstrap is unseeded
 - Every target at distance 3 or 4 is at least three steps from a major
   karyotype, outside the domain, so the sparse joint prediction is the trend
   alone.
-- Held-out, balance: ratio to the null predictor 0.45 / 0.58 / 0.55 / 0.54 at
-  distance 3 and 0.44 / 0.59 / 0.56 / 0.53 at distance 4 (wavelengths 0.4 /
+- Held-out, balance: ratio to the null predictor 0.44 / 0.58 / 0.54 / 0.54 at
+  distance 3 and 0.43 / 0.59 / 0.55 / 0.53 at distance 4 (wavelengths 0.4 /
   0.8 / 1.2 / 1.6), within 0.03 of distance 2. The gain is mostly the mean:
   the null predictor's mean error at distance 4 is 0.474 / 0.157 / 0.085 /
-  0.049, the trend leaves 0.128 / 0.071 / 0.034 / 0.010. The remaining mean
+  0.049, the trend leaves 0.123 / 0.071 / 0.034 / 0.010. The remaining mean
   error is positive everywhere and grows from distance 3 to 4: distant
   karyotypes are predicted too high.
 - Spearman at distance 4: 0.14 / 0.16 / 0.33 / 0.40 (distance 2: 0.17 / 0.21 /
-  0.39 / 0.46). Coverage at distances 3 and 4: 0.91, 0.84 to 0.86, 0.97 to
-  0.98 and 1.00, so too narrow at wavelength 0.8.
+  0.39 / 0.46). Coverage at distances 3 and 4: 0.99, 0.93 to 0.94, 0.99
+  and 1.00, so slightly narrow at wavelength 0.8.
 - Independent initial states: higher error than balance everywhere (0.48 to
   0.82), similar ranking (0.11 to 0.43).
 - Graph Gaussian: 0.98 to 1.00 of the null error, mean error within 0.001 of
@@ -623,7 +653,7 @@ identical predictions for all but `alfak`, whose bootstrap is unseeded
   predict nothing beyond distance 2 and score as the null predictor.
 - `alfak` (Kriging mean, no uncertainty): 2.35 / 1.32 / 1.50 / 18.2 at
   distance 3, 2.28 / 1.26 / 1.42 / 15.3 at distance 4; Spearman 0.01 to 0.25.
-- Development landscapes: balance 0.42 to 0.59, Spearman 0.14 to 0.49.
+- Development landscapes: balance 0.42 to 0.60, Spearman 0.14 to 0.49.
 
 ## Three measures of accuracy
 
@@ -650,7 +680,7 @@ Held-out, means of 24 datasets per wavelength and distance:
 
 | | error ÷ null, d0–2 | direction, d0–2 | direction, d3–4 | direction above 1/2, by design |
 |---|---|---|---|---|
-| sparse joint, balance | 0.47–0.74 | 0.64–0.96 | 0.76–0.81 | 96 / 96 |
+| sparse joint, balance | 0.46–0.74 | 0.65–0.96 | 0.76–0.81 | 96 / 96 |
 | sparse joint, independent | 0.53–0.96 | 0.66–0.96 | 0.76–0.81 | 96 / 96 |
 | two-layer (graph Gaussian) | 0.92–1.00 | 0.49–0.57 | 0.49–0.52 | 62 / 96 |
 | alfak (minobs 20) | 1.39–41.6 | 0.36–0.52 | 0.45–0.53 | 28 / 96 |
@@ -658,12 +688,12 @@ Held-out, means of 24 datasets per wavelength and distance:
 - alfak is below one half in 10 of 12 wavelength × distance cells at
   distances 0–2: it predicts the wrong direction more often than the right
   one. Its failed fits score one half (all ties).
-- The default's lowest value, 0.64 for observed karyotypes at wavelength 1.6,
+- The default's lowest value, 0.65 for observed karyotypes at wavelength 1.6,
   comes from rare observed karyotypes outside the domain: they share one log
   birth rate, so their fitness differs only through the missegregation term.
 - By design at distance 1 the default is 0.76 to 0.90 everywhere; unlike the
   error, direction hardly changes with sample size.
-- Development: default 0.67 to 0.93 (d0–2), above one half in 96 / 96.
+- Development: default 0.66 to 0.93 (d0–2), above one half in 96 / 96.
 
 `accuracy_by_wavelength.R` draws the three measures by wavelength (Section
 5.2); `scenario_results.R` and `far_results.R` add the direction figures and
@@ -833,8 +863,11 @@ not help.
 - The unknown birth rate has no remedy beyond the range fit. Intervals are too
   narrow when the assumed rate is too low, because both calibration terms
   scale with it.
-- Intervals are too narrow after 1080 days and when the landscape changes at
-  the first time point.
+- Intervals are too narrow for observed karyotypes when the landscape changes
+  at the first time point (KARST 1.0.0, development: coverage 0.81 to 0.90 at
+  distance 0 with balance, 0.93 to 0.98 at distances 1 and 2). After 1080
+  days they now cover 0.95 to 0.98 pooled (0.91 at wavelength 0.8, distance
+  2, held-out).
 - Observed karyotypes outside the domain all get the same observed level, so
   on diverse populations (smooth landscapes) about half the rare observed
   karyotypes are not ranked. Adding the trend's variation to that level is
@@ -842,8 +875,8 @@ not help.
 - The shell coefficient is a lower bound from absence, so unobserved
   neighbours are still predicted too high (bias +0.02 at one step, +0.04 at
   two, and on held-out landscapes +0.005 to +0.13 at three and four, largest
-  on rugged ones). Far intervals are too narrow at wavelength 0.8 (coverage
-  0.84 at distance 4).
+  on rugged ones). Far intervals are slightly narrow at wavelength 0.8
+  (coverage 0.93 to 0.94 at distances 3 and 4, KARST 1.0.0).
 - The calibration constants come from one family of simulated landscapes.
 - With more than two time points the time points in between add little on the
   simulated passaged cultures (above). On the Salehi passages they helped: the

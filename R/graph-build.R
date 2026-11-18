@@ -20,6 +20,10 @@ build_karyotype_graph <- function(x,
                                   max_nodes = 5000) {
   transition_kernel <- match.arg(transition_kernel)
   if (inherits(x, "karst_data")) {
+    if (ncol(x$counts) != 2L) {
+      stop(sprintf("The karyotype graph is built from two time points; `x` has %d.", ncol(x$counts)),
+           call. = FALSE)
+    }
     labels <- x$labels
     y0 <- x$counts[, 1]
     y1 <- x$counts[, 2]

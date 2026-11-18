@@ -131,7 +131,7 @@ Rscript $R --stage=report   --split=dev
 Results go to `benchmark/results/sparse_two_timepoint/` (not tracked). Fits are
 cached per dataset and method, so a stage can be rerun after adding a method.
 
-`--workers` defaults to 2. An KARST two-layer fit at 22 chromosomes needs
+`--workers` defaults to 2. A KARST two-layer fit at 22 chromosomes needs
 about 1 GB. `alfak` needs up to 4.5 GB and 15 minutes on the largest datasets
 (`minobs = 5` at 3000 cells), so raise the worker count only with memory to
 spare. `karst_two_layer_cv`, the package's default leave-one-anchor-out
@@ -140,6 +140,30 @@ one dataset with 97 observed karyotypes did not finish in 25 minutes, against
 10 seconds with the hyperparameters fixed.
 The held-out landscapes are for the final confirmation only and need
 `--split=heldout --unseal-heldout`.
+
+### Rerunning the fits of an earlier run on the HPC
+
+The fits of the KARST 1.0.0 rerun (2026-11-17, the alfak2 era's fits
+refitted, held-out landscapes included) were run one fit per Slurm task in
+the image of the paper benchmark (`../paper/hpc`):
+
+```sh
+# from the karst clone; FITS_FROM is the earlier run's fits/ folder
+Rscript benchmark/sparse_two_timepoint/make_tasks.R FITS_FROM TASKS.tsv
+# one fit per task: hpc/submit.sh dev TASKS.tsv 8G 06:00:00 (from benchmark/paper)
+Rscript benchmark/sparse_two_timepoint/run_task.R TASKS.tsv ID
+# afterwards: --stage=score and --stage=report of each split, and
+Rscript benchmark/sparse_two_timepoint/compare_eras.R FITS OLD_FITS OUT.csv
+```
+
+`make_tasks.R` maps the alfak2 era's method names (`alfak2_*`, `alfakR_*`)
+to the current ones, copies `alfak`'s and the null predictor's fits instead of
+refitting them, and leaves out methods the configuration no longer has.
+`compare_eras.R` compares each new fit with the earlier one (status,
+predicted fitness and its sd). The distance 3-4 sweep
+(`validation/sparse_joint/far_distance.R`) runs the same way, one fit per
+task (`--ids=<dataset> --methods=<method> --fit-only=yes`; `hpc/submit.sh
+far`), then once without these options to score every fit.
 
 ## Limits
 

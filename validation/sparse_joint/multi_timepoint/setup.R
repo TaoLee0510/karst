@@ -287,13 +287,13 @@ si_run_method <- function(config, dataset, nodes, method) {
   result
 }
 
-# alfak runs from its own library; the karst arms from an karst build.
+# alfak runs from its own library; the karst arms from a karst build.
 mt_stage_fit <- function(config, workers, method_names, datasets) {
   libraries <- unique(unlist(lapply(config$methods[method_names], `[[`, "library")))
   if (length(libraries)) {
     if (length(method_names) != 1L) stop("Run alfak on its own.", call. = FALSE)
     .libPaths(c(file.path(config$library_root, "lib", libraries), .libPaths()))
-    loadNamespace("alfak")
+    loadNamespace("alfakR")
     cat("alfak from", dirname(find.package("alfakR")), "\n")
   }
   si_stage_fit(config, workers, method_names, datasets)

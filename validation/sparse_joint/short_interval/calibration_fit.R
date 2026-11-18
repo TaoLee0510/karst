@@ -81,7 +81,9 @@ coverage <- function(part, by) {
                           per_dataset[by], mean)
   out$worst_dataset <- stats::aggregate(per_dataset$covered, per_dataset[by], min)$x
   out$datasets <- stats::aggregate(per_dataset$covered, per_dataset[by], length)$x
-  names(out)[2:6] <- c("coverage95", "coverage95_model", "mean_reported_sd", "mean_model_sd", "mean_abs_error")
+  # after the key columns (one or two)
+  names(out)[length(by) + 1:5] <- c("coverage95", "coverage95_model", "mean_reported_sd", "mean_model_sd",
+                                    "mean_abs_error")
   out
 }
 options(width = 200)

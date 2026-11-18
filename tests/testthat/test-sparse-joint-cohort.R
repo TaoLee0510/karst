@@ -74,8 +74,10 @@ test_that("invalid cohort inputs are rejected", {
   expect_error(fit_sparse_joint_cohort(sim$samples, beta = sim$beta), "dt")
   expect_error(fit_sparse_joint_cohort(sim$samples, dt = c(1, 2, 3), beta = sim$beta), "dt")
   expect_error(fit_sparse_joint_cohort(stats::setNames(sim$samples, c("A", "A")), dt = sim$dt), "names")
-  expect_error(fit_sparse_joint_cohort(list(A = sim$samples$A, B = prepare_karst_data(sim$samples$B, dt = 60, beta = 0.01)),
-                                       dt = 10, beta = sim$beta), "missegregation")
+  # prepared datasets at different rates, with no rate given to replace them
+  expect_error(fit_sparse_joint_cohort(list(A = prepare_karst_data(sim$samples$A, dt = 60, beta = sim$beta),
+                                            B = prepare_karst_data(sim$samples$B, dt = 60, beta = 0.01))),
+               "missegregation")
 })
 
 test_that("the trend is per dataset, shared, or chosen by marginal likelihood", {

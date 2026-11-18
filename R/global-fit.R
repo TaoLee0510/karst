@@ -26,6 +26,10 @@ anchor_covariance_multiplier <- function(status,
                                            untrusted_nonconverged = 9,
                                            untrusted_sdreport_missing = 4,
                                            untrusted_sdreport_nonfinite = 4,
+                                           untrusted_inner_gradient = 4,
+                                           untrusted_scale_boundary = 4,
+                                           untrusted_hessian = 4,
+                                           untrusted_lognormal_moments = 4,
                                            unknown = 4
                                          )) {
   if (is.null(inflation) || !length(inflation)) return(rep(1, length(status)))
@@ -168,6 +172,10 @@ fit_graph_posterior <- function(local_fit,
                                   untrusted_nonconverged = 9,
                                   untrusted_sdreport_missing = 4,
                                   untrusted_sdreport_nonfinite = 4,
+                                  untrusted_inner_gradient = 4,
+                                  untrusted_scale_boundary = 4,
+                                  untrusted_hessian = 4,
+                                  untrusted_lognormal_moments = 4,
                                   unknown = 4
                                 ),
                                 anchor_count_reference = NULL,

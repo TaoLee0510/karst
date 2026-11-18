@@ -28,7 +28,17 @@ parts <- lapply(files, readRDS)
 status <- as.data.frame(table(method = vapply(parts, function(p) p$task$method, character(1)),
                               status = vapply(parts, `[[`, character(1), "status")))
 cat("Tasks:\n"); print(status[status$Freq > 0, ], row.names = FALSE)
-x <- do.call(rbind, lapply(parts, `[[`, "rows"))
+# Rows of the first run (alfak's, carried over by reuse_rows.R) have no design
+# column and some columns of later runs; every row here is of design "ends".
+x <- lapply(parts, function(p) {
+  r <- p$rows
+  if (is.null(r)) return(NULL)
+  if (is.null(r$design)) r$design <- rep("ends", nrow(r))
+  r
+})
+x <- x[!vapply(x, is.null, logical(1))]
+common <- Reduce(intersect, lapply(x, names))
+x <- do.call(rbind, lapply(x, function(r) r[common]))
 x$method <- c(karst = "karst", alfak = "alfak", karst_free = "karst free")[x$method]
 # Lineage types as the paper benchmark assigns them (salehi_assign_lineage()).
 lineage_map <- c(SA1035T = "SA1035", SA1035U = "SA1035", SA532 = "SA532", SA609 = "SA609", SA609UnBU = "SA609",
