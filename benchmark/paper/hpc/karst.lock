@@ -1,5 +1,5 @@
-KARST_COMMIT=e7e32f8
-KARST_SHA256=62e17eb1398fdaeb9d88090b6ab5ecd6ba620261dc10e85131134887011da381
+KARST_COMMIT=2c60af1
+KARST_SHA256=101210896f11b0ac6a4c8e04b6343e9b47a6b36853ba66e058dddd103b0baba0
 # The commit of karst that a round fits, and the sha256 of its source archive
 # (git archive --format=tar.gz), set when a round is staged.
 # Rounds of the alfak2 era (before the rename to KARST) are in
@@ -11,3 +11,8 @@ KARST_SHA256=62e17eb1398fdaeb9d88090b6ab5ecd6ba620261dc10e85131134887011da381
 #   b9a275e  sha256 b08369fdc38f990fa8c88bd21d4c61f1c58f0121ee959b62d15d3614efe214e3
 #            results in results_b9a275e/: stopped 2026-11-17 with every fit but
 #            one done and no tables, superseded by e7e32f8 (review fixes)
+#   e7e32f8  sha256 62e17eb1398fdaeb9d88090b6ab5ecd6ba620261dc10e85131134887011da381
+#            results in results_e7e32f8/ (report docs/report_e7e32f8.md): 1.0.0
+#            with the fixes of the code review of 2026-11-17; superseded by
+#            2c60af1 (1.1.0, fixes of the code review of 2026-11-18, alfak's
+#            efflux conversion), which refits every KARST arm
