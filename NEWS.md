@@ -1,8 +1,8 @@
 # karst 1.0.0 (2026-11-17)
 
-alfak2 is renamed KARST (Karyotype Abundance-based Reconstruction from Sparse
-Time points). The methods are those of alfak2 0.2.0, with the fixes below;
-names change, and old names have no aliases.
+alfak2 is renamed KARST (Karyotype Abundance-based Reconstruction of fitness
+landscape from Sparse Time points). The methods are those of alfak2 0.2.0,
+with the fixes below; names change, and old names have no aliases.
 
 - The package is `karst`: `library(karst)`. Functions, classes, options and
   condition classes that carried `alfak2` carry `karst`: `fit_karst()`,

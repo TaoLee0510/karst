@@ -1,6 +1,7 @@
 # KARST
 
-**KARST: Karyotype Abundance-based Reconstruction from Sparse Time points.**
+**KARST: Karyotype Abundance-based Reconstruction of fitness landscape from
+Sparse Time points.**
 The R package `karst` infers fitness landscapes of aneuploid karyotypes from
 sparse single-cell karyotype counts at two or more time points, and supports
 analyses of karyotype evolution.
