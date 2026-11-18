@@ -1,5 +1,5 @@
 # Benchmark results by sampling design (scenario) and wavelength, for the
-# method document (Section 5.2 and Supplement S4).
+# method document (Section 5.3 and Supplement S1).
 #
 #   Rscript validation/sparse_joint/scenario_results.R [OUT_DIR]
 #
@@ -28,7 +28,6 @@ results <- "benchmark/results/sparse_two_timepoint"
 
 methods <- c(
   "Null predictor" = "zero",
-  "Two-layer pipeline" = "karst_two_layer_fixed",
   "alfak (minobs = 20)" = "alfak_minobs20",
   "Sparse joint, independent" = "karst_sparse_joint",
   "Sparse joint, balance (default)" = "karst_sparse_joint_balance"
@@ -80,12 +79,13 @@ dev_cells <- summarise_cells(dev)
 
 ## Figures -------------------------------------------------------------------
 
-# Categorical slots 1-4 of the reference palette, in fixed order; shapes are the
-# secondary encoding (the third and fourth hues are below 3:1 on white).
+# Categorical slots 1, 2 and 4 of the reference palette, in fixed order, so
+# that alfak keeps its colour across the figures; shapes are the secondary
+# encoding (the fourth hue is below 3:1 on white).
 palette <- c("Sparse joint, balance (default)" = "#2a78d6", "Sparse joint, independent" = "#eb6834",
-             "Two-layer pipeline" = "#1baf7a", "alfak (minobs = 20)" = "#eda100")
+             "alfak (minobs = 20)" = "#eda100")
 shapes <- c("Sparse joint, balance (default)" = 16, "Sparse joint, independent" = 17,
-            "Two-layer pipeline" = 15, "alfak (minobs = 20)" = 18)
+            "alfak (minobs = 20)" = 18)
 # The error axis stops at `cap`: alfak reaches about 300 times the null
 # predictor's error, which would compress every other series. Values above it
 # are drawn at the cap and labelled with their ratio.
@@ -211,7 +211,7 @@ writeLines(c(range_table(c("w0.4", "w0.8")), "", range_table(c("w1.2", "w1.6")))
 
 # Supplement: every method, by design, with short labels and a smaller font
 # for width.
-short <- c("Null predictor" = "Null predictor", "Two-layer pipeline" = "Two-layer",
+short <- c("Null predictor" = "Null predictor",
            "alfak (minobs = 20)" = "\\texttt{alfak}", "Sparse joint, independent" = "Sparse joint, independent",
            "Sparse joint, balance (default)" = "Sparse joint, balance")
 supp_table <- function(cells, column, labels, title) {
@@ -249,9 +249,7 @@ show <- function(cells, label, column) {
   print(w, row.names = FALSE)
 }
 cat("== held-out ratio, sparse joint balance\n"); show(held_cells, "Sparse joint, balance (default)", "ratio")
-cat("== held-out ratio, two-layer\n"); show(held_cells, "Two-layer pipeline", "ratio")
 cat("== held-out Spearman, sparse joint balance\n"); show(held_cells, "Sparse joint, balance (default)", "spearman")
-cat("== held-out Spearman, two-layer\n"); show(held_cells, "Two-layer pipeline", "spearman")
 cat("== held-out coverage, sparse joint balance\n"); show(held_cells, "Sparse joint, balance (default)", "coverage95")
 for (label in names(methods)[-1L]) {
   d <- held_cells$direction[held_cells$label == label]

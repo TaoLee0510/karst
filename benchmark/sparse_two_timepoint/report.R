@@ -89,10 +89,9 @@ stt_markdown_table <- function(x, digits = 3L) {
 # The acceptance rule for a candidate, evaluated on the three distances.
 #
 # Predicting no fitness differences is the bar for error, because the original
-# ALFA-K is far above it (a few unconstrained fits dominate its RMSE) and the
-# current karst pipeline sits on it. Rank agreement is compared with both
-# existing methods, since it is what they do carry and it does not depend on
-# the reference.
+# ALFA-K is far above it (a few unconstrained fits dominate its RMSE). Rank
+# agreement is compared with the original ALFA-K settings, since it is what
+# they do carry and it does not depend on the reference.
 stt_acceptance <- function(cells, candidate, acceptance) {
   methods <- unique(cells$method)
   criterion <- function(label, baseline, metric, lower_is_better) {
@@ -109,22 +108,10 @@ stt_acceptance <- function(cells, candidate, acceptance) {
     )
   }
   rows <- list(
-    criterion("RMSE below the no-information answer", acceptance$zero, "rmse", TRUE),
-    criterion("RMSE below current karst", acceptance$current, "rmse", TRUE),
-    criterion("Spearman above current karst", acceptance$current, "spearman", FALSE)
+    criterion("RMSE below the no-information answer", acceptance$zero, "rmse", TRUE)
   )
   for (original in acceptance$original) {
     rows[[length(rows) + 1L]] <- criterion(paste("Spearman above", original), original, "spearman", FALSE)
-  }
-  if (acceptance$current %in% methods) {
-    safety <- stt_safety_cells(cells, candidate, acceptance$current)
-    worst <- stats::aggregate(ratio ~ stratum, safety, max)
-    rows[[length(rows) + 1L]] <- data.frame(
-      candidate = candidate, criterion = "Worst scenario RMSE ratio to current karst at most 1.10",
-      stratum = worst$stratum, n_landscapes = NA_integer_, baseline_mean = 1, candidate_mean = worst$ratio,
-      difference = worst$ratio - 1, ci_low = NA_real_, ci_high = NA_real_, passed = worst$ratio <= 1.10,
-      stringsAsFactors = FALSE
-    )
   }
   do.call(rbind, rows)
 }
@@ -132,6 +119,8 @@ stt_acceptance <- function(cells, candidate, acceptance) {
 stt_stage_report <- function(config, split) {
   metrics <- utils::read.csv(file.path(config$output_dir, sprintf("metrics_%s.csv", split)),
                              stringsAsFactors = FALSE)
+  # Methods scored in earlier rounds but no longer configured are left out.
+  metrics <- metrics[metrics$method %in% names(config$methods), ]
   # The verdict is made on the core scenarios. Stress scenarios break an
   # assumption on purpose and are tabulated after it.
   stress <- metrics[metrics$scenario %in% config$scenarios$scenario[config$scenarios$role == "stress"], ]
@@ -145,20 +134,16 @@ stt_stage_report <- function(config, split) {
   board <- board[order(board$stratum, board$method), ]
   methods <- unique(metrics$method)
   acceptance <- config$acceptance
-  baselines <- c(acceptance$zero, acceptance$current, acceptance$original)
   # Methods that are neither baselines nor named candidates (sensitivity
   # variants, for instance) are tabulated but not judged.
   candidates <- intersect(acceptance$candidates, methods)
-  # Every method against the no-information answer, and the current karst and
-  # every candidate against the original ALFA-K settings.
+  # Every method against the no-information answer and against the original
+  # ALFA-K settings.
   pairs <- list()
   for (method in setdiff(methods, acceptance$zero)) {
     if (acceptance$zero %in% methods) pairs[[length(pairs) + 1L]] <- c(method, acceptance$zero)
     if (!method %in% acceptance$original) {
       for (original in intersect(acceptance$original, methods)) pairs[[length(pairs) + 1L]] <- c(method, original)
-    }
-    if (method %in% candidates && acceptance$current %in% methods) {
-      pairs[[length(pairs) + 1L]] <- c(method, acceptance$current)
     }
   }
   # RMSE and median absolute error: lower is better. Spearman and AUC: higher

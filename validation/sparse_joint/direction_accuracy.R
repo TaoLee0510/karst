@@ -31,7 +31,7 @@ config <- stt_config()
 res <- config$output_dir
 out <- file.path(res, "sweeps", "direction")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
-methods <- c("karst_sparse_joint_balance", "karst_sparse_joint", "karst_two_layer_fixed", "alfak_minobs20")
+methods <- c("karst_sparse_joint_balance", "karst_sparse_joint", "alfak_minobs20")
 
 direction <- function(nodes, truth, prediction, distances) {
   table <- stt_score_predictions(nodes, truth, prediction, config$scoring$reference_min_count)$nodes

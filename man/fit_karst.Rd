@@ -2,209 +2,33 @@
 % Please edit documentation in R/fit-karst.R
 \name{fit_karst}
 \alias{fit_karst}
-\title{Fit the complete karst pipeline}
+\title{Fit a karst fitness landscape}
 \usage{
-fit_karst(
-  counts,
-  dt = 1,
-  beta = 5e-05,
-  transition_kernel = c("exact", "linear"),
-  local_shell_depth = 2,
-  global_extra_shell = 1,
-  min_cn = 0,
-  max_cn = 5,
-  max_nodes = 5000,
-  lambda_l_grid = c(0.2, 1, 5),
-  lambda_e_grid = c(0.05, 0.25, 1),
-  sigma_obs_grid = c(0.02, 0.05, 0.1),
-  graph_edge_weight = c("mutation", "unit", "normalized"),
-  extrapolation_method = c("graph_gaussian_baseline", "edge_effect_empirical_bayes",
-    "edge_effect_interaction_path_ensemble", "kronecker_or_graph_trend_filtering",
-    "local_NNGP_or_GPnn", "delta_tree_ensemble", "tabpfn_nearfield_feature_model",
-    "truncated_nearfield_gmrf", "local_polynomial_stencil"),
-  max_prediction_distance = 2,
-  extrapolation_control = list(),
-  anchor_support_tiers = "all",
-  anchor_exclude = character(),
-  anchor_covariance_inflation = c(TMB_sdreport = 1, untrusted_gradient = 4,
-    untrusted_nonconverged = 9, untrusted_sdreport_missing = 4,
-    untrusted_sdreport_nonfinite = 4, untrusted_inner_gradient = 4,
-    untrusted_scale_boundary = 4, untrusted_hessian = 4, untrusted_lognormal_moments = 4,
-    unknown = 4),
-  anchor_count_reference = NULL,
-  anchor_count_power = 1,
-  anchor_min_effective_count = 0,
-  input_depth = c("raw", "effective"),
-  effective_depth = NULL,
-  effective_depth_mode = c("min", "cap", "fixed"),
-  effective_depth_rounding = c("hash", "largest_remainder", "stochastic"),
-  effective_depth_seed = NULL,
-  observation_model = NULL,
-  dm_concentration = NULL,
-  observation_weight_mode = c("likelihood", "fractional_count"),
-  alfak_scale = FALSE,
-  n0 = NULL,
-  nb = NULL,
-  correct_efflux = FALSE,
-  legacy_weight = c("pi0", "directly_informed", "uniform"),
-  pipeline = c("sparse_joint", "two_layer", "joint_count"),
-  joint_control = list(),
-  sparse_joint_control = list(),
-  target_karyotypes = NULL,
-  forward_tolerance = 1e-05,
-  forward_max_refinements = 3L,
-  ...
-)
+fit_karst(counts, dt = 1, beta = 5e-05, sparse_joint_control = list(), ...)
 }
 \arguments{
-\item{counts}{Count matrix with one column per timepoint or an
-\code{karst_data} object. The sparse joint pipeline takes two or more
-timepoints, the other two pipelines exactly two.}
+\item{counts}{Count matrix with one column per timepoint, at least two, or
+an \code{karst_data} object.}
 
 \item{dt}{Time interval if \code{counts} is not already prepared; with more than
 two timepoints, one per pair of consecutive timepoints (or give \code{times}
 in \code{sparse_joint_control}).}
 
-\item{beta}{Missegregation rate.}
-
-\item{transition_kernel}{Transition weighting used by graph edges and local
-transport. \code{"exact"} uses chromosome-level missegregation probabilities;
-\code{"linear"} preserves the historical first-order approximation.}
-
-\item{local_shell_depth}{Local graph shell depth.}
-
-\item{global_extra_shell}{Additional bounded shell depth for graph borrowing.}
-
-\item{min_cn, max_cn}{Copy-number bounds.}
-
-\item{max_nodes}{Hard graph-size bound.}
-
-\item{lambda_l_grid, lambda_e_grid, sigma_obs_grid}{Hyperparameter grids passed
-to the compiled graph posterior.}
-
-\item{graph_edge_weight}{Edge weighting used by the global graph prior.}
-
-\item{extrapolation_method}{Second-layer extrapolation method. The default
-\code{"graph_gaussian_baseline"} preserves the historical global graph posterior
-path. The legacy alias \code{"graph_gaussian"} is still accepted.}
-
-\item{max_prediction_distance}{Maximum support distance reported as reliable
-for near-field extrapolation methods.}
-
-\item{extrapolation_control}{Optional named list of method-specific controls
-passed to \code{fit_extrapolation_layer()}.}
-
-\item{anchor_support_tiers}{Local support tiers used as global graph anchors;
-defaults to \code{"all"} to preserve the legacy public API behavior.}
-
-\item{anchor_exclude}{Optional karyotype labels to exclude from the global
-anchor set, primarily for neighbor-holdout validation.}
-
-\item{anchor_covariance_inflation}{Named variance multipliers for local
-covariance statuses.}
-
-\item{anchor_count_reference}{Optional low-count downweighting reference for
-global graph anchors.}
-
-\item{anchor_count_power}{Exponent for count-based anchor variance inflation.}
-
-\item{anchor_min_effective_count}{Minimum effective count required for local
-rows to be used as global anchors. Set to \code{NULL} to preserve legacy
-all-finite-row anchoring.}
-
-\item{input_depth}{\code{"raw"} uses the supplied count matrix directly. \code{"effective"}
-converts each timepoint to frequencies and re-counts them at a controlled
-effective depth before fitting.}
-
-\item{effective_depth}{Effective sequencing depth used when
-\code{input_depth = "effective"}. Required for \code{"cap"} and \code{"fixed"} modes; ignored
-by \code{"min"} mode.}
-
-\item{effective_depth_mode}{Effective-depth rule. \code{"min"} uses the smaller raw
-timepoint depth for both columns, \code{"cap"} caps each raw depth at
-\code{effective_depth}, and \code{"fixed"} uses \code{effective_depth} for every timepoint.}
-
-\item{effective_depth_rounding}{Rounding rule for effective-depth expected
-counts. \code{"hash"} uses deterministic label-based tie breaking,
-\code{"largest_remainder"} preserves row-order tie breaking, and \code{"stochastic"}
-samples remainders with \code{effective_depth_seed}.}
-
-\item{effective_depth_seed}{Optional seed used only by stochastic
-effective-depth rounding.}
-
-\item{observation_model}{Optional observation model passed to
-\code{fit_local_posterior()}. If omitted, raw input uses \code{"multinomial"} and
-effective-depth input uses \code{"dirichlet_multinomial"}.}
-
-\item{dm_concentration}{Optional Dirichlet-multinomial concentration value or
-grid. If omitted, effective-depth Dirichlet-multinomial fits use 50 and other
-fits use 200.}
-
-\item{observation_weight_mode}{How observation weights enter the
-Dirichlet-multinomial likelihood. See \code{fit_local_posterior()}.}
-
-\item{alfak_scale}{Logical; if \code{TRUE}, append \code{alfak}-scale legacy fitness
-columns without changing the native \code{karst} posterior estimates.}
-
-\item{n0, nb}{Initial and final population sizes used to calibrate the
-\code{alfak} absolute-growth scale. Required when \code{alfak_scale = TRUE}.}
-
-\item{correct_efflux}{Logical; if \code{TRUE}, apply the \code{alfak}
-missegregation-efflux viability correction to the legacy-scale columns.}
-
-\item{legacy_weight}{Weighting scheme used to set the legacy-scale zero point.
-\code{"pi0"} uses the local TMB posterior initial frequencies, \code{"directly_informed"}
-uses observed graph nodes, and \code{"uniform"} weights all finite summary rows
-equally.}
-
-\item{pipeline}{\code{"sparse_joint"}, the default, fits the sparse joint count
-model with \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}; of the other arguments only \code{counts},
-\code{dt}, \code{beta} and \code{sparse_joint_control} then apply, and giving any other
-is an error. \code{"two_layer"} retains separate local and extrapolation fits;
-\code{"joint_count"} fits a single count likelihood and structured landscape
-prior on the entire bounded target graph. On simulated sparse data the
-sparse joint model predicted fitness at distances 0 to 2 better than both
-(\code{validation/sparse_joint/README.md}).}
-
-\item{joint_control}{Named prior controls passed to the joint landscape.
-Experimental \code{interaction_support = "observed_nullspace"} separates pair
-directions that vanish at observed design rows; this is not a likelihood
-identifiability test. \code{unidentified_interaction_sd} controls their prior.
-Optional \code{prior_components} is a list of prior-control lists, with
-\code{model_prior} supplying component weights before conditional evidence
-updating. It cannot be combined with \code{model_scales}.}
+\item{beta}{Missegregation rate per chromosome copy and division.}
 
 \item{sparse_joint_control}{Named list of further arguments for
-\code{\link[=fit_sparse_joint]{fit_sparse_joint()}} when \code{pipeline = "sparse_joint"}, such as
-\code{birth_rate}, \code{min_cn} and \code{max_cn}.}
+\code{\link[=fit_sparse_joint]{fit_sparse_joint()}}, such as \code{birth_rate}, \code{min_cn} and \code{max_cn}.}
 
-\item{target_karyotypes}{Optional explicit finite query states, as labels or a
-copy-number matrix. They define the global domain together with observed
-nodes, permitting distant queries without complete shell enumeration.}
-
-\item{forward_tolerance}{Joint division-model step-halving tolerance on both
-maximum frequency change and log total growth change.}
-
-\item{forward_max_refinements}{Maximum joint forward step halvings and refits.}
-
-\item{...}{Passed to \code{fit_local_posterior()}.}
+\item{...}{Not used; any argument given here is an error. The two-layer and
+joint-count pipelines, and the \code{pipeline} argument that selected them,
+were removed in version 1.0.0.}
 }
 \value{
-An \code{karst_sparse_joint_fit} object for \code{pipeline = "sparse_joint"},
-otherwise an \code{karst_fit} object.
+An \code{karst_sparse_joint_fit} object.
 }
 \description{
-By default fits the sparse joint count model, built for sparse counts at
-two or more timepoints: see \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}, whose result is
-returned. Its outputs
-can be converted to those of alfak with \code{\link[=as_alfak]{as_alfak()}}, or produced
-directly with alfak's arguments by \code{\link[=alfak_compat]{alfak_compat()}}.
-}
-\details{
-The earlier pipelines remain available: \code{"two_layer"} runs data
-validation, local graph construction, TMB local posterior fitting, bounded
-global graph expansion and compiled graph Gaussian posterior solving;
-\code{"joint_count"} fits one count likelihood on the bounded target graph. All
-arguments from \code{transition_kernel} to \code{forward_max_refinements}, and \code{...},
-belong to these two.
+The main entry point: fits the sparse joint count model to sparse counts at
+two or more timepoints with \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}, whose result is returned.
+Its outputs can be converted to those of alfak with \code{\link[=as_alfak]{as_alfak()}}, or
+produced directly with alfak's arguments by \code{\link[=alfak_compat]{alfak_compat()}}.
 }

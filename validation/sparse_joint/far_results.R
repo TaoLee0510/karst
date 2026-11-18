@@ -1,11 +1,11 @@
-# Figures and tables for distances 0 to 4 (Section 5.4 and Supplement S5 of
+# Figures and tables for distances 0 to 4 (Section 5.4 and Supplement S2 of
 # doc/karst_method.tex).
 #
 #   Rscript validation/sparse_joint/far_results.R [OUT_DIR]
 #
 # Distances 0-2 come from the scoreboard (metrics_<split>.csv), distances 3-4
 # from far_distance.R (sweeps/far/metrics_far_<split>.csv). Both are centred on
-# the same reference karyotypes. Direction accuracy, for the four main methods,
+# the same reference karyotypes. Direction accuracy, for every method but the null predictor,
 # comes from direction_accuracy.R (sweeps/direction/direction_<split>.csv). Values are averaged over the scenarios of each
 # landscape and then over the three landscapes of each wavelength; error
 # ratios divide the mean error by the mean error of the null predictor.
@@ -18,14 +18,6 @@ results <- "benchmark/results/sparse_two_timepoint"
 
 labels <- c(
   "zero" = "Null predictor",
-  "karst_two_layer_fixed" = "Graph Gaussian",
-  "karst_two_layer_nearfield_gmrf" = "Truncated GMRF",
-  "karst_two_layer_edge_effect" = "Edge effect",
-  "karst_two_layer_path_ensemble" = "Path ensemble",
-  "karst_two_layer_polynomial" = "Local polynomial",
-  "karst_two_layer_nngp" = "Nearest-neighbour GP",
-  "karst_two_layer_delta_tree" = "Delta tree",
-  "karst_two_layer_trend_filtering" = "Trend filtering",
   "alfak_minobs20" = "alfak (minobs = 20)",
   "karst_sparse_joint" = "Sparse joint, independent",
   "karst_sparse_joint_balance" = "Sparse joint, balance (default)"
@@ -58,11 +50,11 @@ load <- function(split) {
 held <- load("heldout")
 dev <- load("dev")
 
-## Figures: distance 0 to 4, four main methods ---------------------------------
+## Figures: distance 0 to 4 ----------------------------------------------------
 palette <- c("Sparse joint, balance (default)" = "#2a78d6", "Sparse joint, independent" = "#eb6834",
-             "Graph Gaussian" = "#1baf7a", "alfak (minobs = 20)" = "#eda100")
+             "alfak (minobs = 20)" = "#eda100")
 shapes <- c("Sparse joint, balance (default)" = 16, "Sparse joint, independent" = 17,
-            "Graph Gaussian" = 15, "alfak (minobs = 20)" = 18)
+            "alfak (minobs = 20)" = 18)
 cap <- 8
 plotted <- held[held$label %in% names(palette), ]
 plotted$label <- factor(plotted$label, levels = names(palette))
@@ -108,7 +100,7 @@ direction_plot <- ggplot(plotted[is.finite(plotted$direction), ], aes(distance, 
   labs(x = "Distance from the nearest observed karyotype", y = "Direction accuracy") + theme_doc
 ggsave(file.path(out_dir, "far_distance_direction.pdf"), direction_plot, width = 6.5, height = 2.9, device = grDevices::cairo_pdf)
 
-## Tables: every method at distances 3 and 4 ---------------------------------
+## Tables: distances 3 and 4 --------------------------------------------------
 fmt <- function(v, digits) ifelse(is.finite(v), formatC(v, format = "f", digits = digits), "--")
 table_tex <- function(wl, column, digits, title, methods = names(labels)) {
   rows <- vapply(methods, function(m) {
@@ -129,7 +121,7 @@ table_tex <- function(wl, column, digits, title, methods = names(labels)) {
     paste0("Method", paste(rep(" & $d=3$ & $d=4$", 4), collapse = ""), " \\\\"), "\\midrule",
     rows, "\\bottomrule", "\\end{tabular}", "\\end{center}", "\\end{minipage}")
 }
-main_methods <- c("zero", "karst_two_layer_fixed", "alfak_minobs20", "karst_sparse_joint", "karst_sparse_joint_balance")
+main_methods <- c("zero", "alfak_minobs20", "karst_sparse_joint", "karst_sparse_joint_balance")
 writeLines(c(table_tex(held, "ratio", 2, "Error relative to the null predictor, held-out landscapes.", main_methods[-1]), "",
              table_tex(held, "direction", 2, "Direction accuracy, held-out landscapes.", main_methods[-1]), "",
              table_tex(held, "spearman", 2, "Spearman correlation, held-out landscapes.", main_methods[-1])),
@@ -139,7 +131,7 @@ supp <- unlist(lapply(c("heldout", "dev"), function(split) {
   name <- if (split == "heldout") "held-out" else "development"
   c(table_tex(wl, "rmse", 3, sprintf("Root mean squared error, %s landscapes.", name)), "",
     table_tex(wl, "bias", 3, sprintf("Mean error (prediction minus reference), %s landscapes.", name)), "",
-    table_tex(wl, "direction", 2, sprintf("Direction accuracy, %s landscapes (main methods).", name), main_methods[-1]), "",
+    table_tex(wl, "direction", 2, sprintf("Direction accuracy, %s landscapes.", name), main_methods[-1]), "",
     table_tex(wl, "spearman", 2, sprintf("Spearman correlation, %s landscapes.", name), names(labels)[-1]), "",
     table_tex(wl, "coverage95", 2, sprintf("Coverage of nominal 95\\%% intervals, %s landscapes.", name), names(labels)[-1]), "",
     table_tex(wl, "prediction_fraction", 2, sprintf("Fraction of karyotypes predicted, %s landscapes.", name), names(labels)[-1]), "")
@@ -161,7 +153,7 @@ for (split in c("heldout", "dev")) {
   cat("==", split, "spearman\n"); show(wl, main_methods[-1], "spearman")
   cat("==", split, "direction\n"); show(wl, main_methods[-1], "direction")
   cat("==", split, "bias (null bias = minus mean truth)\n"); show(wl, main_methods, "bias", 3)
-  cat("==", split, "coverage\n"); show(wl, c("karst_sparse_joint_balance", "alfak_minobs20", "karst_two_layer_fixed"), "coverage95")
-  cat("==", split, "near-field prediction fraction at d3/d4\n")
-  print(stats::aggregate(prediction_fraction ~ label, wl[wl$distance >= 3 & grepl("two_layer", wl$method), ], max))
+  cat("==", split, "coverage\n"); show(wl, c("karst_sparse_joint_balance", "alfak_minobs20"), "coverage95")
+  cat("==", split, "fraction of karyotypes predicted at d3/d4, lowest\n")
+  print(stats::aggregate(prediction_fraction ~ label, wl[wl$distance >= 3, ], min))
 }

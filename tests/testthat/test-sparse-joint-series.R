@@ -160,8 +160,6 @@ test_that("a timepoint with no cell next to a major names the timepoints the maj
 
 test_that("functions that take two timepoints say so", {
   sim <- simulate_series_counts()
-  expect_error(fit_karst(sim$counts, dt = c(20, 20, 20), beta = sim$beta, pipeline = "two_layer"),
-               "two_layer pipeline fits two timepoints")
   expect_error(fit_sparse_joint_cohort(list(a = sim$counts, b = sim$counts[, 1:2]), dt = 20),
                "two timepoints per dataset; a has 4")
   empty <- cbind(sim$counts, 0)

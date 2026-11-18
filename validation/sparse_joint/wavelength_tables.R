@@ -1,36 +1,18 @@
-# Benchmark results by wavelength class, as LaTeX tables (doc/karst_method.tex).
+# Benchmark results by wavelength class, as LaTeX tables (doc/karst_method.tex,
+# Section 5).
 #
-#   Rscript validation/sparse_joint/wavelength_tables.R METRICS_CSV OUT_TEX MODE
+#   Rscript validation/sparse_joint/wavelength_tables.R METRICS_CSV OUT_TEX
 #
-# MODE "heldout": the methods of the held-out confirmation (Section 5).
-# MODE "extrapolation": the second-layer methods of the two-layer pipeline
-# against the sparse joint model (Supplement S2.3).
 # Values are averaged over the scenarios of each landscape and then over the
 # three landscapes of each wavelength; core scenarios and patient 1 only.
 
 args <- commandArgs(TRUE)
 m <- read.csv(args[[1]], stringsAsFactors = FALSE)
-mode <- args[[3]]
 tt <- function(x) paste0("\\texttt{", gsub("_", "\\\\_", x), "}")
-methods <- if (mode == "heldout") {
-  c("Null predictor" = "zero",
-    "Two-layer pipeline" = "karst_two_layer_fixed",
-    "alfak" = "alfak_minobs20",
-    "Sparse joint, independent" = "karst_sparse_joint",
-    "Sparse joint, balance" = "karst_sparse_joint_balance")
-} else {
-  # Short labels; the text of Supplement S2.3 maps them to the method names.
-  c("Null predictor" = "zero",
-    "Graph Gaussian" = "karst_two_layer_fixed",
-    "Truncated GMRF" = "karst_two_layer_nearfield_gmrf",
-    "Edge effect" = "karst_two_layer_edge_effect",
-    "Path ensemble" = "karst_two_layer_path_ensemble",
-    "Local polynomial" = "karst_two_layer_polynomial",
-    "Nearest-neighbour GP" = "karst_two_layer_nngp",
-    "Delta tree" = "karst_two_layer_delta_tree",
-    "Trend filtering" = "karst_two_layer_trend_filtering",
-    "Sparse joint, balance" = "karst_sparse_joint_balance")
-}
+methods <- c("Null predictor" = "zero",
+             "alfak" = "alfak_minobs20",
+             "Sparse joint, independent" = "karst_sparse_joint",
+             "Sparse joint, balance" = "karst_sparse_joint_balance")
 display <- function(label) {
   if (label == "alfak") return("\\texttt{alfak} (\\texttt{minobs = 20})")
   if (grepl("_", label)) return(tt(label))

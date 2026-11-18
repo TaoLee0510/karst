@@ -20,7 +20,7 @@ two, in time order, and dot-separated karyotype labels as row names.}
 either \code{times} or the positive time between each pair of consecutive
 timepoints (one value fewer than there are timepoints).}
 
-\item{beta}{Missegregation rate used by graph transition kernels.}
+\item{beta}{Missegregation rate per chromosome copy and division.}
 
 \item{metadata}{Optional list stored on the returned object.}
 

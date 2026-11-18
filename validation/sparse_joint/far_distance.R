@@ -1,16 +1,14 @@
 # Extrapolation to distances 3 and 4 from the observed karyotypes.
 #
 #   Rscript validation/sparse_joint/far_distance.R [--split=dev|heldout|both] [--workers=2] [--ids=a,b]
-#                                                  [--memo=yes|no] [--out=DIR] [--methods=a,b]
-#                                                  [--fit-only=yes]
+#                                                  [--out=DIR] [--methods=a,b] [--fit-only=yes]
 #
 # For every core dataset of the benchmark (patient 1), karyotypes three and
 # four steps from the observed ones are sampled (stt_far_nodes() in
 # benchmark/sparse_two_timepoint/score.R), every method is fitted again with
 # these as targets, and predictions are scored against the true landscape,
 # centred on the same reference karyotypes as the scoreboard. The intermediate
-# nodes of the sampling walks are passed to the methods as unscored targets, so
-# that graph-based second layers have a path from the observed karyotypes.
+# nodes of the sampling walks are passed to the methods too, but not scored.
 # Results go to benchmark/results/sparse_two_timepoint/sweeps/far/; the
 # scoreboard's own nodes, fits and metrics are not touched. Sparse joint fits
 # are saved whole (objects/), so that further distances need no refit.
@@ -41,33 +39,8 @@ out <- option("out", file.path(config$output_dir, "sweeps", "far"))
 for (sub_dir in c("nodes", "fits", "objects")) dir.create(file.path(out, sub_dir), recursive = TRUE, showWarnings = FALSE)
 Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
 
-# The eight two-layer entries share their first layer and target graph and
-# differ only in the second layer. Within a worker, the local posterior and the
-# explicit target graph are therefore computed once per dataset: the two
-# internal functions return their last result when called again with identical
-# arguments. Results are unchanged (checked against an uncached run).
-if (option("memo", "yes") == "yes") {
-  memoise_last <- function(name) {
-    original <- get(name, envir = asNamespace("karst"))
-    last_args <- NULL
-    last_value <- NULL
-    utils::assignInNamespace(name, function(...) {
-      arguments <- list(...)
-      if (!is.null(last_args) && identical(arguments, last_args)) return(last_value)
-      value <- original(...)
-      last_args <<- arguments
-      last_value <<- value
-      value
-    }, ns = "karst")
-  }
-  memoise_last("fit_local_posterior")
-  memoise_last("build_explicit_target_graph")
-}
-
-method_names <- c("zero", "karst_sparse_joint", "karst_sparse_joint_balance", "karst_two_layer_fixed",
-                  "karst_two_layer_nearfield_gmrf", "karst_two_layer_edge_effect", "karst_two_layer_path_ensemble",
-                  "karst_two_layer_polynomial", "karst_two_layer_nngp", "karst_two_layer_delta_tree",
-                  "karst_two_layer_trend_filtering", "alfak_minobs5", "alfak_minobs10", "alfak_minobs20")
+method_names <- c("zero", "karst_sparse_joint", "karst_sparse_joint_balance",
+                  "alfak_minobs5", "alfak_minobs10", "alfak_minobs20")
 only_methods <- option("methods", "")
 if (nzchar(only_methods)) {
   keep <- strsplit(only_methods, ",", fixed = TRUE)[[1L]]

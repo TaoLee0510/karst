@@ -1,8 +1,8 @@
 ---
-title: "KARST Lazy GRF Pipeline"
+title: "KARST on a Simulated GRF Landscape"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{KARST Lazy GRF Pipeline}
+  %\VignetteIndexEntry{KARST on a Simulated GRF Landscape}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -45,24 +45,23 @@ sim <- simulate_sparse_counts(
 sim$sparsity
 ```
 
-Fit the two-layer compiled pipeline.
+Fit the sparse joint count model. `fit_karst()` passes the arguments in
+`sparse_joint_control` on to `fit_sparse_joint()`.
 
 ```{r fit}
 fit <- fit_karst(
   sim$counts,
   dt = 1,
   beta = 0.00005,
-  min_cn = 1,
-  max_cn = 4,
-  local_shell_depth = 2,
-  global_extra_shell = 1
+  sparse_joint_control = list(min_cn = 1, max_cn = 4)
 )
-head(summarize_karst(fit))
+fit
+head(fit$summary[, c("karyotype", "major", "shell", "relative_fitness", "relative_sd")])
 ```
 
-Inspect local and global support tiers.
+Predict the fitness of any karyotype: inside the fitted domain from the
+posterior, outside it from the fitted trend.
 
-```{r tiers}
-table(summarize_karst(fit, layer = "local")$support_tier)
-table(summarize_karst(fit, layer = "global")$support_tier)
+```{r predict}
+predict(fit, c("2.2.2.2", "3.3.3.3"))[, c("karyotype", "relative_fitness", "relative_sd", "in_domain")]
 ```

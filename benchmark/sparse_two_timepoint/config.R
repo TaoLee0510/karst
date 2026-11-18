@@ -49,12 +49,6 @@ stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_tw
                stringsAsFactors = FALSE)
   }
   landscapes <- rbind(make_split("dev", 71000L), make_split("heldout", 82000L))
-  # The two-layer pipeline with one of its second-layer methods.
-  two_layer_method <- function(extrapolation_method) {
-    list(type = "karst_two_layer", local_shell_depth = 0L, max_nodes = 60000L,
-         graph_hyperparameters = c(lambda_l = 1, lambda_e = 0.25, sigma_obs = 0.05),
-         extrapolation_method = extrapolation_method)
-  }
   # What a cohort method needs to find the other datasets of its cohort.
   cohort_method <- function(members, ...) {
     list(type = "karst_sparse_joint_cohort", birth_rate = 1, min_cn = 1L, max_cn = 8L, members = members,
@@ -109,7 +103,7 @@ stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_tw
     # uniformly sampled one- and two-step neighbours.
     scoring = list(min_cn = 1L, max_cn = 8L, d1_cap = 2000L, d2_cap = 2000L, reference_min_count = 5),
     # Roles in the acceptance rule (report.R).
-    acceptance = list(zero = "zero", current = "karst_two_layer_fixed",
+    acceptance = list(zero = "zero",
                       original = c("alfak_minobs5", "alfak_minobs20"),
                       candidates = c("karst_sparse_joint", "karst_sparse_joint_balance"),
                       # Cohort methods exist for the cohort scenario only and are
@@ -127,22 +121,6 @@ stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_tw
                              nn_prior = "empirical"),
       alfak_minobs20 = list(type = "alfak", minobs = 20L, nboot = 45L, n0 = 5e4, nb = 2e6,
                              nn_prior = "empirical"),
-      # Graph hyperparameters fixed at the centre of the package's default grid.
-      karst_two_layer_fixed = list(type = "karst_two_layer", local_shell_depth = 0L, max_nodes = 60000L,
-                                    graph_hyperparameters = c(lambda_l = 1, lambda_e = 0.25, sigma_obs = 0.05)),
-      # The other second-layer methods of the two-layer pipeline, on the same
-      # first layer and the same fixed graph hyperparameters. The TabPFN
-      # method falls back to delta_tree_ensemble without the Python module
-      # and is not listed separately.
-      karst_two_layer_edge_effect = two_layer_method("edge_effect_empirical_bayes"),
-      karst_two_layer_path_ensemble = two_layer_method("edge_effect_interaction_path_ensemble"),
-      karst_two_layer_polynomial = two_layer_method("local_polynomial_stencil"),
-      karst_two_layer_nngp = two_layer_method("local_NNGP_or_GPnn"),
-      karst_two_layer_delta_tree = two_layer_method("delta_tree_ensemble"),
-      karst_two_layer_trend_filtering = two_layer_method("kronecker_or_graph_trend_filtering"),
-      karst_two_layer_nearfield_gmrf = two_layer_method("truncated_nearfield_gmrf"),
-      # Package default: hyperparameters by leave-one-anchor-out selection.
-      karst_two_layer_cv = list(type = "karst_two_layer", local_shell_depth = 0L, max_nodes = 60000L),
       # Candidate. One division per day is assumed for every dataset; the
       # simulated populations divide about 0.9 times per day.
       # `initial_state = "free"` was the package default when these were

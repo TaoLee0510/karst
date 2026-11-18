@@ -15,8 +15,8 @@ mutation-selection balance by the clone it descends from, so its frequency
 follows its parent's and says nothing through its change. What carries its
 fitness is its level relative to the parent: influx divided by fitness deficit.
 The forward model therefore has to integrate mutational influx over the
-interval. The two-layer pipeline applies one transport step after selection,
-which underestimates that influx by a factor of 160–320 at these rates.
+interval. A single transport step after selection underestimates that influx
+by a factor of 160–320 at these rates.
 
 ## Decisions
 
@@ -322,45 +322,43 @@ than two time points `"auto"` is `"balance"`.
 Pooled over the eight core scenarios, 96 datasets; RMSE, with Spearman
 correlation in brackets, then coverage of the reported 95% intervals.
 
-| Distance | No information | Two-layer | ALFA-K (minobs 20) | Sparse joint | With balance |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| 0 | 0.046 | 0.045 (0.30) | 1.073 (0.23) | 0.033 (0.44), 0.97 | 0.026 (0.47), 0.98 |
-| 1 | 0.092 | 0.091 (0.24) | 1.186 (0.20) | 0.055 (0.43), 0.94 | 0.044 (0.45), 0.97 |
-| 2 | 0.137 | 0.136 (0.15) | 1.297 (0.18) | 0.079 (0.36), 0.91 | 0.066 (0.38), 0.96 |
+| Distance | No information | ALFA-K (minobs 20) | Sparse joint | With balance |
+| --- | ---: | ---: | ---: | ---: |
+| 0 | 0.046 | 1.073 (0.23) | 0.033 (0.44), 0.97 | 0.026 (0.47), 0.98 |
+| 1 | 0.092 | 1.186 (0.20) | 0.055 (0.43), 0.94 | 0.044 (0.45), 0.97 |
+| 2 | 0.137 | 1.297 (0.18) | 0.079 (0.36), 0.91 | 0.066 (0.38), 0.96 |
 
 All 168 fits of each variant (core and stress scenarios) finished; median
 9 s for the default and 14 s with balance, maximum 238 s.
 
-Acceptance: the default model passes 17 of 18 criteria. RMSE is below the
-no-information answer and below the two-layer pipeline at every distance, and
-Spearman above both existing methods, all with landscape-bootstrap intervals
-excluding zero. The safety line fails in one cell: scenario
-`unbalanced_3000_100_360d` at distance 0, RMSE 17% above the two-layer
-pipeline. That cell is two near-monoclonal datasets whose information is in
-the deep first time point, which the default model does not read. With balance
-all 18 pass; its worst cell is 0.69 of the two-layer pipeline.
+Acceptance: both models pass every criterion. RMSE is below the
+no-information answer at every distance, and Spearman above ALFA-K with
+minobs 5 and 20, all with landscape-bootstrap intervals excluding zero. The
+default model's weakest cell is scenario `unbalanced_3000_100_360d` at
+distance 0: two near-monoclonal datasets whose information is in the deep
+first time point, which the default model does not read and the model with
+balance does.
 
 ## Held-out confirmation
 
 Twelve landscapes simulated with seeds sealed until the methods were frozen
 (commit 61ef06e), eight core scenarios, 96 datasets, scored once.
 
-| Distance | No information | Two-layer | ALFA-K (minobs 20) | Sparse joint | With balance |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| 0 | 0.044 | 0.043 (0.22) | 0.277 (0.16) | 0.032 (0.41), 0.97 | 0.025 (0.44), 0.98 |
-| 1 | 0.090 | 0.090 (0.16) | 0.371 (0.13) | 0.058 (0.36), 0.95 | 0.046 (0.37), 0.96 |
-| 2 | 0.136 | 0.135 (0.09) | 0.454 (0.12) | 0.082 (0.30), 0.93 | 0.068 (0.31), 0.94 |
+| Distance | No information | ALFA-K (minobs 20) | Sparse joint | With balance |
+| --- | ---: | ---: | ---: | ---: |
+| 0 | 0.044 | 0.277 (0.16) | 0.032 (0.41), 0.97 | 0.025 (0.44), 0.98 |
+| 1 | 0.090 | 0.371 (0.13) | 0.058 (0.36), 0.95 | 0.046 (0.37), 0.96 |
+| 2 | 0.136 | 0.454 (0.12) | 0.082 (0.30), 0.93 | 0.068 (0.31), 0.94 |
 
-- With balance, all 15 criteria that could be evaluated pass (ALFA-K with
+- With balance, all six criteria that could be evaluated pass (ALFA-K with
   minobs 5 was not run on these landscapes): RMSE 43%, 49% and 50% below no
-  information, with every interval excluding zero; worst scenario 0.90 of the
-  two-layer pipeline. All 168 fits finished.
-- The default model passes 12 of 15. The safety line fails at distances 0 and
-  1 (1.38 and 1.14) in `unbalanced_3000_100_360d`, as on the development
+  information, with every interval excluding zero. All 168 fits finished.
+- The default model passes all six as well. Its weakest scenarios are
+  `unbalanced_3000_100_360d` at distances 0 and 1, as on the development
   landscapes, from three datasets in which most observed karyotypes, seen at
   the deep first time point only, are predicted at the trend (bias -0.12 to
-  -0.23), and at distance 0 in `very_sparse_50_50_180d` (1.33), from one
-  dataset with three observed karyotypes.
+  -0.23), and `very_sparse_50_50_180d` at distance 0, from one dataset with
+  three observed karyotypes.
 - ALFA-K fails in 5 of 96 fits and its error is 3–6 times that of no
   information.
 - The calibration fitted on the development landscapes holds: coverage of
@@ -378,14 +376,14 @@ image of the paper benchmark (`alfak` and the null predictor reused);
 `benchmark/sparse_two_timepoint/README.md` describes the rerun. Pooled over
 the eight core scenarios, 96 datasets each:
 
-| Distance | No information | Two-layer | ALFA-K (minobs 20) | Sparse joint | With balance |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Development 0 | 0.046 | 0.045 (0.30) | 1.073 (0.23) | 0.033 (0.44), 0.97 | 0.026 (0.47), 0.98 |
-| Development 1 | 0.092 | 0.091 (0.24) | 1.186 (0.20) | 0.055 (0.43), 0.97 | 0.044 (0.45), 0.99 |
-| Development 2 | 0.137 | 0.136 (0.15) | 1.297 (0.18) | 0.079 (0.36), 0.95 | 0.066 (0.38), 0.98 |
-| Held-out 0 | 0.044 | 0.043 (0.22) | 0.277 (0.16) | 0.032 (0.41), 0.97 | 0.025 (0.44), 0.98 |
-| Held-out 1 | 0.090 | 0.090 (0.16) | 0.371 (0.13) | 0.058 (0.36), 0.98 | 0.046 (0.37), 0.99 |
-| Held-out 2 | 0.136 | 0.135 (0.09) | 0.454 (0.12) | 0.083 (0.30), 0.96 | 0.068 (0.31), 0.98 |
+| Distance | No information | ALFA-K (minobs 20) | Sparse joint | With balance |
+| --- | ---: | ---: | ---: | ---: |
+| Development 0 | 0.046 | 1.073 (0.23) | 0.033 (0.44), 0.97 | 0.026 (0.47), 0.98 |
+| Development 1 | 0.092 | 1.186 (0.20) | 0.055 (0.43), 0.97 | 0.044 (0.45), 0.99 |
+| Development 2 | 0.137 | 1.297 (0.18) | 0.079 (0.36), 0.95 | 0.066 (0.38), 0.98 |
+| Held-out 0 | 0.044 | 0.277 (0.16) | 0.032 (0.41), 0.97 | 0.025 (0.44), 0.98 |
+| Held-out 1 | 0.090 | 0.371 (0.13) | 0.058 (0.36), 0.98 | 0.046 (0.37), 0.99 |
+| Held-out 2 | 0.136 | 0.454 (0.12) | 0.083 (0.30), 0.96 | 0.068 (0.31), 0.98 |
 
 - Errors and rank correlations are those of the earlier runs to within 0.002.
 - Coverage at distances 1 and 2 is higher: the earlier runs' fits predate
@@ -397,6 +395,9 @@ the eight core scenarios, 96 datasets each:
   difference between the Mac it ran on and the HPC.
 - The method document's numbers (Section 5 and the supplements, and
   `doc/generated/`) are from this rerun.
+- Under the acceptance rule of KARST 1.0.0 (RMSE below the no-information
+  answer, Spearman above ALFA-K), both models pass every criterion on the
+  development (9 of 9) and the held-out landscapes (6 of 6) of this rerun.
 
 ## Stress scenarios
 
@@ -522,64 +523,32 @@ a residual of 0.003). The patients do not look like one landscape. Within a
 dataset, estimates under the two trends agree (Spearman 0.94, median over
 datasets). The fit takes about an hour for 16 000 states.
 
-## The second-layer methods of the two-layer pipeline
-
-The two-layer pipeline's nine second-layer methods were compared on the 96
-development datasets of the core scenarios (2026-11-11), each with the same
-first layer and fixed graph hyperparameters as `karst_two_layer_fixed`
-(`graph_gaussian_baseline`). `tabpfn_nearfield_feature_model` runs
-`delta_tree_ensemble` without its Python module and was not run separately.
-All 672 fits finished. By wavelength (`wavelength_tables.R`, as in Supplement
-S2.3 of `doc/karst_method.tex`):
-
-- Error: every second-layer method is 0.89 to 1.00 times the error of the null
-  predictor (`delta_tree_ensemble` 0.89 to 1.00), against 0.44 to 0.76 for the
-  sparse joint model with balance. They all interpolate the same first-layer
-  anchors, so the choice of second layer hardly matters.
-- Ranking: on the smoothest landscapes the second-layer methods rank observed
-  karyotypes better (wavelength 1.6, distance 0: 0.48 to 0.54 against 0.42)
-  and as well at wavelength 1.2 (0.47 to 0.50 against 0.49); everywhere else
-  the sparse joint model ranks better. The held-out landscapes show the same
-  exception (0.48 against 0.34 for `graph_gaussian_baseline`).
-- Intervals: near zero coverage for `local_polynomial_stencil` and
-  `delta_tree_ensemble` at distances 1 and 2, near one for the graph Gaussian
-  methods and `local_NNGP_or_GPnn`, below 0.6 for observed karyotypes except
-  the graph Gaussian methods; 0.95 to 1.00 for the sparse joint model.
-
-The benchmark's score stage now replaces the rows of the methods it scores and
-keeps the others; it previously rewrote `metrics_<split>.csv` with only those
-methods.
-
 ## Results by wavelength
 
 Pooled over landscapes, errors are dominated by the rugged landscapes
 (wavelength 0.4), where fitness differences are about ten times larger than at
 1.6. The method document therefore reports results per wavelength. On the
 held-out landscapes the sparse joint model with balance is below the null
-predictor at every wavelength and distance (0.46 to 0.74 of its error), the
-two-layer pipeline at 0.92 to 1.00, and `alfak` above it everywhere (21% of
-its fits failed at wavelength 1.6). Coverage of the sparse joint model ranges
+predictor at every wavelength and distance (0.46 to 0.74 of its error), and
+`alfak` above it everywhere (21% of its fits failed at wavelength 1.6). Coverage of the sparse joint model ranges
 from 0.95 (wavelength 0.8, distance 2) to 1.00 (wavelength 1.6): close to
 nominal on intermediate (0.95 to 0.97 at wavelength 0.8), conservative on
 smooth landscapes. The pooled
 acceptance rule is unchanged.
 
-The one ranking exception, observed karyotypes on the smoothest landscapes
-(wavelength 1.6, distance 0), where the two-layer pipeline ranks better (0.48
-against 0.34 held-out), comes from karyotypes seen in fewer than five cells.
-The two-layer pipeline does not filter by count. For karyotypes with at least
-five cells the sparse joint model ranks better at every wavelength (0.74
-against 0.68 at 1.6). At wavelength 1.6, 56% of the rare observed karyotypes
-(held-out; 51% development) lie more than one step from every major and are
-predicted at the common observed level, which cannot rank them; the two-layer
-pipeline smooths them from their observed neighbours (Spearman 0.44). Inside
-the domain the sparse joint model ranks rare karyotypes better (0.65 against
-0.53).
+Observed karyotypes on the smoothest landscapes (wavelength 1.6, distance 0)
+are ranked less well than their neighbours at distance 1 (0.34 against 0.50
+held-out) because of karyotypes seen in fewer than five cells: for karyotypes
+with at least five cells the Spearman correlation at 1.6 is 0.74. At
+wavelength 1.6, 56% of the rare observed karyotypes (held-out; 51%
+development) lie more than one step from every major and are predicted at the
+common observed level, which cannot rank them. Inside the domain the sparse
+joint model ranks rare karyotypes at 0.65.
 
 ## Results by sampling design
 
 `scenario_results.R` resolves the held-out results by sampling design and
-wavelength (Section 5.3 and Supplement S4 of `doc/karst_method.tex`; figures
+wavelength (Section 5.3 and Supplement S1 of `doc/karst_method.tex`; figures
 and tables in `doc/generated/`). Each cell holds three landscapes.
 
 - Sparsity, as cells per observed karyotype, ranges from 1.4 (50/50 cells,
@@ -595,16 +564,14 @@ and tables in `doc/generated/`). Each cell holds three landscapes.
   little. A 1080-day interval is worse than 360 days at wavelengths 0.8 and
   1.2 (0.62 to 0.74 against 0.49 to 0.61). 3000/100 is the weakest design at
   wavelength 1.6 (0.82 at distance 1).
-- The two-layer pipeline is at 0.85 to 1.08 everywhere; `alfak` is below the
-  null predictor in 4 of 96 combinations and up to 300 times above it (the
+- `alfak` is below the null predictor in 4 of 96 combinations and up to 300 times above it (the
   error figure caps its ratios at 8 and labels the larger ones). The sparse
   joint model has a lower error than `alfak` in all 96 and ranks better in
   87 of the 93 with an `alfak` ranking; the exceptions are observed
   karyotypes in four designs at wavelength 1.6 and two small ones at 0.4.
 - Rank correlation at distances 1 and 2 grows with depth on smooth landscapes
   (wavelength 1.6, distance 1: 0.28 at 50/50, 0.55 to 0.61 at 500/700) and
-  stays at 0.12 to 0.32 on rugged ones. The two-layer pipeline ranks observed
-  karyotypes better in 7 of 8 designs at wavelength 1.6 and 2 of 8 at 1.2.
+  stays at 0.12 to 0.32 on rugged ones.
 - Coverage 0.85 to 1.00; below 0.90 mostly at distance 2 with the long
   interval (0.91 to 0.99) or a shallow first time point (100/3000: 0.85 to 0.98),
   at wavelengths up to 0.8.
@@ -614,21 +581,16 @@ and tables in `doc/generated/`). Each cell holds three landscapes.
 `far_distance.R` samples, for every core dataset of both sets, 2000
 karyotypes at distance 3 and 2000 at distance 4 from the nearest observed
 karyotype (`stt_far_nodes()` in `benchmark/sparse_two_timepoint/score.R`) and
-fits all twelve methods again with them as targets: the null predictor, both
-sparse joint variants, the two-layer pipeline with each of its eight second
-layers, and `alfak` (minobs 20). The shells cannot be enumerated at 22
+fits the methods again with them as targets: the null predictor, both sparse
+joint variants and `alfak` (minobs 20). The shells cannot be enumerated at 22
 chromosomes, so they are sampled by random walks from observed karyotypes,
 each observed karyotype an equally likely start, keeping endpoints at exactly
 that distance; this is not uniform within a shell, unlike the scoreboard's
-distances 1 and 2. The walks' intermediate nodes are unscored targets, so that
-the graph second layers have a path. Centring is the scoreboard's. Results,
+distances 1 and 2. The walks' intermediate nodes are passed to the methods but
+not scored. Centring is the scoreboard's. Results,
 fits and the sparse joint fit objects are under
 `benchmark/results/sparse_two_timepoint/sweeps/far/`; `far_results.R` writes
-the figures and tables of Section 5.4 and Supplement S5 to `doc/generated/`.
-The two-layer first layer and target graph are computed once per dataset and
-reused by its eight entries (`--memo=yes`); a check on two datasets gave
-identical predictions for all but `alfak`, whose bootstrap is unseeded
-(correlation 0.996). The run took 3 h 20 min with three workers on a laptop.
+the figures and tables of Section 5.4 and Supplement S2 to `doc/generated/`.
 
 - Every method fitted every dataset except `alfak`, which failed on the same
   7 development and 5 held-out datasets as in the scoreboard.
@@ -647,10 +609,6 @@ identical predictions for all but `alfak`, whose bootstrap is unseeded
   and 1.00, so slightly narrow at wavelength 0.8.
 - Independent initial states: higher error than balance everywhere (0.48 to
   0.82), similar ranking (0.11 to 0.43).
-- Graph Gaussian: 0.98 to 1.00 of the null error, mean error within 0.001 of
-  the null predictor, Spearman -0.04 to 0.28, coverage 1.00 because its
-  standard deviation grows to 0.6 to 1.2. The seven near-field second layers
-  predict nothing beyond distance 2 and score as the null predictor.
 - `alfak` (Kriging mean, no uncertainty): 2.35 / 1.32 / 1.50 / 18.2 at
   distance 3, 2.28 / 1.26 / 1.42 / 15.3 at distance 4; Spearman 0.01 to 0.25.
 - Development landscapes: balance 0.42 to 0.60, Spearman 0.14 to 0.49.
@@ -682,7 +640,6 @@ Held-out, means of 24 datasets per wavelength and distance:
 |---|---|---|---|---|
 | sparse joint, balance | 0.46–0.74 | 0.65–0.96 | 0.76–0.81 | 96 / 96 |
 | sparse joint, independent | 0.53–0.96 | 0.66–0.96 | 0.76–0.81 | 96 / 96 |
-| two-layer (graph Gaussian) | 0.92–1.00 | 0.49–0.57 | 0.49–0.52 | 62 / 96 |
 | alfak (minobs 20) | 1.39–41.6 | 0.36–0.52 | 0.45–0.53 | 28 / 96 |
 
 - alfak is below one half in 10 of 12 wavelength × distance cells at

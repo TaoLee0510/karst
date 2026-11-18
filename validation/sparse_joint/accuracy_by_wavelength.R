@@ -24,7 +24,6 @@ results <- "benchmark/results/sparse_two_timepoint"
 
 methods <- c("Sparse joint, balance (default)" = "karst_sparse_joint_balance",
              "Sparse joint, independent" = "karst_sparse_joint",
-             "Two-layer pipeline" = "karst_two_layer_fixed",
              "alfak (minobs = 20)" = "alfak_minobs20")
 waves <- c("w0.4", "w0.8", "w1.2", "w1.6")
 mean_na <- function(v) if (all(is.na(v))) NA_real_ else mean(v, na.rm = TRUE)
@@ -51,9 +50,9 @@ dev <- load_split("dev")
 
 ## Figure ----------------------------------------------------------------------
 palette <- c("Sparse joint, balance (default)" = "#2a78d6", "Sparse joint, independent" = "#eb6834",
-             "Two-layer pipeline" = "#1baf7a", "alfak (minobs = 20)" = "#eda100")
+             "alfak (minobs = 20)" = "#eda100")
 shapes <- c("Sparse joint, balance (default)" = 16, "Sparse joint, independent" = 17,
-            "Two-layer pipeline" = 15, "alfak (minobs = 20)" = 18)
+            "alfak (minobs = 20)" = 18)
 theme_doc <- theme_minimal(base_size = 8) +
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "#e6e5e0", linewidth = 0.3),
         axis.text = element_text(colour = "#52514e"), strip.text = element_text(colour = "#1f1f1e"),
@@ -84,8 +83,7 @@ figure <- (p1 / p2 / p3) + plot_layout(guides = "collect") & theme(legend.positi
 ggsave(file.path(out_dir, "accuracy_by_wavelength.pdf"), figure, width = 6.5, height = 6.6, device = grDevices::cairo_pdf)
 
 ## Table -----------------------------------------------------------------------
-display <- c("Two-layer pipeline" = "Two-layer pipeline",
-             "alfak (minobs = 20)" = "\\texttt{alfak} (\\texttt{minobs = 20})",
+display <- c("alfak (minobs = 20)" = "\\texttt{alfak} (\\texttt{minobs = 20})",
              "Sparse joint, independent" = "Sparse joint, independent",
              "Sparse joint, balance (default)" = "Sparse joint, balance")
 rows <- vapply(names(display), function(label) {

@@ -45,9 +45,7 @@ beyond the model domain are predicted from a fitted trend. This document
 specifies the model (Section~\ref{sec:sparse-joint}), relates it to
 \texttt{alfak} (Section~\ref{sec:alfak}), describes the default analysis
 workflow (Section~\ref{sec:workflow}) and summarises its validation
-(Section~\ref{sec:validation}). The earlier two-layer pipeline, its nine
-second-layer extrapolation methods and the joint-count pipeline are described
-in the Supplement.
+(Section~\ref{sec:validation}).
 \end{abstract}
 
 \section{Problem Formulation}
@@ -1340,8 +1338,7 @@ The analyses are in validation/sparse\_joint/salehi\_horizon.
 \toprule
 Function & Purpose & Value \\
 \midrule
-\texttt{fit\_karst()} & Principal interface; the sparse joint pipeline is
-the default & Sparse joint fit \\
+\texttt{fit\_karst()} & Principal interface & Sparse joint fit \\
 \texttt{fit\_sparse\_joint()} & Direct interface to the same model & Sparse
 joint fit \\
 \texttt{alfak\_compat()} & Interface with the arguments of
@@ -1352,9 +1349,8 @@ $R^2_{\mathrm{xv}}$ (invisible) \\
 \end{center}
 
 \texttt{fit\_karst()} passes \texttt{counts}, \texttt{dt}, \texttt{beta} and
-the list \texttt{sparse\_joint\_control} to \texttt{fit\_sparse\_joint()}.
-Arguments specific to the earlier pipelines raise an error unless the
-corresponding pipeline is specified. A plain-text version of this section is
+the list \texttt{sparse\_joint\_control} to \texttt{fit\_sparse\_joint()};
+any other argument raises an error. A plain-text version of this section is
 provided in \texttt{doc/karst\_workflow.md}.
 
 \subsection{Procedure}
@@ -1476,38 +1472,22 @@ by the anchored model \\
 \subsection{Software Implementation}
 \label{sec:structure}
 
-\texttt{fit\_karst()} provides three pipelines:
-
-\begin{center}
-\begin{tabular}{L{0.2\textwidth}L{0.4\textwidth}L{0.3\textwidth}}
-\toprule
-Pipeline & Stages & Computation \\
-\midrule
-\texttt{sparse\_joint} (default) & A single count model on the major
-karyotypes and their neighbours, with trend-based prediction beyond them
-(Section~\ref{sec:sparse-joint}) & TMB model \texttt{sparse\_joint};
-\texttt{sparse\_joint\_cohort} for multiple datasets \\
-\texttt{two\_layer} & A local hierarchical count model followed by one of nine
-second-layer methods (Supplement~\ref{sec:s-two-layer}) & Local layer: TMB
-model \texttt{local\_model}; second layer: R and RcppEigen \\
-\texttt{joint\_count} & A single count model with a structured landscape prior
-on a bounded graph (Supplement~\ref{sec:s-joint-count}) & TMB model
-\texttt{local\_model} with the structured prior \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-TMB (Template Model Builder) is an R package in which a negative log density
-is implemented once as a C++ template and compiled. It provides exact
-derivatives by automatic differentiation and the Laplace approximation
-(\ref{eq:laplace}), comprising an inner Newton optimisation over the latent
-variables at given hyperparameters and the log determinant of the sparse
-Hessian. TMB is thus a computational framework rather than a statistical
-method. \texttt{karst} compiles a single library whose entry point selects
-\texttt{local\_model}, \texttt{sparse\_joint} or \texttt{sparse\_joint\_cohort}
-by name. Graph construction, the kernel (\ref{eq:pij}), the graph Gaussian
-posterior of the two-layer pipeline and the simulators are implemented
-separately in Rcpp.
+\texttt{fit\_karst()} fits the sparse joint count model
+(Section~\ref{sec:sparse-joint}); it passes its arguments on to
+\texttt{fit\_sparse\_joint()}. The model is implemented in TMB (Template Model
+Builder), an R package in which a negative log density is implemented once as
+a C++ template and compiled. TMB provides exact derivatives by automatic
+differentiation and the Laplace approximation (\ref{eq:laplace}), comprising
+an inner Newton optimisation over the latent variables at given
+hyperparameters and the log determinant of the sparse Hessian. TMB is thus a
+computational framework rather than a statistical method. \texttt{karst}
+compiles a single library whose entry point selects the model by name:
+\texttt{sparse\_joint} for two time points; \texttt{sparse\_joint\_series},
+\texttt{sparse\_joint\_pairwise} and \texttt{sparse\_joint\_state\_space} for
+more (Section~\ref{sec:sj-series}); and \texttt{sparse\_joint\_cohort} for
+multiple datasets (Section~\ref{sec:sj-cohort}). The parsing of karyotype
+labels and the kernel (\ref{eq:pij}) are implemented in Rcpp; the simulators
+are written in R.
 
 \subsection{Extensions and Computational Cost}
 
@@ -1726,7 +1706,6 @@ drawn at the upper edge and labelled with their value.}
  & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ \\
 \midrule
 Null predictor & 0.107 & 0.230 & 0.344 & 0.033 & 0.069 & 0.107 & 0.020 & 0.037 & 0.057 & 0.014 & 0.023 & 0.034 \\
-Two-layer pipeline & 0.106 & 0.230 & 0.343 & 0.033 & 0.069 & 0.107 & 0.019 & 0.037 & 0.056 & 0.013 & 0.023 & 0.034 \\
 \texttt{alfak} (\texttt{minobs = 20}) & 0.393 & 0.641 & 0.852 & 0.079 & 0.113 & 0.149 & 0.050 & 0.072 & 0.095 & 0.586 & 0.659 & 0.720 \\
 Sparse joint, independent & 0.071 & 0.131 & 0.183 & 0.032 & 0.062 & 0.091 & 0.015 & 0.024 & 0.036 & 0.011 & 0.014 & 0.020 \\
 Sparse joint, balance & 0.054 & 0.108 & 0.159 & 0.020 & 0.039 & 0.062 & 0.014 & 0.020 & 0.031 & 0.010 & 0.015 & 0.019 \\
@@ -1747,7 +1726,6 @@ Sparse joint, balance & 0.054 & 0.108 & 0.159 & 0.020 & 0.039 & 0.062 & 0.014 & 
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
  & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ \\
 \midrule
-Two-layer pipeline & -0.035 & -0.045 & -0.038 & 0.075 & 0.035 & 0.022 & 0.363 & 0.284 & 0.191 & 0.482 & 0.381 & 0.185 \\
 \texttt{alfak} (\texttt{minobs = 20}) & 0.031 & 0.023 & 0.026 & 0.033 & 0.013 & 0.015 & 0.242 & 0.201 & 0.168 & 0.334 & 0.294 & 0.277 \\
 Sparse joint, independent & 0.392 & 0.193 & 0.145 & 0.387 & 0.276 & 0.199 & 0.524 & 0.465 & 0.381 & 0.351 & 0.510 & 0.461 \\
 Sparse joint, balance & 0.471 & 0.235 & 0.172 & 0.407 & 0.286 & 0.209 & 0.531 & 0.473 & 0.391 & 0.339 & 0.500 & 0.457 \\
@@ -1765,7 +1743,6 @@ Sparse joint, balance & 0.471 & 0.235 & 0.172 & 0.407 & 0.286 & 0.209 & 0.531 & 
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
  & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ \\
 \midrule
-Two-layer pipeline & 0.514 & 0.995 & 1.000 & 0.994 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
 \texttt{alfak} (\texttt{minobs = 20}) & 0.387 & 0.319 & 0.259 & 0.249 & 0.188 & 0.174 & 0.403 & 0.260 & 0.229 & 0.678 & 0.565 & 0.484 \\
 Sparse joint, independent & 0.954 & 0.985 & 0.980 & 0.954 & 0.939 & 0.892 & 0.983 & 0.984 & 0.974 & 1.000 & 1.000 & 0.999 \\
 Sparse joint, balance & 0.957 & 0.987 & 0.985 & 0.966 & 0.971 & 0.948 & 0.986 & 0.997 & 0.994 & 1.000 & 1.000 & 1.000 \\
@@ -1775,63 +1752,48 @@ Sparse joint, balance & 0.957 & 0.987 & 0.985 & 0.966 & 0.971 & 0.948 & 0.986 & 
 
 With the balance prior, the sparse joint model attained a lower error than the
 null predictor at every wavelength and distance, at 0.46 to 0.74 times its
-value, with the largest reductions on the most rugged landscapes. The
-two-layer pipeline attained 0.92 to 1.00 times the error of the null
-predictor, and \texttt{alfak} exceeded it everywhere; 21\% of the
-\texttt{alfak} fits failed at $\lambda=1.6$.
+value, with the largest reductions on the most rugged landscapes.
+\texttt{alfak} exceeded it everywhere; 21\% of the \texttt{alfak} fits failed
+at $\lambda=1.6$.
 
 Direction accuracy of the sparse joint model with the balance prior was 0.65
 to 0.96. It was highest for observed karyotypes on the most rugged landscapes
 (0.96), where fitness differences are largest, and 0.79 to 0.88 at distances 1
 and 2. It was lowest for observed karyotypes on the smoothest landscapes
-(0.65), for the reason that also explains the exception in rank correlation
-below: rare observed karyotypes outside the domain share one level of the log
+(0.65), for the reason that also explains the lower rank correlation of
+these karyotypes below: rare observed karyotypes outside the domain share one level of the log
 birth rate, so that their predicted fitness differs only through the
 missegregation term, which depends on copy number rather than on the data.
 Independent initial abundances gave similar values (0.66 to 0.96); the
-balance prior improves mainly the numerical accuracy. The two-layer pipeline
-attained 0.49 to 0.57, close to the one half of a method without directional
-information, and \texttt{alfak} 0.36 to 0.52, below one half in 11 of the 12
-combinations of wavelength and distance: it predicted the wrong direction
-more often than the right one. The sparse joint model was thus the only
-method better than the null predictor in both numerical and direction
-accuracy at every wavelength and distance. On the development landscapes its
+balance prior improves mainly the numerical accuracy. \texttt{alfak}
+attained 0.36 to 0.52, below one half in 11 of the 12 combinations of
+wavelength and distance: it predicted the wrong direction more often than the
+right one. The sparse joint model was thus better than the null predictor in
+both numerical and direction accuracy at every wavelength and distance. On the development landscapes its
 direction accuracy was 0.66 to 0.93.
 
 Rank correlations, which measure the overall similarity of predicted and true
 fitness rather than the direction of individual changes, were higher for the
-sparse joint model than for the two-layer pipeline and
-\texttt{alfak} at every wavelength and distance, with one exception: for
-observed karyotypes on the smoothest landscapes ($\lambda=1.6$, $d=0$), the
-two-layer pipeline ranked them better (0.48 versus 0.34). The exception
-arises from observed karyotypes with fewer than five cells. For karyotypes
-with at least five cells, the sparse joint model ranked better at every
-wavelength (0.74 versus 0.68 at $\lambda=1.6$). On smooth landscapes the
-populations are diverse, and 56\% of the rare observed karyotypes lay more
-than one step from every major karyotype, outside the domain, where the
-sparse joint model assigns them a common level (\ref{eq:predict-level}) that
-carries no ranking information. The two-layer pipeline instead estimates each
-of them by smoothing over neighbouring observed karyotypes, which is effective
-when neighbouring karyotypes have similar fitness (Spearman 0.44 for these
-karyotypes). Within the domain, the sparse joint model ranked rare karyotypes
-better (0.65 versus 0.53). Rank correlations at distances 1 and 2 decreased
-with ruggedness. Coverage of the sparse joint model
+sparse joint model than for \texttt{alfak} at every wavelength and distance.
+On the smoothest landscapes ($\lambda=1.6$), observed karyotypes were ranked
+less well than their neighbours (0.34 at $d=0$ against 0.50 and 0.46 at
+$d=1$ and 2, with the balance prior). This arises from observed karyotypes
+with fewer than five cells: for karyotypes with at least five cells, the rank
+correlation at $\lambda=1.6$ was 0.74. On smooth landscapes the populations
+are diverse, and 56\% of the rare observed karyotypes lay more than one step
+from every major karyotype, outside the domain, where the sparse joint model
+assigns them a common level (\ref{eq:predict-level}) that carries no ranking
+information. Within the domain, the rank correlation of rare karyotypes was
+0.65. Rank correlations at distances 1 and 2 decreased with ruggedness. Coverage of the sparse joint model
 ranged from 0.95 to 1.00: close to nominal on landscapes of intermediate
 ruggedness ($\lambda=0.8$: 0.95 to 0.97) and conservative on the smoother
 ones (0.99 to 1.00 at $\lambda\ge1.2$).
 The intervals of \texttt{alfak} covered 17--68\% of reference values and
-were thus overconfident; those of the two-layer pipeline were close to one
-except for observed karyotypes on the most rugged landscapes. The acceptance
-criteria, specified before the held-out landscapes were evaluated, were
-applied to values averaged over all twelve landscapes and were all met: lower
-error than both the null predictor and the two-layer pipeline, higher rank
-correlation than both the two-layer pipeline and \texttt{alfak}, and no
-scenario with an error more than 10\% above that of the two-layer pipeline.
-On the development landscapes, none of the eight
-available second-layer methods of the two-layer pipeline reduced the error
-of the null predictor by more than 11\% at any wavelength and distance,
-whereas the sparse joint model reduced it by 24--56\%
-(Supplement~\ref{sec:s-extrapolation-results}).
+were thus overconfident. The acceptance criteria, specified before the
+held-out landscapes were evaluated, were applied to values averaged over all
+twelve landscapes and were all met; they included a lower error than the null
+predictor and a higher rank correlation than \texttt{alfak} at every
+distance.
 
 \subsection{Results by Sampling Design}
 \label{sec:val-sampling}
@@ -1840,8 +1802,7 @@ Figures~\ref{fig:design-error}, \ref{fig:design-direction}
 and~\ref{fig:design-rank} resolve the held-out results by sampling design.
 For each wavelength and distance they show the error relative to the null
 predictor, the direction accuracy and the rank correlation of the sparse
-joint model, with and without the balance prior, of the two-layer pipeline
-and of \texttt{alfak}; points are means over the three landscapes of a
+joint model, with and without the balance prior, and of \texttt{alfak}; points are means over the three landscapes of a
 wavelength and bars the range over those landscapes. Designs are ordered by the number of cells at fixed
 interval (50/50 cells at 180 days, 200/200 at 180 and 360 days, 500/700 at 360
 days), followed by a longer interval, a bottleneck and the two unbalanced
@@ -1905,8 +1866,7 @@ ratios of 0.44 to 0.48 against 0.48 to 0.50 at 360 days) and reduced it on
 landscapes of intermediate ruggedness ($\lambda=0.8$ and 1.2, 0.62 to 0.74
 against 0.49 to 0.61). Of the unbalanced designs, 3000 cells at the first and 100 at the second
 time point gave the weakest result on the smoothest landscapes (0.82 at distance
-1). The two-layer pipeline attained 0.85 to 1.08 times the error of the null
-predictor in every design. \texttt{alfak} exceeded the error of the null
+1). \texttt{alfak} exceeded the error of the null
 predictor in 92 of the 96 combinations, by more than a factor of eight in 10
 of them, and the sparse joint model attained a lower error than
 \texttt{alfak} in all 96. On the development landscapes the sparse joint
@@ -1918,19 +1878,15 @@ combinations of wavelength, design and distance (0.55 to 1.00;
 Figure~\ref{fig:design-direction}). At distance 1 it was 0.76 to 0.90 in
 every design, so that even 50 cells per time point identified the direction of
 most changes between neighbouring karyotypes; unlike the error, it changed
-little with the number of cells. The two-layer pipeline exceeded one half in 62 and
-\texttt{alfak} in 28 of the 96 combinations (0.33 to 0.72 and 0.12 to 0.72).
+little with the number of cells. \texttt{alfak} exceeded one half in 28 of the
+96 combinations (0.12 to 0.72).
 On the development landscapes the sparse joint model exceeded one half in all
 96 combinations (0.60 to 1.00).
 
 Rank correlations of the sparse joint model at distances 1 and 2 increased
 with the number of cells on smooth landscapes ($\lambda=1.6$, distance 1: 0.28 at 50
 cells per time point against 0.55 to 0.61 at 500/700) but remained between 0.12
-and 0.32 on the most rugged landscapes in every design. The two-layer
-pipeline ranked observed karyotypes better in 7 of the 8 designs at
-$\lambda=1.6$ and in 2 of 8 at $\lambda=1.2$, for the reason given in
-Section~\ref{sec:val-wavelength}; it ranked them worse in every design at
-$\lambda\le0.8$. The sparse joint model ranked karyotypes better than
+and 0.32 on the most rugged landscapes in every design. The sparse joint model ranked karyotypes better than
 \texttt{alfak} in 87 of the 93 combinations in which \texttt{alfak} produced
 a ranking; the exceptions were observed karyotypes in four designs at
 $\lambda=1.6$ and two small differences at $\lambda=0.4$. Coverage of the
@@ -1950,9 +1906,8 @@ observed karyotypes, each observed karyotype being an equally likely start,
 and endpoints at exactly that distance were retained, up to 2000 per
 distance; the shells cannot be enumerated at 22 chromosomes, and this
 sampling is not uniform within a shell. All methods were fitted again with
-these karyotypes as targets. The intermediate nodes of the walks were added
-as unscored targets, so that the graph-based second layers of the two-layer
-pipeline have a path from the observed karyotypes. Reference values and
+these karyotypes as targets; the intermediate nodes of the walks were passed
+to the methods as well but not scored. Reference values and
 centring are those of Section~\ref{sec:val-design}, so that distances 0 to 4
 share one origin. Because fitness declines with distance from the observed
 karyotypes, the error at large distances contains a mean deficit that the
@@ -1960,7 +1915,8 @@ null predictor does not capture; the mean error, the direction accuracy and
 the rank correlation are therefore reported alongside the error ratio. For
 direction accuracy, a karyotype at distance 3 or 4 is paired with its
 neighbours among all nodes of the walks, so that each has neighbours one step
-closer to the observed karyotypes; it is computed for the four main methods.
+closer to the observed karyotypes; it is computed for every method but the
+null predictor.
 
 \begin{figure}[htbp]
 \centering
@@ -1973,8 +1929,7 @@ closer to the observed karyotypes; it is computed for the four main methods.
 (middle) and Spearman correlation with the reference values (bottom) against
 distance from the nearest observed karyotype, held-out landscapes. Distances 0 to 2 are those of the scoreboard;
 the shaded region marks distances 3 and 4. Ratios of \texttt{alfak} above 8
-are drawn at the upper edge and labelled with their value. Graph Gaussian
-denotes the two-layer pipeline with its default second layer.}
+are drawn at the upper edge and labelled with their value.}
 \label{fig:far}
 \end{figure}
 
@@ -2014,20 +1969,7 @@ Direction accuracy of the sparse joint model at distances 3 and 4 was 0.76 to
 0.81, slightly below that at distance 2 (0.79 to 0.84) and similar with
 independent initial states.
 
-The graph Gaussian second layer of the two-layer pipeline attained 0.98 to
-1.00 times the error of the null predictor at distances 3 and 4, and its mean
-error agreed with that of the null predictor to within 0.001: its predictions
-shrink to zero away from the observed karyotypes. Its rank correlation ranged
-from $-0.04$ to 0.28 and was lower than that of the sparse joint model at
-every wavelength and both distances, and its direction accuracy was 0.49 to
-0.52, that of a method without directional information. Its standard
-deviations grew with
-distance, to 0.6 to 1.2 at distances 3 and 4 in the datasets examined, so
-that its intervals contained 99.9 to 100\% of the reference values; such
-intervals carry little information. The seven near-field
-second-layer methods produced no prediction beyond distance 2 and are
-therefore equivalent to the null predictor there
-(Supplement~\ref{sec:s-far}). \texttt{alfak} predicts these karyotypes from
+\texttt{alfak} predicts these karyotypes from
 its Kriging mean surface, without an uncertainty. Its error was 2.35, 1.32,
 1.50 and 18.2 times that of the null predictor at distance 3 and 2.28, 1.26,
 1.42 and 15.3 times at distance 4, its direction accuracy was 0.45 to 0.53,
@@ -2039,9 +1981,7 @@ the sparse joint model at distances 3 and 4 (Supplement~\ref{sec:s-far}). One qu
 comparison across distances. The scoreboard draws distances 1 and 2
 uniformly within each shell, whereas distances 3 and 4 are drawn by random
 walks, which are not uniform within a shell. Differences between distances 2
-and 3 therefore partly reflect the sampling; the rank correlation of the graph
-Gaussian layer at $\lambda=1.6$, which rose from 0.19 at distance 2 to 0.28
-at distance 3, is an example. Beyond the domain, the sparse joint model thus
+and 3 therefore partly reflect the sampling. Beyond the domain, the sparse joint model thus
 retains a constant advantage over the null predictor, because its trend
 captures the decline of fitness with distance, and it identifies the
 direction of 76 to 81\% of changes between neighbouring karyotypes; but
@@ -2086,7 +2026,7 @@ reference values exist.
 
 \section{Summary}
 
-The default pipeline of \texttt{karst} can be summarised as
+The method of \texttt{karst} can be summarised as
 \[
 \begin{aligned}
 &\text{counts at two time points}
@@ -2101,9 +2041,8 @@ The default pipeline of \texttt{karst} can be summarised as
 with calibrated uncertainty and, optionally, output in the \texttt{alfak}
 format. On held-out simulated landscapes it was better than the null
 predictor in both numerical and direction accuracy at every wavelength and
-distance, which neither the earlier two-layer pipeline nor \texttt{alfak}
-achieved (Section~\ref{sec:validation}). The earlier pipelines are described
-in the Supplement.
+distance, which \texttt{alfak} did not achieve
+(Section~\ref{sec:validation}).
 
 \clearpage
 \sloppy
@@ -2114,1261 +2053,6 @@ in the Supplement.
 \begin{center}
 {\Large\bfseries Supplement}
 \end{center}
-
-\section{The Two-Layer Pipeline}
-\label{sec:s-two-layer}
-
-The two-layer pipeline, \texttt{fit\_karst(..., pipeline = "two\_layer")},
-was the default before November 2026 and remains available. It first fits a
-local hierarchical count model around the observed karyotypes and then treats
-the resulting local fitness estimates as noisy anchors, from which a
-second-layer method predicts fitness on a larger bounded graph:
-\[
-\begin{aligned}
-\text{counts}&\longrightarrow\text{local count model}\longrightarrow
-\text{anchors }(z_a,s_a^2)\\
-&\longrightarrow\text{second-layer method}\longrightarrow\text{global landscape}.
-\end{aligned}
-\]
-The second layer does not use the counts. On the sparse two-time-point benchmark,
-the pipeline with its default second layer was not more accurate than the
-null predictor that assumes no fitness differences
-(Section~\ref{sec:validation}).
-
-\subsection{Procedure}
-
-\begin{enumerate}
-\item \textbf{Input depth.} The counts are used as supplied or resampled to an
-effective depth (Section~\ref{sec:s-preprocessing}).
-\item \textbf{Local graph.} The observed karyotypes and their neighbours up to
-\texttt{local\_shell\_depth} steps (default 2), with copy numbers in $[0,5]$
-and at most 5000 nodes (Section~\ref{sec:s-graph}).
-\item \textbf{Transport kernel} on this graph, exact by default
-(Section~\ref{sec:kernel}).
-\item \textbf{Local posterior.} The local hierarchical count model, compiled as
-the TMB model \texttt{local\_model}, with a multinomial observation model for
-raw counts and a Dirichlet-multinomial observation model for effective counts
-(Section~\ref{sec:s-local}).
-\item \textbf{Anchors.} Local estimates with finite variances, inflated
-according to the status of their covariance and, optionally, for low counts
-(Section~\ref{sec:s-anchors}).
-\item \textbf{Global graph.} The local graph extended by
-\texttt{global\_extra\_shell} steps (default 1), or an explicitly specified
-set of target karyotypes.
-\item \textbf{Second layer.} One of the nine methods of
-Supplement~\ref{sec:s-extrapolation}, by default
-\texttt{graph\_gaussian\_baseline}, with hyperparameters selected by
-leave-one-anchor-out cross-validation when grids are supplied.
-\item \textbf{Output}, optionally on the \texttt{alfak} scale
-(Sections~\ref{sec:s-output}--\ref{sec:s-alfak-scale}).
-\end{enumerate}
-
-\subsection{Notation}
-
-\begin{table}[h]
-\centering
-\begin{tabular}{ll}
-\toprule
-Symbol & Meaning \\
-\midrule
-$x_v$ & Copy-number vector for node $v$ \\
-$\mathcal{O}$ & Observed karyotype set \\
-$\mathcal{G}=(\mathcal{V},\mathcal{E})$ & Bounded karyotype graph \\
-$d(v)$ & Shortest one-step copy-number distance from observed seed nodes \\
-$\beta$ & Single-chromosome missegregation probability \\
-$\Delta t$ & Time interval between the two count observations \\
-$T_{uv}$ & Row-stochastic transition probability from parent node $u$ to child node $v$ \\
-$\eta_v$ & Initial log-abundance parameter for node $v$ \\
-$\pi_{0v}, \pi_{1v}$ & Model frequencies at the two timepoints \\
-$f_v$ & Native \texttt{karst} fitness for node $v$ \\
-$z_a$ & Local fitness estimate used as a global anchor \\
-$s_a^2$ & Local fitness variance estimate for anchor $a$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Count Preprocessing}
-\label{sec:s-preprocessing}
-
-If \texttt{input\_depth = "raw"}, the model uses the supplied count matrix
-directly:
-\[
-  y'_{vt}=y_{vt}.
-\]
-
-If \texttt{input\_depth = "effective"}, each timepoint is first converted to
-frequencies and then recounted at a controlled target depth:
-\[
-  N_t = \sum_{v \in \mathcal{O}} y_{vt},
-  \qquad
-  \hat p_{vt} = \frac{y_{vt}}{N_t}.
-\]
-The target depth is
-\[
-  D_t =
-  \begin{cases}
-  \min(N_0,N_1), & \text{mode = min},\\
-  \min(N_t,D), & \text{mode = cap},\\
-  D, & \text{mode = fixed}.
-  \end{cases}
-\]
-The effective counts satisfy
-\[
-  y'_{vt} \approx D_t \hat p_{vt},
-  \qquad
-  \sum_v y'_{vt}=D_t.
-\]
-Rounding is performed with a largest-remainder style rule so that the total is
-exactly preserved.
-
-This step controls the influence of sequencing depth. Without it, a timepoint
-with much larger depth can dominate the likelihood even when the biological
-information content should be treated as comparable.
-
-\subsection{Bounded Karyotype Graph}
-\label{sec:s-graph}
-
-\texttt{karst} builds a finite graph
-$\mathcal{G}=(\mathcal{V},\mathcal{E})$ around the observed karyotypes.
-Two nodes are connected by a one-step edge if they differ by one copy on one
-chromosome:
-\[
-  x_v = x_u \pm e_c,
-\]
-where $e_c$ is the unit vector in chromosome coordinate $c$.
-
-Graph expansion is bounded by copy-number limits, shell depth, and a maximum
-node count:
-\[
-  \min_{\mathrm{cn}} \le x_{vc} \le \max_{\mathrm{cn}},
-  \qquad
-  d(v) \le h,
-  \qquad
-  |\mathcal{V}| \le M.
-\]
-
-Nodes are classified by support distance:
-\[
-\begin{array}{ll}
-d(v)=0 & \text{directly informed},\\
-d(v)=1 & \text{local borrowed},\\
-d(v)=2 & \text{weakly supported},\\
-d(v)>2 & \text{graph borrowed}.
-\end{array}
-\]
-
-The bounded graph avoids enumerating the full copy-number lattice, whose size
-grows exponentially with chromosome dimension. It keeps the inference focused
-on biologically plausible states near the observed karyotypes.
-
-\subsection{Missegregation Transition Kernel}
-\label{sec:kernel}
-
-\subsubsection{Exact Single-Chromosome Kernel}
-
-Let $i$ be the parent copy number and $j$ the child copy number for one
-chromosome. Under the exact kernel, the transition probability is
-\[
-  p_{\beta}(i \to j)
-  =
-  \sum_{\substack{m=|i-j|\\m\equiv |i-j|\;(\mathrm{mod}\;2)}}^{i}
-  \binom{i}{m}
-  \beta^m(1-\beta)^{i-m}
-  2^{-m}
-  \binom{m}{(m+i-j)/2}.
-\]
-Here $m$ is the number of missegregating copies. The term
-$\binom{i}{m}$ selects which copies missegregate,
-$\beta^m(1-\beta)^{i-m}$ is the missegregation probability, and
-$2^{-m}\binom{m}{(m+i-j)/2}$ accounts for their allocation to the two
-daughter directions.
-
-\subsubsection{Karyotype-Level Transition Weight}
-
-For a full karyotype transition from node $u$ to node $v$, the exact weight is
-the product over chromosomes:
-\[
-  q_{\beta}(u \to v)
-  =
-  \prod_{c=1}^{p}
-  p_{\beta}(x_{uc}\to x_{vc}).
-\]
-
-The alternative \texttt{linear} kernel retains the first-order
-approximation used in earlier versions:
-\[
-  q_{\beta}(u \to v)
-  =
-  \begin{cases}
-  \beta\max(1,x_{uc}), & x_v=x_u\pm e_c,\\
-  1, & v=u,\\
-  0, & \text{otherwise}.
-  \end{cases}
-\]
-
-\subsubsection{Row-Stochastic Transport Matrix}
-
-The local forward model uses a row-stochastic transport matrix $T$. Let
-$q_{uv}$ be the one-step edge weight and $s_u$ the self weight. Then
-\[
-  T_{uv}
-  =
-  \frac{q_{uv}}{s_u+\sum_{z:(u,z)\in\mathcal{E}}q_{uz}},
-  \qquad u\ne v,
-\]
-and
-\[
-  T_{uu}
-  =
-  \frac{s_u}{s_u+\sum_{z:(u,z)\in\mathcal{E}}q_{uz}}.
-\]
-For the exact kernel, $s_u=q_\beta(u\to u)$. For the linear kernel, $s_u=1$.
-
-\subsection{Local Hierarchical Bayesian Count Model}
-\label{sec:s-local}
-
-The local model estimates initial frequencies and fitness values on a local
-karyotype graph $\mathcal{G}_{\mathrm{local}}$.
-
-\subsubsection{Initial Frequency Parameterization}
-
-Each node $v$ has an initial log-abundance parameter $\eta_v$. Initial
-frequencies are obtained by a softmax transform:
-\[
-  \pi_{0v}
-  =
-  \frac{\exp(\eta_v)}
-       {\sum_{u\in\mathcal{V}}\exp(\eta_u)}.
-\]
-
-\subsubsection{Selection and Missegregation Forward Model}
-
-Fitness acts through exponential growth between the two timepoints:
-\[
-  g_v = \pi_{0v}\exp(\Delta t\,f_v).
-\]
-After growth, mass is transported through the missegregation matrix:
-\[
-  \tilde\pi_{1v}
-  =
-  \sum_{u\in\mathcal{V}} T_{uv}g_u.
-\]
-The result is normalized to a frequency vector:
-\[
-  \pi_{1v}
-  =
-  \frac{\tilde\pi_{1v}}
-       {\sum_{z\in\mathcal{V}}\tilde\pi_{1z}}.
-\]
-
-Thus the model explicitly represents
-\[
-  \text{initial composition}
-  \quad+\quad
-  \text{fitness-driven growth}
-  \quad+\quad
-  \text{missegregation transport}.
-\]
-
-\subsubsection{Observation Model}
-
-For raw counts, the default observation model is multinomial:
-\[
-  y_{\cdot 0}\mid \pi_0
-  \sim
-  \Mult(N_0,\pi_0),
-  \qquad
-  y_{\cdot 1}\mid \pi_1
-  \sim
-  \Mult(N_1,\pi_1),
-\]
-where $N_t=\sum_v y_{vt}$. Up to constants independent of the parameters,
-\[
-  \ell_{\mathrm{mult}}
-  =
-  \sum_v y_{v0}\log \pi_{0v}
-  +
-  \sum_v y_{v1}\log \pi_{1v}.
-\]
-
-The optional Dirichlet-multinomial observation model is
-\[
-  y_{\cdot t}\mid \pi_t,\phi
-  \sim
-  \DM(N_t,\pi_t,\phi),
-\]
-with log-likelihood
-\[
-  \ell_{\mathrm{DM}}(y,\pi,\phi)
-  =
-  \log\Gamma(\phi)
-  -
-  \log\Gamma(N+\phi)
-  +
-  \sum_v
-  \left[
-    \log\Gamma(y_v+\phi\pi_v)
-    -
-    \log\Gamma(\phi\pi_v)
-  \right].
-\]
-This model allows overdispersion relative to the multinomial likelihood.
-
-\subsubsection{Prior for Initial Abundance}
-
-Initial log-abundance has a node-specific Gaussian prior:
-\[
-  \eta_v \sim \Normal(m_{\eta v},s_{\eta v}^2).
-\]
-Directly observed or otherwise effectively counted nodes use a diffuse prior:
-\[
-  m_{\eta v}=0,\qquad s_{\eta v}=5.
-\]
-Unobserved borrowed nodes use a smaller prior mean:
-\[
-  m_{\eta v}
-  =
-  -6 - 0.75\max\{0,d(v)-1\},
-  \qquad
-  s_{\eta v}=1.5.
-\]
-This encodes the conservative assumption that unobserved nearby karyotypes may
-exist but should have small initial abundance unless the data support them.
-
-\subsubsection{Hierarchical Fitness Prior}
-
-For directly informed nodes, fitness is centered at zero:
-\[
-  f_v\mid \sigma_{\mathrm{anchor}}
-  \sim
-  \Normal(0,\sigma_{\mathrm{anchor}}^2),
-  \qquad d(v)=0.
-\]
-
-Borrowed nodes receive information from parent nodes closer to the observed
-set. Each parent edge $(u,v)$ has a context
-\[
-  c(u,v)
-  =
-  \{\text{gain/loss},\;\text{chromosome index},\;\text{parent ploidy band}\}.
-\]
-Context effects follow a hierarchical Gaussian prior:
-\[
-  \delta_c\mid \mu_{g(c)},\tau_{g(c)}
-  \sim
-  \Normal(\mu_{g(c)},\tau_{g(c)}^2),
-\]
-\[
-  \mu_g\sim \Normal(0,0.5^2).
-\]
-The scale parameters are positive and are given half-normal type priors:
-\[
-  \sigma_{\mathrm{neighbor}}>0,\qquad
-  \sigma_{\mathrm{anchor}}>0,\qquad
-  \tau_g>0.
-\]
-
-For a borrowed node $v$, the prior mean is the transition-weighted average of
-parent fitness plus context effect:
-\[
-  m_{fv}
-  =
-  \frac{
-    \sum_{u\in P(v)}
-    w_{uv}\{f_u+\delta_{c(u,v)}\}
-  }{
-    \sum_{u\in P(v)}w_{uv}
-  }.
-\]
-The borrowed-node prior is
-\[
-  f_v\mid \{f_u:u\in P(v)\},\delta,\sigma_{\mathrm{neighbor}}
-  \sim
-  \Normal(m_{fv},\sigma_{\mathrm{neighbor}}^2),
-  \qquad d(v)>0.
-\]
-When $d(v)\ge 2$, the local model inflates this prior standard deviation by
-$1.75$:
-\[
-  f_v \sim \Normal(m_{fv},(1.75\sigma_{\mathrm{neighbor}})^2).
-\]
-This expresses weaker local information farther from observed nodes.
-
-\subsubsection{Local Posterior Objective}
-
-The local layer estimates the maximum a posteriori parameter vector
-\[
-  \theta=(\eta,f,\delta,\mu,\sigma_{\mathrm{neighbor}},
-  \sigma_{\mathrm{anchor}},\tau).
-\]
-It solves
-\[
-  \hat\theta
-  =
-  \arg\max_{\theta}
-  \left\{
-    \ell(Y\mid \eta,f,\beta,\Delta t)
-    +
-    \log p(\eta)
-    +
-    \log p(f\mid \delta)
-    +
-    \log p(\delta,\mu,\sigma,\tau)
-  \right\}.
-\]
-Equivalently, the code minimizes the negative log posterior
-\[
-  \mathcal{J}_{\mathrm{local}}(\theta)
-  =
-  -\ell(Y\mid \eta,f,\beta,\Delta t)
-  -
-  \log p(\eta)
-  -
-  \log p(f\mid \delta)
-  -
-  \log p(\delta,\mu,\sigma,\tau).
-\]
-
-This objective is implemented with Template Model Builder (TMB). TMB is not the
-statistical algorithm; it is the numerical backend used to compute derivatives,
-optimize the MAP objective, and obtain approximate marginal standard errors
-through \texttt{sdreport}.
-
-The local layer returns, for each local graph node,
-\[
-  z_v=\hat f_v,\qquad s_v=\widehat{\mathrm{sd}}(f_v).
-\]
-These become noisy anchors for the global graph layer.
-
-\subsection{Output of the Two-Layer Pipeline}
-\label{sec:s-output}
-
-The local layer reports
-\[
-  \hat f_v^{\mathrm{local}},
-  \qquad
-  \widehat{\operatorname{sd}}(f_v^{\mathrm{local}}),
-  \qquad
-  \hat\pi_{0v},
-  \qquad
-  \hat\pi_{1v}.
-\]
-The second layer reports
-\[
-  \hat f_v^{\mathrm{global}},
-  \qquad
-  \widehat{\operatorname{sd}}(f_v^{\mathrm{global}}),
-  \qquad
-  \texttt{prediction\_status}_v.
-\]
-For \texttt{graph\_gaussian\_baseline} and
-\texttt{truncated\_nearfield\_gmrf}, the estimate is the Gaussian posterior
-mean $\mu_v$ and, when \texttt{compute\_sd = TRUE},
-\[
-  \widehat{\operatorname{sd}}(f_v^{\mathrm{global}})
-  =
-  \sqrt{(\bm Q^{-1})_{vv}}.
-\]
-For the other near-field methods, the reported standard deviation is
-method-specific: path ensembles combine anchor, edge-effect, and between-path
-variance; local GP uses conditional predictive variance; local polynomial uses
-weighted residual and leverage variance; delta-feature models use residual
-delta-model variance. These are uncertainty estimates on the common output
-schema, not all exact Gaussian posterior marginals.
-Approximate normal intervals are
-\[
-  \hat f_v \pm 1.9599639845\,\widehat{\operatorname{sd}}(f_v).
-\]
-
-The fit also reports support tier, support distance, anchor diagnostics,
-selected hyperparameters, tuning grid, dependency status, convergence status,
-runtime, and method-specific diagnostics. Nodes far from anchors can be labeled
-\texttt{out\_of\_scope} by near-field methods. In the full graph Gaussian
-posterior, nodes far from direct support can be labeled graph-borrowed or
-prior-dominated, indicating that their estimates are driven mostly by prior
-structure rather than direct data.
-
-\subsection{Optional \texttt{alfak}-Scale Transformation}
-\label{sec:s-alfak-scale}
-
-This option belongs to the two-layer pipeline; the default pipeline produces
-\texttt{alfak}'s outputs as described in Section~\ref{sec:sj-alfak}.
-Native \texttt{karst} fitness is on a relative scale. If
-\texttt{alfak\_scale = TRUE}, the package appends legacy-scale columns for
-compatibility with \texttt{alfak}. Let
-\[
-  g_0=\frac{\log(n_b/n_0)}{\Delta t}
-\]
-and define the efflux viability approximation
-\[
-  V(x)=2(1-\beta)^{\sum_c x_c}-1.
-\]
-
-Without efflux correction,
-\[
-  f^{\mathrm{alfak}}(x)
-  =
-  f^{\mathrm{KARST}}(x)
-  +
-  g_0
-  -
-  \sum_x w_x f^{\mathrm{KARST}}(x).
-\]
-With efflux correction,
-\[
-  o
-  =
-  \frac{
-    \sum_x w_x f^{\mathrm{KARST}}(x)/V(x)-g_0
-  }{
-    \sum_x w_x/V(x)
-  },
-\]
-\[
-  f^{\mathrm{alfak}}(x)
-  =
-  \frac{f^{\mathrm{KARST}}(x)-o}{V(x)}.
-\]
-This is a post-processing scale conversion. It does not change the native
-\texttt{karst} posterior estimates.
-
-\subsection{Design Considerations}
-
-\begin{enumerate}
-  \item \textbf{Count likelihoods.} The local layer models counts with
-  multinomial or Dirichlet-multinomial likelihoods.
-  \item \textbf{Separation of selection and missegregation.} The forward model
-  scales $\pi_0$ by $\exp(\Delta t\,f)$ and then applies a single
-  missegregation step $T^\top$.
-  \item \textbf{Bounded state space.} Bounded graph expansion avoids
-  enumeration of the full copy-number lattice.
-  \item \textbf{Alternative second layers.} Graph Gaussian posteriors,
-  near-field regression and tabular models are available.
-  \item \textbf{Propagation of uncertainty.} Uncertainty from the local TMB
-  layer is propagated to the second layer, and support tiers distinguish
-  directly informed from graph-borrowed estimates.
-\end{enumerate}
-
-\section{Second-Layer Extrapolation Methods}
-\label{sec:s-extrapolation}
-
-The second layer of the two-layer pipeline is selected with
-\texttt{extrapolation\_method}. All nine methods take the same anchors, namely
-the local fitness estimates and their variances, and predict fitness on the
-same bounded graph; none of them uses the counts. They are not part of the
-default pipeline.
-
-\begin{center}
-\small
-\begin{tabular}{L{0.42\textwidth}L{0.5\textwidth}}
-\toprule
-Method & Principle \\
-\midrule
-\texttt{graph\_gaussian\_baseline} & Gaussian posterior on the full graph with
-edge smoothing, copy-number curvature and pairwise epistasis penalties \\
-\texttt{truncated\_nearfield\_gmrf} & The same posterior restricted to the
-subgraph within distance 2 \\
-\texttt{edge\_effect\_empirical\_bayes} & Mean effect of the gain or loss of
-each chromosome, with empirical Bayes shrinkage \\
-\texttt{edge\_effect\_interaction\_path\_ensemble} & As above, with
-corrections for two-step paths \\
-\texttt{local\_polynomial\_stencil} & Weighted local quadratic regression on
-neighbouring anchors \\
-\texttt{local\_NNGP\_or\_GPnn} & Nearest-neighbour Gaussian process with an
-exponential kernel in $L_1$ distance \\
-\texttt{delta\_tree\_ensemble} & Tree ensemble for parent-to-target fitness
-differences based on tabular features \\
-\texttt{tabpfn\_nearfield\_feature\_model} & Reserved for TabPFN; in the
-absence of the Python module it executes \texttt{delta\_tree\_ensemble} \\
-\texttt{kronecker\_or\_graph\_trend\_filtering} & Graph trend filtering on
-the subgraph within distance 2 \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\subsection{Second-Layer Extrapolation Framework}
-
-The second layer does not revisit the raw counts. Instead, it treats local
-fitness estimates as noisy anchors and predicts fitness on a larger bounded
-graph $\mathcal{G}_{\mathrm{global}}$. The public entry point is
-\texttt{fit\_extrapolation\_layer()}, and \texttt{fit\_karst()} passes
-\texttt{extrapolation\_method} to this function.
-
-All second-layer methods return the same global-fit schema:
-\[
-  \{\mathcal{G}_{\mathrm{global}},\;
-    \text{node summary},\;
-    \text{anchor table},\;
-    \text{hyperparameters},\;
-    \text{tuning grid},\;
-    \text{diagnostics}\}.
-\]
-The node summary always contains
-\[
-\begin{array}{llll}
-\texttt{fitness\_mean}, & \texttt{fitness\_sd}, &
-\texttt{conf\_low}, & \texttt{conf\_high},\\
-\texttt{support\_distance}, & \texttt{support\_tier}, &
-\texttt{extrapolation\_method}, & \texttt{prediction\_status}.
-\end{array}
-\]
-
-The current method registry is:
-\begin{itemize}
-  \item \texttt{graph\_gaussian\_baseline}: full-graph sparse Gaussian posterior.
-  \item \texttt{edge\_effect\_empirical\_bayes}: ridge-shrunk one-step edge effect extrapolation.
-  \item \texttt{edge\_effect\_interaction\_path\_ensemble}: one- and two-step path ensemble with edge interactions.
-  \item \texttt{kronecker\_or\_graph\_trend\_filtering}: near-field graph trend filtering.
-  \item \texttt{local\_NNGP\_or\_GPnn}: nearest-neighbor local Gaussian process.
-  \item \texttt{delta\_tree\_ensemble}: tabular parent-to-target fitness-delta model.
-  \item \texttt{tabpfn\_nearfield\_feature\_model}: TabPFN adapter name with current tree fallback.
-  \item \texttt{truncated\_nearfield\_gmrf}: near-field induced-subgraph Gaussian posterior.
-  \item \texttt{local\_polynomial\_stencil}: local weighted polynomial stencil regression.
-\end{itemize}
-The accepted legacy aliases are:
-\[
-\begin{array}{lll}
-\texttt{graph\_gaussian} &\mapsto& \texttt{graph\_gaussian\_baseline},\\
-\texttt{nearfield\_local\_edge\_effect} &\mapsto& \texttt{edge\_effect\_empirical\_bayes},\\
-\texttt{edge\_interaction\_path\_ensemble} &\mapsto& \texttt{edge\_effect\_interaction\_path\_ensemble},\\
-\texttt{graph\_trend\_filtering} &\mapsto& \texttt{kronecker\_or\_graph\_trend\_filtering}.
-\end{array}
-\]
-
-The default reliable near-field reporting distance is
-\[
-  d(v)\le d_{\max}=2.
-\]
-For every method except \texttt{graph\_gaussian\_baseline}, nodes with
-$d(v)>d_{\max}$ are marked \texttt{out\_of\_scope} and their reported fitness
-is set to missing. This is deliberate: these methods are intended to estimate
-directly informed and one- or two-hop neighboring karyotypes, not arbitrary
-far-field graph states.
-
-\subsubsection{Shared Anchor Construction and Observation Model}
-\label{sec:s-anchors}
-
-Let $\mathcal{A}$ be the retained anchor set. For each anchor $a$,
-\[
-  z_a\mid f_a
-  \sim
-  \Normal(f_a,R_a),
-\]
-where
-\[
-  R_a = s_a^2\,m_a + \sigma_{\mathrm{obs}}^2.
-\]
-The multiplier $m_a$ combines covariance-status and count-based inflation:
-\[
-  m_a
-  =
-  m^{\mathrm{cov}}_a
-  m^{\mathrm{count}}_a.
-\]
-If count-based downweighting is enabled,
-\[
-  m^{\mathrm{count}}_a
-  =
-  \max\left\{
-    1,
-    \left(\frac{C_{\mathrm{ref}}}{C_a}\right)^\alpha
-  \right\}.
-\]
-Low-count or unreliable local anchors therefore receive larger observation
-variance and have less influence on the global posterior.
-
-The retained anchors are controlled by:
-\[
-  \texttt{anchor\_support\_tiers},\quad
-  \texttt{anchor\_exclude},\quad
-  \texttt{anchor\_min\_effective\_count}.
-\]
-\texttt{anchor\_support\_tiers = "all"} keeps all finite local posterior rows.
-Otherwise, only the requested support tiers are allowed. \texttt{anchor\_exclude}
-removes named karyotypes from the anchor set and is used for holdout
-validation. If \texttt{anchor\_min\_effective\_count} is not \texttt{NULL},
-only rows with effective count strictly larger than that threshold are retained.
-
-Edge weights entering second-layer methods are selected by
-\texttt{graph\_edge\_weight}:
-\[
-  w_{ij}^{\mathrm{mutation}} = q_{ij},\qquad
-  w_{ij}^{\mathrm{unit}} = \mathbf{1}\{q_{ij}>0\},\qquad
-  w_{ij}^{\mathrm{normalized}} = q_{ij}/\operatorname{median}(q_{ij}:q_{ij}>0).
-\]
-The normalized mode keeps relative mutation plausibility but removes the global
-scale set by $\beta$.
-
-\subsubsection{\texttt{graph\_gaussian\_baseline}: Full Graph Gaussian Posterior}
-
-This method was the default second layer of the two-layer pipeline. It infers the full fitness vector
-\[
-  \bm f=(f_1,\ldots,f_n)^\top
-\]
-on $\mathcal{G}_{\mathrm{global}}$ with a sparse Gaussian posterior.
-
-\paragraph{Graph Laplacian Smoothing}
-
-The first global prior term is graph edge smoothing:
-\[
-  \mathcal{P}_{\mathrm{edge}}(\bm f)
-  =
-  \sum_{(i,j)\in\mathcal{E}}
-  w_{ij}(f_i-f_j)^2.
-\]
-It enters the posterior with strength $\lambda_l$:
-\[
-  \lambda_l\mathcal{P}_{\mathrm{edge}}(\bm f).
-\]
-This term encourages neighboring karyotypes connected by plausible one-step
-copy-number changes to have similar fitness unless anchor data support a sharp
-difference.
-
-\paragraph{Ordered Copy-Number Curvature Penalty}
-
-The second prior term penalizes second differences along a chromosome
-copy-number axis. For any triplet $x-e_c$, $x$, $x+e_c$ present in the graph,
-define
-\[
-  \Delta_c^2 f(x)
-  =
-  f(x-e_c)-2f(x)+f(x+e_c).
-\]
-The curvature penalty is
-\[
-  \mathcal{P}_{\mathrm{curv}}(\bm f)
-  =
-  \sum_{x,c}
-  \left\{\Delta_c^2 f(x)\right\}^2.
-\]
-This discourages unsupported zig-zag behavior along ordered copy-number
-coordinates.
-
-\paragraph{Epistasis Penalty}
-
-The third prior term controls second-order interaction between two chromosome
-directions. For any quadruplet $x$, $x+e_c$, $x+e_d$, and $x+e_c+e_d$ present
-in the graph,
-\[
-  \Delta_{cd} f(x)
-  =
-  f(x)-f(x+e_c)-f(x+e_d)+f(x+e_c+e_d).
-\]
-The epistasis penalty is
-\[
-  \mathcal{P}_{\mathrm{epi}}(\bm f)
-  =
-  \frac{1}{2}
-  \sum_{x,c<d}
-  \left\{\Delta_{cd}f(x)\right\}^2.
-\]
-This does not forbid epistasis. It penalizes strong interaction effects when
-they are weakly supported by anchors, reducing unstable high-order oscillations
-in sparse regions.
-
-\paragraph{Gaussian Posterior}
-
-The global negative log posterior is
-\[
-\begin{aligned}
-  \mathcal{J}_{\mathrm{global}}(\bm f)
-  =
-  \frac{1}{2}
-  \bigg[
-  &\lambda_l\mathcal{P}_{\mathrm{edge}}(\bm f)
-  +
-  \lambda_e\mathcal{P}_{\mathrm{curv}}(\bm f)
-  +
-  \lambda_e\mathcal{P}_{\mathrm{epi}}(\bm f)\\
-  &+
-  \sum_{a\in\mathcal{A}}
-  \frac{(f_a-z_a)^2}{R_a}
-  +
-  \epsilon\sum_{v\in\mathcal{V}}f_v^2
-  \bigg].
-\end{aligned}
-\]
-All terms are quadratic, so the posterior is Gaussian:
-\[
-  p(\bm f\mid \bm z)
-  =
-  \Normal(\bm \mu,\bm Q^{-1}).
-\]
-The precision matrix can be written as
-\[
-  \bm Q
-  =
-  \lambda_l\bm L
-  +
-  \lambda_e\bm K
-  +
-  \bm A^\top\bm R^{-1}\bm A
-  +
-  \epsilon\bm I.
-\]
-Here $\bm L$ is the weighted graph Laplacian, $\bm K$ is the sparse precision
-contribution from the ordered copy-number curvature and epistasis penalties,
-$\bm A$ selects anchor nodes from the full graph, and $\bm R$ is the diagonal
-anchor variance matrix.
-
-The right-hand side is
-\[
-  \bm b
-  =
-  \bm A^\top\bm R^{-1}\bm z.
-\]
-The posterior mean solves
-\[
-  \bm Q\bm\mu=\bm b,
-  \qquad
-  \bm \mu=\bm Q^{-1}\bm b.
-\]
-The marginal posterior variance for node $v$ is
-\[
-  \Var(f_v\mid \bm z)
-  =
-  (\bm Q^{-1})_{vv}.
-\]
-
-The implementation assembles $\bm Q$ as a sparse matrix and uses RcppEigen
-sparse linear algebra to solve for $\bm \mu$ and the diagonal of
-$\bm Q^{-1}$.
-
-\paragraph{Hyperparameter Selection}
-
-The global layer has three main hyperparameters:
-\[
-  \lambda_l,\qquad \lambda_e,\qquad \sigma_{\mathrm{obs}}.
-\]
-If each grid contains a single value, these are treated as fixed. If multiple
-values are supplied, \texttt{karst} uses leave-one-anchor-out cross-validation.
-For each anchor $a$, the model removes $a$, predicts its fitness from the
-remaining anchors, and obtains $\mu_{-a,a}$. The score is
-\[
-  \operatorname{CV}(\lambda_l,\lambda_e,\sigma_{\mathrm{obs}})
-  =
-  \frac{1}{|\mathcal{A}_{\mathrm{eval}}|}
-  \sum_{a\in\mathcal{A}_{\mathrm{eval}}}
-  \frac{(z_a-\mu_{-a,a})^2}{R_a}.
-\]
-The selected values are
-\[
-  (\lambda_l^\star,\lambda_e^\star,\sigma_{\mathrm{obs}}^\star)
-  =
-  \arg\min
-  \operatorname{CV}(\lambda_l,\lambda_e,\sigma_{\mathrm{obs}}).
-\]
-
-\subsection{Near-Field Extrapolation Methods}
-
-The eight non-baseline methods use the same anchors and the same bounded graph
-but restrict reliable reporting to $d(v)\le d_{\max}$. They are intended to
-estimate fitness in the vicinity of the observed karyotypes from the local
-fitness estimates.
-
-\subsubsection{\texttt{edge\_effect\_empirical\_bayes}}
-
-This method estimates average one-step copy-number fitness effects. Each
-directed edge has type
-\[
-  \tau(e)=(c(e),s(e)),
-\]
-where $c(e)$ is chromosome index and $s(e)\in\{-1,+1\}$ is loss or gain. For an
-anchor-to-anchor edge $e=(u,v)$, define
-\[
-  r_e=z_v-z_u,\qquad
-  V_e=R_u+R_v,\qquad
-  \omega_e=\frac{w_e}{V_e}.
-\]
-The ridge-shrunk empirical Bayes estimate for edge type $\tau$ is
-\[
-  \hat\delta_{\tau}
-  =
-  \frac{\sum_{e:\tau(e)=\tau}\omega_e r_e}
-       {\sum_{e:\tau(e)=\tau}\omega_e+\lambda_\delta}.
-\]
-The default code uses \texttt{ridge\_delta = 4}. For a one-hop target $v$,
-candidate predictions from direct anchor parents $u$ are
-\[
-  \hat f_v^{(u)}
-  =
-  z_u+\hat\delta_{\tau(u,v)}.
-\]
-For two-hop targets, the method reuses the path-combination machinery but sets
-the interaction shrinkage effectively to infinity, so second-order interactions
-are shrunk to zero. Candidate paths are combined by inverse variance and path
-weight. The final variance includes anchor variance, edge-effect uncertainty,
-and between-path dispersion.
-
-The implementation first copies any available local posterior estimates within
-$d_{\max}$ into the global summary. Only remaining missing near-field nodes are
-filled by the edge-effect predictor. This makes the method conservative: when
-TMB already estimated a nearby local node, that local estimate is kept.
-
-\subsubsection{\texttt{edge\_effect\_interaction\_path\_ensemble}}
-
-This method extends the previous model with second-order path interactions.
-For a two-edge path
-\[
-  u\to m\to v,
-\]
-with edge types $\tau_1$ and $\tau_2$, it fits an interaction correction
-\[
-  \gamma_{\tau_1,\tau_2}
-\]
-from anchor triplets. The residual used for training is
-\[
-  z_v-z_u-\hat\delta_{\tau_1}-\hat\delta_{\tau_2}.
-\]
-The ridge estimate has the same form as the one-step effect:
-\[
-  \hat\gamma_{\tau_1,\tau_2}
-  =
-  \frac{\sum \omega r}
-       {\sum \omega+\lambda_\gamma},
-\]
-with default \texttt{ridge\_gamma = 25}.
-
-For a one-hop target,
-\[
-  \hat f_v^{(u)}=z_u+\hat\delta_{\tau(u,v)}.
-\]
-For a two-hop target,
-\[
-  \hat f_v^{(u,m)}
-  =
-  z_u+\hat\delta_{\tau(u,m)}
-      +\hat\delta_{\tau(m,v)}
-      +\hat\gamma_{\tau(u,m),\tau(m,v)}.
-\]
-All valid paths from directly informed anchors are ensembled. The path weight is
-the product of edge weights along the path, and candidate predictions are
-combined using inverse variance weighting plus a between-path variance term:
-\[
-  \widehat{\Var}(f_v)
-  =
-  \sum_p \alpha_p V_p
-  +
-  \sum_p \alpha_p(\hat f_{vp}-\hat f_v)^2.
-\]
-
-\subsubsection{\texttt{local\_polynomial\_stencil}}
-
-For each target karyotype $x_0$, this method fits a weighted local polynomial
-regression to nearby anchors. Let
-\[
-  h_a=x_a-x_0,\qquad
-  d_a=\|x_a-x_0\|_1.
-\]
-The design matrix contains an intercept, linear terms, and diagonal quadratic
-terms:
-\[
-  X_a =
-  \left[
-    1,\;
-    h_{a1},\ldots,h_{ap},\;
-    \frac{1}{2}h_{a1}^2,\ldots,\frac{1}{2}h_{ap}^2
-  \right].
-\]
-If there are enough local training anchors, the implementation also adds a
-limited number of pairwise terms $h_{ac}h_{ad}$. The default limit is
-\texttt{max\_pairwise\_terms = 20}.
-
-The anchor weights are
-\[
-  \omega_a
-  =
-  \frac{
-    \exp(-d_a/b)\,q_{\mathrm{tier}(a)}
-  }{
-    R_a
-  },
-\]
-where $b$ is \texttt{bandwidth} and $q_{\mathrm{tier}}$ downweights weaker
-support tiers:
-\[
-q_{\mathrm{direct}}=1,\qquad
-q_{\mathrm{local\ borrowed}}=0.6,\qquad
-q_{\mathrm{weakly\ supported}}=0.3.
-\]
-The coefficient vector is the ridge solution
-\[
-  \hat\beta
-  =
-  (X^\top W X+\lambda I_0)^{-1}X^\top Wz,
-\]
-where the intercept is not penalized. Because the design is centered at
-$x_0$, the predicted target fitness is the intercept $\hat\beta_0$. Prediction
-variance is estimated from weighted residual variance and the intercept
-leverage. If the linear solve fails, the method falls back to a weighted mean.
-
-\subsubsection{\texttt{local\_NNGP\_or\_GPnn}}
-
-This method is a nearest-neighbor Gaussian process on copy-number vectors. For
-each prediction target, it selects the $k$ nearest anchors by lattice distance
-and anchor variance. The default is \texttt{k = 30}, capped by the number of
-available anchors. The kernel is exponential in $L_1$ copy-number distance:
-\[
-  K(x,y)=\exp\{-\|x-y\|_1/\ell\}.
-\]
-The local covariance matrix is
-\[
-  \bm K_{\mathrm{local}}
-  =
-  K(X,X)+\operatorname{diag}(R_a)+\nu I,
-\]
-where $\nu$ is the nugget. The prior mean is the inverse-variance weighted
-anchor mean. The predictive mean and variance are the standard GP conditional
-quantities.
-
-The method tunes $(\ell,\nu)$ by leave-one-anchor-out RMSE on the grid
-\[
-  \ell\in\{0.75,1.5,3\},\qquad
-  \nu\in\{0.02,0.05\}
-\]
-unless those grids are overridden. If the Cholesky factorization of a local GP
-system fails, the implementation falls back to an inverse-variance weighted
-kernel mean and records the fallback in diagnostics.
-
-\subsubsection{\texttt{delta\_tree\_ensemble}}
-
-This method learns parent-to-target fitness deltas from tabular features. For
-an ordered anchor pair $(u,v)$ with $1\le \|x_v-x_u\|_1\le 2$, the response is
-\[
-  y_{uv}=z_v-z_u.
-\]
-The feature vector includes parent fitness mean and standard deviation, parent
-support weight, parent count totals, target support distance, path length, edge
-weight, parent copy numbers, target copy numbers, signed copy-number deltas,
-and absolute copy-number deltas.
-
-The backend currently uses \texttt{xgboost} when it is installed and the
-training table is large enough. Otherwise it uses a ridge regression fallback:
-\[
-  y = \alpha + X\beta + \epsilon,\qquad
-  \hat\beta
-  =
-  (X^\top X+\lambda I_0)^{-1}X^\top y.
-\]
-The code checks for several tree libraries, but the implemented non-ridge
-training path is currently \texttt{xgboost}; other detected backends fall back
-to ridge if \texttt{xgboost} is unavailable or fitting fails.
-
-For a target $v$, candidate parent anchors are anchors within
-$1,\ldots,d_{\max}$ lattice steps. Each candidate prediction is
-\[
-  \hat f_v^{(u)}
-  =
-  z_u+\widehat{\Delta}(u,v).
-\]
-Candidates are combined by inverse variance and path-distance weighting.
-The residual standard deviation of the fitted delta model contributes to the
-prediction variance.
-
-\subsubsection{\texttt{tabpfn\_nearfield\_feature\_model}}
-
-This method name is reserved for a TabPFN-style near-field tabular feature
-model. The current implementation checks whether \texttt{reticulate} and the
-Python module \texttt{tabpfn} are available, records that dependency status,
-and then delegates to the same delta-feature pipeline used by
-\texttt{delta\_tree\_ensemble}; consequently,
-\[
-\begin{aligned}
-\texttt{tabpfn\_nearfield\_feature\_model}
-&\equiv \text{delta-feature model}\\
-&\quad \text{with TabPFN dependency diagnostics.}
-\end{aligned}
-\]
-in the current code. When TabPFN is unavailable, diagnostics report
-\[
-  \texttt{tabpfn\_unavailable\_used\_tree\_fallback}.
-\]
-This distinction is important for benchmark interpretation: rows for this
-method should not be read as evidence for an actual TabPFN model unless
-diagnostics show a real TabPFN backend in a future implementation.
-
-\subsubsection{\texttt{kronecker\_or\_graph\_trend\_filtering}}
-
-This method induces the near-field subgraph
-\[
-  \mathcal{G}_{\le d_{\max}}
-  =
-  \{v\in\mathcal{G}:d(v)\le d_{\max}\}
-\]
-and solves a graph trend-filtering problem. In the current implementation the
-backend is graph-based, not a Kronecker lattice solver. The objective is an
-anchor weighted least-squares term plus first- and second-difference penalties:
-\[
-\begin{aligned}
-  \min_{\bm f}\quad
-  &
-  \frac{1}{2}
-  \sum_{a\in\mathcal{A}_{\le d_{\max}}}
-  \frac{(f_a-z_a)^2}{R_a}
-  +
-  \lambda_1\sum_{(i,j)\in E_{\le d_{\max}}}|f_i-f_j|\\
-  &+
-  \lambda_2
-  \sum_{i\to j\to k}
-  |f_i-2f_j+f_k|
-  +
-  \frac{\rho}{2}\|\bm f\|_2^2.
-\end{aligned}
-\]
-The code solves this with an iteratively reweighted quadratic approximation:
-\[
-  |u|\approx \frac{u^2}{\max(|u^{\mathrm{old}}|,\epsilon)}.
-\]
-The defaults are \texttt{lambda1 = 0.25}, \texttt{lambda2 = 0.1},
-\texttt{max\_iter = 80}, and \texttt{tol = 1e-4}. The reported standard
-deviation is a shared residual scale estimated from anchor residuals.
-
-Because this implementation uses dense linear algebra on the induced near-field
-graph, it has a safety limit \texttt{max\_dense\_nodes = 1500}. If the induced
-graph is larger, the method falls back to the interaction path ensemble and
-records \texttt{fallback\_path\_ensemble} in diagnostics.
-
-\subsubsection{\texttt{truncated\_nearfield\_gmrf}}
-
-This method is the graph Gaussian posterior restricted to the near-field
-induced subgraph. It builds
-\[
-  \mathcal{G}_{\le d_{\max}}
-\]
-and then calls the same sparse Gaussian posterior solver used by
-\texttt{graph\_gaussian\_baseline}, but only on that induced graph. It therefore
-uses the same anchor observation model, graph Laplacian penalty, curvature
-penalty, epistasis penalty, and hyperparameter selection:
-\[
-  (\lambda_l,\lambda_e,\sigma_{\mathrm{obs}})
-  \quad\text{are selected or fixed exactly as in the baseline GMRF.}
-\]
-After solving, the near-field posterior means and standard deviations are
-copied back into the full graph summary; all nodes with $d(v)>d_{\max}$ are
-left \texttt{out\_of\_scope}. This method is useful when the goal is accurate
-direct and near-neighbor shape preservation without allowing far-field graph
-states to influence the near-field posterior.
-
-\subsection{Comparison on the Sparse Two-Time-Point Benchmark}
-\label{sec:s-extrapolation-results}
-
-The eight second-layer methods that run without additional software were
-compared on the 96 development datasets of the core scenarios. The first layer
-and the graph hyperparameters ($\lambda_l=1$, $\lambda_e=0.25$,
-$\sigma_{\mathrm{obs}}=0.05$) were identical for all of them, so that the
-methods differ only in the second layer;
-\texttt{tabpfn\_nearfield\_feature\_model} was not run separately because,
-without its Python module, it executes \texttt{delta\_tree\_ensemble}. Values
-are aggregated by wavelength as in (\ref{eq:rmse-pooled}); the sparse joint
-model with the balance prior is included for comparison. In the tables, Graph Gaussian denotes \texttt{graph\_gaussian\_baseline}; Truncated GMRF denotes \texttt{truncated\_nearfield\_gmrf}; Edge effect denotes \texttt{edge\_effect\_empirical\_bayes}; Path ensemble denotes \texttt{edge\_effect\_interaction\_path\_ensemble}; Local polynomial denotes \texttt{local\_polynomial\_stencil}; Nearest-neighbour GP denotes \texttt{local\_NNGP\_or\_GPnn}; Delta tree denotes \texttt{delta\_tree\_ensemble}; Trend filtering denotes \texttt{kronecker\_or\_graph\_trend\_filtering}.
-
-\noindent\textit{Root mean squared error.}
-\begin{center}
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{l*{12}{r}}
-\toprule
- & \multicolumn{3}{c}{$\lambda=0.4$} & \multicolumn{3}{c}{$\lambda=0.8$} & \multicolumn{3}{c}{$\lambda=1.2$} & \multicolumn{3}{c}{$\lambda=1.6$} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
- & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ \\
-\midrule
-Null predictor & 0.113 & 0.234 & 0.345 & 0.032 & 0.068 & 0.107 & 0.025 & 0.041 & 0.058 & 0.016 & 0.025 & 0.036 \\
-Graph Gaussian & 0.113 & 0.233 & 0.345 & 0.031 & 0.067 & 0.106 & 0.023 & 0.039 & 0.057 & 0.014 & 0.024 & 0.035 \\
-Truncated GMRF & 0.113 & 0.233 & 0.345 & 0.031 & 0.067 & 0.106 & 0.023 & 0.039 & 0.057 & 0.014 & 0.024 & 0.035 \\
-Edge effect & 0.113 & 0.233 & 0.345 & 0.031 & 0.067 & 0.106 & 0.023 & 0.039 & 0.057 & 0.014 & 0.024 & 0.035 \\
-Path ensemble & 0.113 & 0.233 & 0.345 & 0.031 & 0.067 & 0.106 & 0.023 & 0.039 & 0.057 & 0.014 & 0.024 & 0.035 \\
-Local polynomial & 0.113 & 0.233 & 0.345 & 0.031 & 0.068 & 0.107 & 0.023 & 0.039 & 0.057 & 0.014 & 0.024 & 0.036 \\
-Nearest-neighbour GP & 0.113 & 0.233 & 0.345 & 0.031 & 0.067 & 0.106 & 0.023 & 0.040 & 0.057 & 0.014 & 0.024 & 0.035 \\
-Delta tree & 0.113 & 0.233 & 0.345 & 0.031 & 0.067 & 0.106 & 0.023 & 0.039 & 0.057 & 0.014 & 0.024 & 0.035 \\
-Trend filtering & 0.113 & 0.233 & 0.345 & 0.031 & 0.067 & 0.106 & 0.023 & 0.039 & 0.057 & 0.014 & 0.024 & 0.035 \\
-Sparse joint, balance & 0.056 & 0.103 & 0.153 & 0.020 & 0.038 & 0.061 & 0.017 & 0.022 & 0.031 & 0.012 & 0.015 & 0.020 \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\noindent\textit{Spearman correlation with the reference values.}
-\begin{center}
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{l*{12}{r}}
-\toprule
- & \multicolumn{3}{c}{$\lambda=0.4$} & \multicolumn{3}{c}{$\lambda=0.8$} & \multicolumn{3}{c}{$\lambda=1.2$} & \multicolumn{3}{c}{$\lambda=1.6$} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
- & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ \\
-\midrule
-Graph Gaussian & -0.098 & -0.064 & -0.047 & 0.264 & 0.177 & 0.120 & 0.500 & 0.419 & 0.271 & 0.542 & 0.446 & 0.266 \\
-Truncated GMRF & -0.098 & -0.064 & -0.047 & 0.264 & 0.177 & 0.120 & 0.500 & 0.419 & 0.271 & 0.542 & 0.446 & 0.266 \\
-Edge effect & -0.102 & -0.079 & -0.058 & 0.236 & 0.166 & 0.112 & 0.473 & 0.413 & 0.244 & 0.484 & 0.442 & 0.205 \\
-Path ensemble & -0.102 & -0.079 & -0.050 & 0.236 & 0.166 & 0.107 & 0.473 & 0.413 & 0.233 & 0.484 & 0.442 & 0.193 \\
-Local polynomial & -0.102 & -0.087 & -0.069 & 0.236 & 0.116 & 0.031 & 0.473 & 0.384 & 0.211 & 0.484 & 0.389 & 0.184 \\
-Nearest-neighbour GP & -0.102 & -0.081 & -0.065 & 0.236 & 0.175 & 0.133 & 0.473 & 0.448 & 0.386 & 0.484 & 0.492 & 0.423 \\
-Delta tree & -0.102 & -0.078 & -0.036 & 0.236 & 0.194 & 0.135 & 0.473 & 0.450 & 0.379 & 0.484 & 0.484 & 0.418 \\
-Trend filtering & -0.102 & -0.079 & -0.050 & 0.236 & 0.166 & 0.107 & 0.473 & 0.413 & 0.233 & 0.484 & 0.442 & 0.193 \\
-Sparse joint, balance & 0.442 & 0.285 & 0.202 & 0.520 & 0.372 & 0.290 & 0.490 & 0.581 & 0.508 & 0.416 & 0.573 & 0.508 \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\noindent\textit{Coverage of nominal 95\% intervals.}
-\begin{center}
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{l*{12}{r}}
-\toprule
- & \multicolumn{3}{c}{$\lambda=0.4$} & \multicolumn{3}{c}{$\lambda=0.8$} & \multicolumn{3}{c}{$\lambda=1.2$} & \multicolumn{3}{c}{$\lambda=1.6$} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}
- & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ & $d=0$ & $d=1$ & $d=2$ \\
-\midrule
-Graph Gaussian & 0.421 & 0.989 & 0.999 & 0.994 & 1.000 & 1.000 & 0.996 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
-Truncated GMRF & 0.421 & 0.989 & 0.999 & 0.994 & 1.000 & 1.000 & 0.996 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
-Edge effect & 0.112 & 0.380 & 0.566 & 0.271 & 0.179 & 0.420 & 0.408 & 0.232 & 0.419 & 0.582 & 0.411 & 0.528 \\
-Path ensemble & 0.112 & 0.380 & 0.566 & 0.271 & 0.179 & 0.427 & 0.408 & 0.232 & 0.445 & 0.582 & 0.411 & 0.572 \\
-Local polynomial & 0.112 & 0.001 & 0.000 & 0.271 & 0.047 & 0.022 & 0.408 & 0.167 & 0.133 & 0.582 & 0.341 & 0.289 \\
-Nearest-neighbour GP & 0.112 & 1.000 & 1.000 & 0.271 & 1.000 & 1.000 & 0.408 & 1.000 & 1.000 & 0.582 & 1.000 & 1.000 \\
-Delta tree & 0.112 & 0.005 & 0.001 & 0.271 & 0.128 & 0.033 & 0.408 & 0.390 & 0.197 & 0.582 & 0.663 & 0.424 \\
-Trend filtering & 0.112 & 0.380 & 0.566 & 0.271 & 0.179 & 0.427 & 0.408 & 0.232 & 0.445 & 0.582 & 0.411 & 0.572 \\
-Sparse joint, balance & 0.963 & 0.992 & 0.988 & 0.980 & 0.976 & 0.953 & 0.983 & 0.996 & 0.995 & 0.997 & 1.000 & 1.000 \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-No second-layer method improved materially on the null predictor: their
-errors were 0.89 to 1.00 times its value, compared with 0.44 to 0.76 times
-for the sparse joint model. All second-layer methods interpolate the same first-layer
-anchors, which in sparse data carry little information beyond the abundant
-clones, so the choice of second layer has little effect on accuracy. On the
-smoothest landscapes, the second-layer methods ranked observed karyotypes
-better than the sparse joint model ($\lambda=1.6$, $d=0$: 0.48--0.54 versus
-0.42) and similarly at $\lambda=1.2$ (0.47--0.50 versus 0.49); at all other
-wavelengths and distances the sparse joint model ranked karyotypes better.
-Coverage of the second-layer intervals ranged from nearly zero
-(\texttt{local\_polynomial\_stencil} and \texttt{delta\_tree\_ensemble} at
-distances 1 and 2 on rugged landscapes, 0.00 to 0.13 at $\lambda\le0.8$) to
-nearly one (the graph Gaussian methods and
-\texttt{local\_NNGP\_or\_GPnn} at distances 1 and 2), and was below 0.6 for
-observed karyotypes for all but the graph Gaussian methods; coverage of the
-sparse joint model ranged from 0.95 to 1.00.
-
-
-\section{The Joint-Count Pipeline}
-\label{sec:s-joint-count}
-
-\texttt{fit\_karst(..., pipeline = "joint\_count")} fits the local count
-model of Supplement~\ref{sec:s-local}, the TMB model \texttt{local\_model},
-once on the entire bounded target graph rather than on a local graph, with a
-structured landscape prior in place of the independent fitness prior. Fitness
-is modelled as the sum of a baseline, a main effect and a curvature term for
-each chromosome, pairwise chromosome interactions, an independent residual and
-edge effects, all Gaussian, with default standard deviations of 0.5,
-$0.07/\sqrt p$, $0.04/\sqrt p$, $0.04/\sqrt{n_{\mathrm{pairs}}}$, 0.125 and
-0.25, respectively. Interaction directions that the observed karyotypes cannot
-separate may be assigned a separate prior, and several prior components may be
-weighted by their marginal evidence. The forward model is the division
-process, refined by step halving until the changes in frequencies and in log
-growth fall below a tolerance. In contrast to the sparse joint model, this
-pipeline has no balance prior, no domain constructed around abundant clones
-and no calibration of uncertainty, and it was not evaluated on the sparse
-two-time-point benchmark.
 
 \section{Results by Sampling Design}
 \label{sec:s-designs}
@@ -3396,15 +2080,10 @@ joint model (balance) relative to the null predictor.}
 This section gives, for every method and both sets of landscapes, the error,
 mean error, rank correlation, interval coverage and fraction of karyotypes
 predicted at distances 3 and 4 (Section~\ref{sec:val-far}), and the direction
-accuracy of the four main methods. For the near-field methods direction
-accuracy was not computed: their predictions within distance 2 enter pairs
-with karyotypes at distance 3, so it is not fixed by their absence of
-predictions beyond. As in the
-scoreboard, a karyotype for which a method provides no prediction receives
-the prediction zero, and a method that fails on a dataset is scored as the
-null predictor on it. The seven near-field second-layer methods report
-predictions only within distance 2 of the observed karyotypes and are
-therefore scored as the null predictor at distances 3 and 4. The fraction of
+accuracy of every method but the null predictor. As in the scoreboard, a
+karyotype for which a method provides no prediction receives the prediction
+zero, and a method that fails on a dataset is scored as the null predictor on
+it. The fraction of
 karyotypes predicted by \texttt{alfak} is below one where it failed: on 5 of
 the 24 held-out datasets at $\lambda=1.6$, and on 3, 1 and 3 of the 24
 development datasets at $\lambda=0.4$, 1.2 and 1.6. It has no coverage at

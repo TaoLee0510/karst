@@ -8,7 +8,6 @@ stt_run_method <- function(method, dataset, nodes, work_dir) {
     switch(method$type,
       zero = stt_method_zero(dataset, nodes),
       alfak = stt_method_alfak(dataset, nodes, method, work_dir),
-      karst_two_layer = stt_method_karst_two_layer(dataset, nodes, method),
       karst_sparse_joint = stt_method_karst_sparse_joint(dataset, nodes, method),
       karst_sparse_joint_cohort = stt_method_karst_sparse_joint_cohort(dataset, nodes, method),
       karst_sparse_joint_rates = stt_method_karst_sparse_joint_rates(dataset, nodes, method),
@@ -60,51 +59,6 @@ stt_method_alfak <- function(dataset, nodes, method, work_dir) {
        detail = sprintf("frequent=%d kriging_only=%d", sum(landscape$fq), n_extrapolated),
        prediction = data.frame(karyotype = nodes$karyotype, fitness = fitness,
                                fitness_sd = fitness_sd, stringsAsFactors = FALSE))
-}
-
-# Current karst two-layer pipeline, configured as in the June 22-chromosome
-# benchmark and the real-data workflow: local fit on observed karyotypes,
-# graph Gaussian extrapolation with normalised edge weights. The global graph
-# is the observed karyotypes plus the scored nodes.
-#
-# `method$graph_hyperparameters`, when given, fixes (lambda_l, lambda_e,
-# sigma_obs). Without it the package default applies: leave-one-anchor-out
-# selection over a 27-point grid, which refactorises the graph once per anchor
-# and grid point and takes hours per dataset at 22 chromosomes.
-stt_method_karst_two_layer <- function(dataset, nodes, method) {
-  counts <- dataset$counts
-  storage.mode(counts) <- "integer"
-  karyotypes <- stt_parse_karyotypes(nodes$karyotype)
-  targets <- nodes$karyotype[nodes$distance > 0L]
-  # The two-layer pipeline is no longer the package default and must be named.
-  arguments <- list(
-    counts, dt = dataset$interval, beta = dataset$beta, pipeline = "two_layer",
-    transition_kernel = "exact",
-    local_shell_depth = method$local_shell_depth,
-    min_cn = 0, max_cn = as.integer(max(karyotypes)),
-    max_nodes = method$max_nodes,
-    graph_edge_weight = "normalized",
-    extrapolation_method = if (is.null(method$extrapolation_method)) "graph_gaussian_baseline" else
-      method$extrapolation_method,
-    target_karyotypes = targets,
-    observation_weight_mode = "fractional_count"
-  )
-  if (!is.null(method$graph_hyperparameters)) {
-    fixed <- method$graph_hyperparameters
-    arguments$lambda_l_grid <- fixed[["lambda_l"]]
-    arguments$lambda_e_grid <- fixed[["lambda_e"]]
-    arguments$sigma_obs_grid <- fixed[["sigma_obs"]]
-  }
-  fit <- suppressWarnings(do.call(karst::fit_karst, arguments))
-  summary <- karst::summarize_karst(fit, layer = "global")
-  index <- match(nodes$karyotype, as.character(summary$karyotype))
-  list(status = "ok",
-       detail = sprintf("local_covariance=%s nodes=%d",
-                        fit$local$diagnostics$covariance_status, nrow(summary)),
-       prediction = data.frame(karyotype = nodes$karyotype,
-                               fitness = as.numeric(summary$fitness_mean)[index],
-                               fitness_sd = as.numeric(summary$fitness_sd)[index],
-                               stringsAsFactors = FALSE))
 }
 
 # Sparse joint count model. The baseline birth rate is an input; the benchmark

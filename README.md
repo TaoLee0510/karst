@@ -19,32 +19,27 @@ the benchmarks fit).
 remotes::install_github("TaoLee0510/karst")
 ```
 
-The default pipeline, `fit_karst()` or `fit_sparse_joint()`, is the sparse
+The model, fitted by `fit_karst()` or `fit_sparse_joint()`, is the sparse
 joint count model, described [below](#sparse-joint-model-for-sparse-counts-at-two-time-points).
 `alfak_compat()` runs it with the arguments of `alfakR::alfak()` and writes
 alfak's output files, so that analyses built on alfak read its results
 unchanged.
 
-The earlier two-layer pipeline, `pipeline = "two_layer"`, is:
-
-1. build a local karyotype graph around observed copy-number states,
-2. fit a local hierarchical posterior for initial frequencies and node fitness
-   values,
-3. expand to a bounded graph and solve a graph Gaussian posterior with ordered
-   copy-number epistasis penalties,
-4. summarize or plot posterior fitness and uncertainty by support tier.
-
-An explicitly selected `pipeline = "joint_count"` candidate fits the counts and
-a structured landscape prior jointly on the bounded target graph. The current
-accuracy validation compares these paths at every exact support distance.
-
 ## Method Components
 
-- Local posterior inference for observed and nearby karyotype states.
-- Bounded graph expansion over copy-number states connected by plausible
-  karyotype transitions.
-- Graph posterior smoothing with ordered copy-number epistasis penalties.
-- Posterior summaries and plots for fitness estimates and uncertainty.
+- One count likelihood for the well-sampled karyotypes and all their one-step
+  neighbours, observed or not, at two or more time points
+  (`fit_sparse_joint()`).
+- Initial abundances of rare karyotypes tied to mutation-selection balance
+  with the clones they descend from (`initial_state = "balance"`, the
+  default).
+- Fitness of any karyotype outside the fitted domain from a fitted trend
+  (`predict()`).
+- Several datasets fitted together (`fit_sparse_joint_cohort()`), and fits over
+  a range of birth or missegregation rates (`fit_sparse_joint_rates()`).
+- A check of the counts before fitting (`check_sparse_joint_counts()`).
+- Outputs in alfak's format (`alfak_compat()`, `as_alfak()`,
+  `write_alfak_outputs()`).
 - Benchmark truth landscapes can be generated as lightweight paper-style GRF
   oracles with `simulate_grf_landscape()`. Fitness is computed on demand for
   requested karyotypes, so synthetic simulations can use 22 chromosomes without
@@ -81,76 +76,13 @@ fit <- fit_karst(
   sparse_joint_control = list(min_cn = 1, max_cn = 4)
 )
 
-head(summarize_karst(fit))
+head(fit$summary)
 predict(fit, c("2.2.2.2", "2.3.2.2"))
-
-# the earlier two-layer pipeline
-two_layer <- fit_karst(
-  sim$counts,
-  dt = 1,
-  beta = 0.00005,
-  pipeline = "two_layer",
-  min_cn = 1,
-  max_cn = 4,
-  max_nodes = 5000
-)
-plot_karst(two_layer)
 ```
-
-## Inference and biological dynamics
-
-Local inference now defaults to Laplace marginalization of latent effects,
-with gradient, conditional-gradient, Hessian, and scale-boundary checks. The
-historical centered joint MAP remains available as `inference_method =
-"joint_map"` for reproducible comparisons. Untrusted intervals are missing and
-carry an explicit diagnostic status. A narrower interval alone is not evidence
-of a more accurate fit.
-
-`forward_model = "selection_transport"` retains the historical relative
-net-growth model, with one transport operation after selection. The optional
-`forward_model = "division_process"` instead models mutation at each division:
-fitness is a positive birth rate per unit of `dt`, parameterized on the log
-scale. It uses the full single-daughter kernel on retained graph nodes without
-redistributing biological death or computational outflow. `forward_step`
-controls a convergent positive splitting approximation; graph outflow and step
-refinement should be checked for the intended beta, time interval, and domain.
-The joint path checks the fitted-mode result after halving the step and refits
-with finer steps when needed. Explicit `target_karyotypes` permit finite distant
-queries in high dimensions; their omitted intermediate states remain reported
-computational outflow and may require a larger buffer domain.
-
-The joint candidate uses chromosome dosage effects, quadratic effects,
-shrunk pairwise interactions, and a proper Gaussian graph residual. It updates
-observed and unobserved fitness together, without treating a local posterior as
-independent new data. Its default prior scales were selected on development
-landscapes and fixed before independent calibration and testing. For example:
-
-```r
-joint <- fit_karst(
-  sim$counts, dt = 1, beta = 0.00005,
-  min_cn = 1, max_cn = 4, max_nodes = 5000,
-  pipeline = "joint_count", forward_model = "division_process"
-)
-```
-
-Without additional information, the absolute birth baseline can be weakly
-identified and prior dependent. `population_sizes = c(N0, Nb)` supplies actual
-population sizes, with `population_log_growth_sd` describing uncertainty in
-their log ratio. These are distinct from the numbers of sampled cells.
-Relative fitness comparisons must apply the same prespecified reference
-contrast to both estimates and truth, including the full covariance.
-
-Optional `joint_control$model_scales` averages fixed prior-scale models using
-Laplace evidence conditional on the selected target graph; posterior component
-means, covariance, and weights are returned. These weights do not integrate the
-data-dependent graph-selection mechanism. Hyperparameters fixed by the user
-remain conditional assumptions; initial-abundance priors also depend on the
-observed support. Division summaries use lognormal moment and
-quantile approximations; they do not claim exact full posterior integration.
 
 ## Sparse joint model for sparse counts at two time points
 
-`fit_sparse_joint()`, the default pipeline of `fit_karst()`, is built for the
+`fit_sparse_joint()`, the model `fit_karst()` fits, is built for the
 case the package is meant for: a few hundred cells at each of two time points. It fits both time points with one
 count likelihood on the well-sampled karyotypes and all their one-step
 neighbours, observed or not. A rare karyotype is held at mutation-selection
@@ -444,52 +376,8 @@ alfak's folds, but by removing their counts and refitting the model, so its
 R-squared measures how well KARST predicts a karyotype it has not seen.
 `as_alfak()` and `write_alfak_outputs()` do the same for an existing fit.
 
-[`doc/karst_workflow.md`](doc/karst_workflow.md) follows the default pipeline
+[`doc/karst_workflow.md`](doc/karst_workflow.md) follows a fit
 step by step, and [`doc/karst_method.tex`](doc/karst_method.tex) gives the
 mathematics. Design, benchmark results and checks on real data are recorded in
 [`validation/sparse_joint/README.md`](validation/sparse_joint/README.md); the
 benchmark is [`benchmark/sparse_two_timepoint`](benchmark/sparse_two_timepoint/README.md).
-
-## Accuracy validation
-
-The reproducible workflow in `validation/accuracy_upgrade/` freezes independent
-landscape, ABM, and sampling seeds and scores identical target nodes at every
-distance. It includes point errors, full-covariance reference contrasts,
-interval coverage and proper interval scores, fit failures, and held-out count
-forecasts. Development, calibration, and final-test landscapes are separated.
-See the generated reports there for measured improvements and regressions.
-The [final independent exact-division test](validation/accuracy_upgrade/final_exact_review.md)
-contains 48 datasets on twelve reserved landscapes. Mean relative-fitness
-RMSE falls at distances 0–3, but paired confidence intervals cross zero and
-matched-calibration interval scores do not improve at every distance.
-The new joint path remains an explicit candidate until it passes independent
-validation; development results do not establish improvement for every distance
-or every possible landscape. Complete 22-chromosome lattice enumeration is not
-required, and graph-size limits remain explicit. A finite 128-query,
-22-chromosome fit has been checked for runtime and numerical convergence, but
-its approximately 4.7 GiB sampled memory use does not establish practical
-support for 5,000-node joint inference or high-dimensional statistical accuracy.
-
-The [second-round development decision](validation/accuracy_round2/development_stage_review.md)
-compares two frozen experimental priors on 18 revealed landscapes. Neither
-provides credible improvement in landscape shape at every distance. Candidate B
-reduces relative RMSE by 0.35–2.37% across distances 0–3, while centered shape
-error rises slightly in each distance mean. These are development results;
-new calibration/test landscapes remain sealed and no default is promoted.
-The [information diagnostic](validation/accuracy_round2/oracle_fisher_review.md)
-examines the limited information in sparse two-timepoint compositions.
-
-The [small-graph posterior reference](validation/posterior_reference_4to8/REVIEW.md)
-also identifies substantial Gaussian/Laplace approximation error in fixed
-count-only cases. A [prior-preserving growth-scale integration prototype](validation/baseline_quadrature/REVIEW.md)
-largely corrects that numerical discrepancy, but its 27-node truth-development
-pilot still fails the all-distance shape/uncertainty requirements. It remains a
-validation prototype; the package's default estimator is unchanged.
-
-The [fixed-budget observation-design study](validation/observation_design/REVIEW.md)
-now includes all sixty development cases after adaptive baseline integration
-restored six numerical failures. Both prespecified candidate layouts fail the
-all-distance accuracy and interval-score criteria: the shared-anchor layout
-improves remote-state mean errors but harms observed-state performance. The
-adaptive integrator remains a validation prototype; no default change or new
-independent test is claimed.

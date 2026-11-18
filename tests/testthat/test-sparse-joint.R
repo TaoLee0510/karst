@@ -264,22 +264,24 @@ test_that("uncertainty is finite and no wider than the prior where the counts fi
   expect_true(all(sqrt(diag(fit$trend$covariance)) <= 0.5 + 1e-8))
 })
 
-test_that("fit_karst reaches the sparse joint model as a pipeline", {
+test_that("fit_karst fits the sparse joint model", {
   sim <- simulate_sparse_joint_counts()
   direct <- fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05, max_cn = 4)
-  through <- fit_karst(sim$counts, dt = sim$dt, beta = sim$beta, pipeline = "sparse_joint",
+  through <- fit_karst(sim$counts, dt = sim$dt, beta = sim$beta,
                         sparse_joint_control = list(major_frequency = 0.05, max_cn = 4))
   expect_s3_class(through, "karst_sparse_joint_fit")
   expect_equal(through$summary, direct$summary)
-  expect_equal(summarize_karst(through), direct$summary)
-  expect_error(fit_karst(sim$counts, dt = sim$dt, pipeline = "sparse_joint", sparse_joint_control = list(4)),
-               "sparse_joint_control")
-  # It is the default, and arguments of the other pipelines are refused there.
-  by_default <- fit_karst(sim$counts, dt = sim$dt, beta = sim$beta,
-                           sparse_joint_control = list(major_frequency = 0.05, max_cn = 4))
-  expect_equal(by_default$summary, direct$summary)
+  expect_error(fit_karst(sim$counts, dt = sim$dt, sparse_joint_control = list(4)), "sparse_joint_control")
+  # The removed pipelines and their arguments are refused, naming what to do.
+  expect_error(fit_karst(sim$counts, dt = sim$dt, beta = sim$beta, pipeline = "two_layer"),
+               "`pipeline` was removed")
+  expect_error(fit_karst(sim$counts, dt = sim$dt, beta = sim$beta, pipeline = "sparse_joint"),
+               "`pipeline` was removed")
   expect_error(fit_karst(sim$counts, dt = sim$dt, beta = sim$beta, local_shell_depth = 1),
-               "local_shell_depth.*pipeline")
+               "fit_karst() takes no argument `local_shell_depth`; pass arguments of fit_sparse_joint()",
+               fixed = TRUE)
+  expect_error(fit_karst(sim$counts, dt = sim$dt, beta = sim$beta, list(), max_cn = 4, 1),
+               "takes no argument `max_cn` and no further unnamed arguments;", fixed = TRUE)
 })
 
 test_that("mutation-selection balance is the default initial state", {

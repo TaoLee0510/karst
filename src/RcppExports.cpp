@@ -12,30 +12,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// karst_graph_posterior_cpp
-Rcpp::List karst_graph_posterior_cpp(Rcpp::IntegerMatrix karyotypes, Rcpp::IntegerVector edge_from, Rcpp::IntegerVector edge_to, Rcpp::NumericVector edge_weight, Rcpp::IntegerVector anchor_index, Rcpp::NumericVector anchor_mean, Rcpp::NumericVector anchor_var, Rcpp::NumericVector lambda_l_grid, Rcpp::NumericVector lambda_e_grid, Rcpp::NumericVector sigma_obs_grid, double eps, bool compute_variance, Rcpp::Nullable<Rcpp::NumericMatrix> anchor_covariance, bool compute_covariance);
-RcppExport SEXP _karst_karst_graph_posterior_cpp(SEXP karyotypesSEXP, SEXP edge_fromSEXP, SEXP edge_toSEXP, SEXP edge_weightSEXP, SEXP anchor_indexSEXP, SEXP anchor_meanSEXP, SEXP anchor_varSEXP, SEXP lambda_l_gridSEXP, SEXP lambda_e_gridSEXP, SEXP sigma_obs_gridSEXP, SEXP epsSEXP, SEXP compute_varianceSEXP, SEXP anchor_covarianceSEXP, SEXP compute_covarianceSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::IntegerMatrix >::type karyotypes(karyotypesSEXP);
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type edge_from(edge_fromSEXP);
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type edge_to(edge_toSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type edge_weight(edge_weightSEXP);
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type anchor_index(anchor_indexSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type anchor_mean(anchor_meanSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type anchor_var(anchor_varSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lambda_l_grid(lambda_l_gridSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lambda_e_grid(lambda_e_gridSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type sigma_obs_grid(sigma_obs_gridSEXP);
-    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
-    Rcpp::traits::input_parameter< bool >::type compute_variance(compute_varianceSEXP);
-    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericMatrix> >::type anchor_covariance(anchor_covarianceSEXP);
-    Rcpp::traits::input_parameter< bool >::type compute_covariance(compute_covarianceSEXP);
-    rcpp_result_gen = Rcpp::wrap(karst_graph_posterior_cpp(karyotypes, edge_from, edge_to, edge_weight, anchor_index, anchor_mean, anchor_var, lambda_l_grid, lambda_e_grid, sigma_obs_grid, eps, compute_variance, anchor_covariance, compute_covariance));
-    return rcpp_result_gen;
-END_RCPP
-}
 // karst_parse_karyotypes_cpp
 Rcpp::IntegerMatrix karst_parse_karyotypes_cpp(Rcpp::CharacterVector labels);
 RcppExport SEXP _karst_karst_parse_karyotypes_cpp(SEXP labelsSEXP) {
@@ -58,47 +34,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// karst_build_graph_cpp
-Rcpp::List karst_build_graph_cpp(Rcpp::CharacterVector labels, Rcpp::IntegerVector y0, Rcpp::IntegerVector y1, double beta, std::string transition_kernel, int shell_depth, int min_cn, int max_cn, int max_nodes);
-RcppExport SEXP _karst_karst_build_graph_cpp(SEXP labelsSEXP, SEXP y0SEXP, SEXP y1SEXP, SEXP betaSEXP, SEXP transition_kernelSEXP, SEXP shell_depthSEXP, SEXP min_cnSEXP, SEXP max_cnSEXP, SEXP max_nodesSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type labels(labelsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type y0(y0SEXP);
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type y1(y1SEXP);
-    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
-    Rcpp::traits::input_parameter< std::string >::type transition_kernel(transition_kernelSEXP);
-    Rcpp::traits::input_parameter< int >::type shell_depth(shell_depthSEXP);
-    Rcpp::traits::input_parameter< int >::type min_cn(min_cnSEXP);
-    Rcpp::traits::input_parameter< int >::type max_cn(max_cnSEXP);
-    Rcpp::traits::input_parameter< int >::type max_nodes(max_nodesSEXP);
-    rcpp_result_gen = Rcpp::wrap(karst_build_graph_cpp(labels, y0, y1, beta, transition_kernel, shell_depth, min_cn, max_cn, max_nodes));
-    return rcpp_result_gen;
-END_RCPP
-}
-// karst_simulate_counts_cpp
-Rcpp::List karst_simulate_counts_cpp(Rcpp::IntegerMatrix karyotypes, Rcpp::CharacterVector labels, Rcpp::NumericVector fitness, double beta, double dt, int n0, int n1, int detection_threshold, double dropout_prob, int seed, double init_concentration, double overdispersion);
-RcppExport SEXP _karst_karst_simulate_counts_cpp(SEXP karyotypesSEXP, SEXP labelsSEXP, SEXP fitnessSEXP, SEXP betaSEXP, SEXP dtSEXP, SEXP n0SEXP, SEXP n1SEXP, SEXP detection_thresholdSEXP, SEXP dropout_probSEXP, SEXP seedSEXP, SEXP init_concentrationSEXP, SEXP overdispersionSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::IntegerMatrix >::type karyotypes(karyotypesSEXP);
-    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type labels(labelsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type fitness(fitnessSEXP);
-    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
-    Rcpp::traits::input_parameter< double >::type dt(dtSEXP);
-    Rcpp::traits::input_parameter< int >::type n0(n0SEXP);
-    Rcpp::traits::input_parameter< int >::type n1(n1SEXP);
-    Rcpp::traits::input_parameter< int >::type detection_threshold(detection_thresholdSEXP);
-    Rcpp::traits::input_parameter< double >::type dropout_prob(dropout_probSEXP);
-    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
-    Rcpp::traits::input_parameter< double >::type init_concentration(init_concentrationSEXP);
-    Rcpp::traits::input_parameter< double >::type overdispersion(overdispersionSEXP);
-    rcpp_result_gen = Rcpp::wrap(karst_simulate_counts_cpp(karyotypes, labels, fitness, beta, dt, n0, n1, detection_threshold, dropout_prob, seed, init_concentration, overdispersion));
-    return rcpp_result_gen;
-END_RCPP
-}
 // karst_pij_cpp
 double karst_pij_cpp(int parent_cn, int child_cn, double beta);
 RcppExport SEXP _karst_karst_pij_cpp(SEXP parent_cnSEXP, SEXP child_cnSEXP, SEXP betaSEXP) {
@@ -112,30 +47,11 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// karst_transition_operator_cpp
-Rcpp::List karst_transition_operator_cpp(Rcpp::IntegerMatrix karyotypes, double beta, std::string transition_kernel, bool division_process, double probability_cutoff);
-RcppExport SEXP _karst_karst_transition_operator_cpp(SEXP karyotypesSEXP, SEXP betaSEXP, SEXP transition_kernelSEXP, SEXP division_processSEXP, SEXP probability_cutoffSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::IntegerMatrix >::type karyotypes(karyotypesSEXP);
-    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
-    Rcpp::traits::input_parameter< std::string >::type transition_kernel(transition_kernelSEXP);
-    Rcpp::traits::input_parameter< bool >::type division_process(division_processSEXP);
-    Rcpp::traits::input_parameter< double >::type probability_cutoff(probability_cutoffSEXP);
-    rcpp_result_gen = Rcpp::wrap(karst_transition_operator_cpp(karyotypes, beta, transition_kernel, division_process, probability_cutoff));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_karst_karst_graph_posterior_cpp", (DL_FUNC) &_karst_karst_graph_posterior_cpp, 14},
     {"_karst_karst_parse_karyotypes_cpp", (DL_FUNC) &_karst_karst_parse_karyotypes_cpp, 1},
     {"_karst_karst_stringify_karyotypes_cpp", (DL_FUNC) &_karst_karst_stringify_karyotypes_cpp, 1},
-    {"_karst_karst_build_graph_cpp", (DL_FUNC) &_karst_karst_build_graph_cpp, 9},
-    {"_karst_karst_simulate_counts_cpp", (DL_FUNC) &_karst_karst_simulate_counts_cpp, 12},
     {"_karst_karst_pij_cpp", (DL_FUNC) &_karst_karst_pij_cpp, 3},
-    {"_karst_karst_transition_operator_cpp", (DL_FUNC) &_karst_karst_transition_operator_cpp, 5},
     {NULL, NULL, 0}
 };
 

@@ -1,6 +1,6 @@
 # KARST workflow, step by step
 
-This is how the default pipeline of KARST runs, from a two-time-point count matrix
+This is how KARST fits a landscape, from a two-time-point count matrix
 to a fitted landscape and, optionally, to the output files of alfak. It is
 Section 4 of [`karst_method.tex`](karst_method.tex) in plain text; the model
 and its equations are Section 2 there, and the design decisions and benchmark
@@ -13,14 +13,13 @@ All three run the same model, the sparse joint count model.
 
 | Entry point | Use | Returns |
 | --- | --- | --- |
-| `fit_karst(counts, dt, beta)` | Main entry point; `pipeline = "sparse_joint"` is the default | An `karst_sparse_joint_fit` |
+| `fit_karst(counts, dt, beta)` | Main entry point | An `karst_sparse_joint_fit` |
 | `fit_sparse_joint(counts, dt, beta, ...)` | The same model with its arguments given directly | The same |
 | `alfak_compat(yi, outdir, ...)` | The arguments of `alfakR::alfak()`; writes alfak's files | The cross-validation R-squared, invisibly, and the files in `outdir` |
 
 `fit_karst()` passes `counts`, `dt`, `beta` and the list
-`sparse_joint_control` on to `fit_sparse_joint()`. Any argument that belongs
-to the earlier pipelines is an error unless `pipeline = "two_layer"` or
-`"joint_count"` is set.
+`sparse_joint_control` on to `fit_sparse_joint()`; any other argument is an
+error.
 
 ## Part 1. Fitting (`fit_sparse_joint`)
 
@@ -208,14 +207,10 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
 | `alfak_compat()` with cross-validation, GBM P6 (226 karyotypes) | About 8 minutes |
 | Simulated culture, 4-8 time points of 200-1000 cells (default) | Median 2.5-5 minutes, 2-4 times two time points |
 
-## Relation to the earlier pipelines
+## Computation
 
-| Pipeline | Stages | Computation |
-| --- | --- | --- |
-| `"sparse_joint"` (default) | One count model on the majors and their neighbours; trend beyond | TMB model `sparse_joint` (`sparse_joint_cohort` for cohorts) |
-| `"two_layer"` | Local hierarchical count model, then one of nine extrapolation methods | Local layer: TMB model `local_model`. Second layer: R and RcppEigen, not TMB |
-| `"joint_count"` | One count model with a structured landscape prior on the bounded target graph | TMB model `local_model` with the structured prior |
-
-All TMB models are compiled into one library and selected by name. Graph
-construction, the missegregation kernel, the graph Gaussian solver and the
-simulators are separate Rcpp code.
+The TMB models `sparse_joint`, `sparse_joint_series`, `sparse_joint_pairwise`,
+`sparse_joint_state_space` and `sparse_joint_cohort` are compiled into one
+library (`src/karst_tmb.cpp`) and selected by name. Parsing of karyotype labels
+and the missegregation probability of one chromosome are separate Rcpp code;
+the simulators are written in R.

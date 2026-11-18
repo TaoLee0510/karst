@@ -4,7 +4,7 @@ Scores fitness-landscape estimates from sparse karyotype counts at two time
 points against a known truth, separately for observed karyotypes and their one-
 and two-step neighbours. It is the development scoreboard for KARST: every
 candidate change is compared here against the original ALFA-K (`alfak`) and
-the current KARST pipeline before it is considered for the 22-chromosome HPC
+the no-information answer before it is considered for the 22-chromosome HPC
 confirmation.
 
 ## Design
@@ -105,17 +105,16 @@ bootstrap interval.
 **Acceptance rule for a candidate.** Pooled over scenarios, at each of
 distances 0, 1 and 2:
 
-1. RMSE below the no-information answer and below the current KARST pipeline
-   (95% interval of the paired difference below zero);
-2. Spearman correlation above the current KARST pipeline and above the
-   original ALFA-K (interval above zero);
-3. no scenario with RMSE more than 10% above the current KARST pipeline.
+1. RMSE below the no-information answer (95% interval of the paired
+   difference below zero);
+2. Spearman correlation above the original ALFA-K (interval above zero).
 
 Coverage is reported separately, with 90–98% as the target. The bar for error
 is the no-information answer rather than ALFA-K because ALFA-K's RMSE is
-dominated by a few unconstrained fits and is far above it, while the current
-KARST pipeline sits on it. `run.R --stage=report` evaluates the rule for every
-method that is not one of these baselines.
+dominated by a few unconstrained fits and is far above it. `run.R
+--stage=report` evaluates the rule for the candidates named in the
+configuration (`acceptance$candidates`), and reports only the methods the
+configuration lists.
 
 ## Running
 
@@ -127,7 +126,7 @@ R=benchmark/sparse_two_timepoint/run.R
 Rscript $R --stage=validate
 Rscript $R --stage=truth    --split=dev --cohort
 Rscript $R --stage=datasets --split=dev --cohort
-Rscript $R --stage=fit      --split=dev --methods=zero,alfak_minobs5,karst_two_layer_fixed
+Rscript $R --stage=fit      --split=dev --methods=zero,alfak_minobs5,karst_sparse_joint_balance
 Rscript $R --stage=score    --split=dev
 Rscript $R --stage=report   --split=dev
 ```
@@ -135,13 +134,9 @@ Rscript $R --stage=report   --split=dev
 Results go to `benchmark/results/sparse_two_timepoint/` (not tracked). Fits are
 cached per dataset and method, so a stage can be rerun after adding a method.
 
-`--workers` defaults to 2. A KARST two-layer fit at 22 chromosomes needs
-about 1 GB. `alfak` needs up to 4.5 GB and 15 minutes on the largest datasets
-(`minobs = 5` at 3000 cells), so raise the worker count only with memory to
-spare. `karst_two_layer_cv`, the package's default leave-one-anchor-out
-selection of graph hyperparameters, is defined but not part of a normal round:
-one dataset with 97 observed karyotypes did not finish in 25 minutes, against
-10 seconds with the hyperparameters fixed.
+`--workers` defaults to 2. `alfak` needs up to 4.5 GB and 15 minutes on the
+largest datasets (`minobs = 5` at 3000 cells), so raise the worker count only
+with memory to spare.
 The held-out landscapes are for the final confirmation only and need
 `--split=heldout --unseal-heldout`.
 

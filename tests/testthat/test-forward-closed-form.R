@@ -18,11 +18,19 @@ test_that("sparse kernel reproduces the exact single-daughter kernel on one-step
   karyotypes <- small_domain()
   beta <- 0.003
   kernel <- sparse_division_kernel(karyotypes, beta)
-  full <- karst_transition_operator_cpp(karyotypes, beta, "exact", division_process = TRUE)
-  full_matrix <- matrix(0, nrow(karyotypes), nrow(karyotypes))
-  full_matrix[cbind(full$from0 + 1L, full$to0 + 1L)] <- full$weight
-  expect_equal(exp(kernel$log_self), diag(full_matrix), tolerance = 1e-12)
-  expect_equal(exp(kernel$log_prob), full_matrix[cbind(kernel$from, kernel$to)], tolerance = 1e-12)
+  # A daughter's copy number of a chromosome: each of the parent's copies
+  # missegregates with probability beta and then sends both chromatids to
+  # either daughter; the others give it one chromatid each.
+  chromosome <- function(parent, child) {
+    if (abs(child - parent) > parent) return(0)
+    m <- seq(abs(child - parent), parent, by = 2)
+    sum(stats::dbinom(m, parent, beta) * stats::dbinom((child - parent + m) %/% 2, m, 0.5))
+  }
+  daughter <- function(i, j) prod(mapply(chromosome, karyotypes[i, ], karyotypes[j, ]))
+  n <- nrow(karyotypes)
+  expect_equal(exp(kernel$log_self), vapply(seq_len(n), function(i) daughter(i, i), numeric(1)),
+               tolerance = 1e-12)
+  expect_equal(exp(kernel$log_prob), mapply(daughter, kernel$from, kernel$to), tolerance = 1e-12)
   one_step <- rowSums(abs(karyotypes[kernel$from, , drop = FALSE] - karyotypes[kernel$to, , drop = FALSE]))
   expect_true(all(one_step == 1))
   # every one-step pair inside the domain is an edge, in both directions

@@ -6,8 +6,8 @@ with the fixes below; names change, and old names have no aliases.
 
 - The package is `karst`: `library(karst)`. Functions, classes, options and
   condition classes that carried `alfak2` carry `karst`: `fit_karst()`,
-  `prepare_karst_data()`, `karst_data_times()`, `summarize_karst()`,
-  `plot_karst()`; classes such as `karst_sparse_joint_fit`; options such as
+  `prepare_karst_data()`, `karst_data_times()`; classes such as
+  `karst_sparse_joint_fit`; options such as
   `karst.sparse_joint_template`; conditions such as
   `karst_domain_coverage_error`.
 - alfak, the R package `alfakR` of the ALFA-K paper, is called alfak in the
@@ -18,6 +18,36 @@ with the fixes below; names change, and old names have no aliases.
 - Commit ids cited from before the rename map to the current history through
   `doc/commit_map.tsv`.
 - The ALFA-K paper benchmark is part of the repository (`benchmark/paper`).
+
+## Removed: the two-layer and joint-count pipelines
+
+KARST fits the sparse joint count model only. The pipelines it replaced, kept
+since 0.2.0 as options of `fit_karst()`, are removed with their code, tests
+and validation studies; they remain in the git history.
+
+- `fit_karst()` passes `counts`, `dt`, `beta` and `sparse_joint_control` to
+  `fit_sparse_joint()`. Its `pipeline` argument and the arguments of the other
+  two pipelines are gone; giving one is an error that says so.
+- Removed functions: `fit_local_posterior()`, `build_karyotype_graph()`,
+  `fit_extrapolation_layer()` with its second-layer methods,
+  `fit_graph_posterior()`, `summarize_karst()` and `plot_karst()`, and the
+  classes `karst_fit`, `karst_local_fit`, `karst_global_fit` and
+  `karst_graph` with their methods. With them go the effective-depth
+  preprocessing, the alfak-scale columns (`alfak_scale`) and the count
+  attributes `observation_weights`, `soft_minobs` and `holdout_mode` that
+  `prepare_karst_data()` kept for the local fit.
+- Removed compiled code: the TMB local model, the graph Gaussian posterior,
+  the graph builder, the transition operator, and a count simulator that no R
+  function had called since May 2026. The TMB source is now `src/karst_tmb.cpp`.
+- Removed validation studies of these pipelines: `validation/accuracy_round2`,
+  `accuracy_upgrade`, `baseline_quadrature`, `observation_design` and
+  `posterior_reference_4to8`.
+- The development benchmark no longer fits the two-layer pipeline, and its
+  acceptance rule no longer compares with it; the method document no longer
+  describes or reports either pipeline.
+- Sparse joint fits are unchanged: two- and multi-time-point, cohort,
+  rate-range and alfak-format fits give identical results before and after
+  the removal.
 
 ## Validation
 
@@ -47,13 +77,6 @@ development benchmark (held-out landscapes included) was redone with 1.0.0
 - `as_alfak()`: the cross-validation of a `series = "pairwise"` fit centres the
   unseen karyotypes of each pair on the depth at the start of the pair, as the
   fit does, not on the first time point's depth.
-- The two-layer pipeline (`fit_local_posterior()`, `build_karyotype_graph()`)
-  stops on more than two time points; before, it read the first two and
-  rescaled fitness by their share of the whole interval.
-- The default `anchor_covariance_inflation` covers every status a local fit
-  reports; a status it lacked stopped the two-layer fit.
-- `alfak_scale = TRUE` with a covariance reported for the near-field nodes only
-  (`truncated_nearfield_gmrf`) no longer stops on mismatched dimensions.
 
 # karst 0.2.0 (2026-11-17, released as alfak2)
 

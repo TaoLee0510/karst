@@ -29,9 +29,9 @@ stt_one_step_neighbours <- function(karyotypes, min_cn, max_cn) {
 # observed karyotype being an equally likely start, keeping endpoints whose
 # distance to the nearest observed karyotype is exactly the number of steps.
 # Within a shell this sampling is not uniform. The intermediate nodes of the
-# kept walks are returned as unscored rows (`scored = FALSE`): graph-based
-# methods need a path from the observed karyotypes to a target. The observed
-# karyotypes are included as the reference for centring.
+# kept walks are also returned, as unscored rows (`scored = FALSE`), as in the
+# node sets saved by earlier rounds. The observed karyotypes are included as
+# the reference for centring.
 stt_far_nodes <- function(counts, min_cn = 1L, max_cn = 8L, cap = 2000L, seed = 1L, max_batches = 60L) {
   counts <- as.matrix(counts)
   observed <- rownames(counts)[rowSums(counts) > 0]
