@@ -1,5 +1,5 @@
-KARST_COMMIT=2c60af1
-KARST_SHA256=101210896f11b0ac6a4c8e04b6343e9b47a6b36853ba66e058dddd103b0baba0
+KARST_COMMIT=50415cf
+KARST_SHA256=631ab56187c2f73dfbef12625a322f4f1fcdf844b19d0725ecd807a60db344b6
 # The commit of karst that a round fits, and the sha256 of its source archive
 # (git archive --format=tar.gz), set when a round is staged.
 # Rounds of the alfak2 era (before the rename to KARST) are in
@@ -16,3 +16,10 @@ KARST_SHA256=101210896f11b0ac6a4c8e04b6343e9b47a6b36853ba66e058dddd103b0baba0
 #            with the fixes of the code review of 2026-11-17; superseded by
 #            2c60af1 (1.1.0, fixes of the code review of 2026-11-18, alfak's
 #            efflux conversion), which refits every KARST arm
+#   2c60af1  sha256 101210896f11b0ac6a4c8e04b6343e9b47a6b36853ba66e058dddd103b0baba0
+#            results in results_2c60af1/ (no report): 1.1.0; complete, but 85
+#            of its 6099 KARST fit tasks failed when one candidate history's
+#            posterior mode was not found (karst_inner_failure), 84 of which
+#            had fitted in e7e32f8; superseded by 50415cf (1.1.1: the mode
+#            searched once more from the initial latent values, a failing
+#            candidate not chosen), which refits every KARST arm
