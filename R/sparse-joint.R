@@ -200,14 +200,50 @@ sparse_joint_initial_prior_matrix <- function(y, initial_frequency, depth = colS
 # Finds the posterior mode of the latent variables at the scales `par_fixed`
 # (left in `objective$env$last.par`). When TMB's inner Newton search fails,
 # the objective is not finite and `last.par` holds the last point tried, not a
-# mode: that is an error (class karst_inner_failure), not a result.
-sparse_joint_inner_mode <- function(objective, par_fixed) {
+# mode. TMB starts that search from its best mode so far: in a fit, a mode
+# found during the scale optimisation, which can lie far from the mode at
+# these scales (at other scales, or from a degenerate Laplace approximation);
+# in a rebuild, the fit's stored mode. The search is then made once more from
+# `start`, the initial latent values of the problem in TMB's order (by
+# default the objective's own, which are those in a fit;
+# sparse_joint_latent_vector() for a rebuild), as the convergence check does
+# (sparse_joint_check_scales()), and TMB's own start restored afterwards. A
+# search that fails from both is an error (class karst_inner_failure), not a
+# result. Returns the objective, with attribute `restart` TRUE when it was
+# found by the second search.
+sparse_joint_inner_mode <- function(objective, par_fixed, start = NULL) {
+  finite <- function(value) length(value) == 1L && is.finite(value)
   value <- objective$fn(par_fixed)
-  if (length(value) != 1L || !is.finite(value)) {
-    stop(errorCondition("The inner optimisation (the posterior mode at the fitted scales) failed.",
+  if (finite(value)) return(invisible(value))
+  env <- objective$env
+  if (is.null(start)) start <- env$par[env$random]
+  if (length(start) != length(env$random)) {
+    stop("Internal error: the initial latent values do not match the objective's latent variables.",
+         call. = FALSE)
+  }
+  tmb_start <- get("random.start", envir = env)
+  on.exit(assign("random.start", tmb_start, envir = env), add = TRUE)
+  sparse_joint_fix_inner_start(env, start)
+  value <- objective$fn(par_fixed)
+  if (!finite(value)) {
+    stop(errorCondition(paste0("The inner optimisation (the posterior mode at the fitted scales) failed, ",
+                               "from TMB's best mode so far and from the initial latent values."),
                         class = "karst_inner_failure", call = NULL))
   }
-  invisible(value)
+  invisible(structure(value, restart = TRUE))
+}
+
+# The latent variables of `parameters` (a list) as TMB orders them in the
+# parameter vector of an objective with `map`: `latent`, the names of its
+# latent variables in the objective's order
+# (unique(names(objective$env$par)[objective$env$random])), and for a mapped
+# parameter one value per level, the mean of its entries (TMB's updateMap()),
+# entries mapped to NA left out.
+sparse_joint_latent_vector <- function(parameters, map, latent) {
+  unlist(lapply(latent, function(name) {
+    value <- as.numeric(parameters[[name]])
+    if (is.null(map[[name]])) value else as.numeric(tapply(value, map[[name]], mean))
+  }), use.names = FALSE)
 }
 
 # Posterior covariance of the latent variables given the scales, as a solver.
@@ -222,9 +258,12 @@ sparse_joint_inner_mode <- function(objective, par_fixed) {
 #
 # Returns the mode, a solver for right-hand sides, the variances of selected
 # latent variables, draws of all latent variables about the mode, the names of
-# the latent variables, and the fitted expected counts.
-sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random, par_fixed, inner_control) {
-  sparse_joint_inner_mode(objective, par_fixed)
+# the latent variables, the fitted expected counts, and `restart`: the
+# objective at the mode when it was found only from `start` (see
+# sparse_joint_inner_mode()), NULL otherwise.
+sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random, par_fixed, inner_control,
+                                   start = NULL) {
+  found <- sparse_joint_inner_mode(objective, par_fixed, start)
   mode <- objective$env$last.par
   latent <- objective$env$random
   report <- objective$report(mode)
@@ -251,6 +290,7 @@ sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random,
   expected_counts <- if (series_method) computed$counts else if (is.null(expected[["y"]])) cbind(expected$y0, expected$y1) else expected[["y"]]
   list(
     mode = unname(mode[latent]), names = names(mode)[latent], solve = solve,
+    restart = if (isTRUE(attr(found, "restart"))) as.numeric(found),
     # Fitted expected counts, for comparison with the observed ones: one
     # column per timepoint, and the first two separately.
     expected = expected_counts, expected_t0 = expected_counts[, 1L], expected_t1 = expected_counts[, 2L],
@@ -603,12 +643,17 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
   inner_control <- fit$settings$inner_control
   objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = problem$random, DLL = "karst",
                               silent = TRUE, inner.control = inner_control)
+  # The inner search starts from the stored mode; should it fail, it is made
+  # once more from the problem's own initial latent values.
+  start <- sparse_joint_latent_vector(problem$parameters, map,
+                                      unique(names(objective$env$par)[objective$env$random]))
   if (!posterior) {
-    sparse_joint_inner_mode(objective, numeric(0))
+    sparse_joint_inner_mode(objective, numeric(0), start)
     mode <- objective$env$last.par
     return(lapply(stats::setNames(nm = problem$random), function(name) unname(mode[names(mode) == name])))
   }
-  solver <- sparse_joint_posterior(objective, tmb_data, parameters, map, problem$random, numeric(0), inner_control)
+  solver <- sparse_joint_posterior(objective, tmb_data, parameters, map, problem$random, numeric(0), inner_control,
+                                   start)
   list(problem = problem, solver = solver, objective = objective, tmb_data = tmb_data)
 }
 
@@ -780,9 +825,10 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   level free (`balance_level = "free"`) and the history at the interval
 #'   measures how much larger the cloud of non-major karyotypes is than the
 #'   balance over the interval allows; if the log of that factor exceeds
-#'   `auto_level`, the fit is `"free"`, otherwise `"balance"`.
-#'   `diagnostics$initial_state_check` records the level, its standard
-#'   deviation and the choice, and `diagnostics$initial_state` the state
+#'   `auto_level`, the fit is `"free"`, otherwise `"balance"`; if the posterior
+#'   mode of that first fit cannot be found, the level is `NA` and the fit
+#'   `"balance"`. `diagnostics$initial_state_check` records the level, its
+#'   standard deviation and the choice, and `diagnostics$initial_state` the state
 #'   fitted. A cloud that large comes from a true missegregation rate above
 #'   `beta` or from cells called a copy off, where the balance prior ranked
 #'   neighbours worse than chance on simulated data; but also from a history
@@ -809,8 +855,16 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   divisions at `birth_rate` that are longer than that interval: the model is fitted at
 #'   each and the fit with the highest marginal likelihood is kept, so a fit
 #'   takes up to six times as long; `diagnostics$history_profile` lists the
-#'   candidates. A single value fixes the history; several values are the
-#'   candidates. Up to karst 8327282 the history was the interval itself
+#'   candidates. The posterior mode at a candidate's fitted scales is searched
+#'   from TMB's best mode so far and, if that fails, once more from the
+#'   initial latent values; a column `posterior_restart` (only when it was
+#'   needed; `diagnostics$posterior_restart` for the fit kept, or for a single
+#'   history) gives the objective at the mode so found, while candidates are
+#'   compared on nlminb's `objective`. A candidate at which both searches fail
+#'   is not chosen: its objective and convergence are `NA`, and a column
+#'   `inner_failure` marks it (only when a candidate failed); when no
+#'   candidate is left the fit stops. A single value fixes the history;
+#'   several values are the candidates. Up to karst 8327282 the history was the interval itself
 #'   (`history = dt`). With time points a few weeks apart that is far shorter than
 #'   the population has been evolving: the balance prior then holds the
 #'   neighbours of the major karyotypes far below their observed abundance, and
@@ -852,7 +906,8 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   inverse of the dispersion of the majors' counts at those time points in a
 #'   first fit (at the shortest history), at most 1, so that a population that
 #'   drifts between time points (small passaging bottlenecks) leans on the
-#'   first and the last. Not used by the other two methods.
+#'   first and the last; 1 if that dispersion is not finite or the posterior
+#'   mode of that first fit cannot be found. Not used by the other two methods.
 #'
 #' @return An `karst_sparse_joint_fit` object. `summary` has one row per
 #'   domain karyotype, with its counts (`count_t0`, `count_t1`, ..., one
@@ -958,15 +1013,21 @@ fit_sparse_joint <- function(counts,
     check$balance_level <- "free"
     check$history <- data$dt
     started <- proc.time()[["elapsed"]]
-    first <- withCallingHandlers(do.call(fit_sparse_joint, check),
-                                 karst_convergence_warning = function(w) invokeRestart("muffleWarning"))
+    # A check fit whose posterior mode could not be found gives no level: the
+    # balance is kept, as for a level that is not finite.
+    first <- tryCatch(withCallingHandlers(do.call(fit_sparse_joint, check),
+                                         karst_convergence_warning = function(w) invokeRestart("muffleWarning")),
+                      karst_inner_failure = function(e) NULL)
     level <- if (is.null(first$diagnostics$balance_level)) NA_real_ else first$diagnostics$balance_level
     chosen <- if (is.finite(level) && level > auto_level) "free" else "balance"
     arguments$initial_state <- chosen
     fit <- do.call(fit_sparse_joint, arguments)
     fit$diagnostics$initial_state_check <- data.frame(
-      level = level, level_sd = first$diagnostics$balance_level_sd, threshold = auto_level, chosen = chosen,
-      check_convergence = first$diagnostics$convergence, stringsAsFactors = FALSE)
+      level = level,
+      level_sd = if (is.null(first$diagnostics$balance_level_sd)) NA_real_ else first$diagnostics$balance_level_sd,
+      threshold = auto_level, chosen = chosen,
+      check_convergence = if (is.null(first)) NA_integer_ else first$diagnostics$convergence,
+      stringsAsFactors = FALSE)
     fit$diagnostics$seconds <- proc.time()[["elapsed"]] - started
     return(fit)
   }
@@ -1069,9 +1130,13 @@ fit_sparse_joint <- function(counts,
       arguments$counts <- data
       arguments$history <- min(history)
       arguments$intermediate_weight <- 1
-      first <- withCallingHandlers(do.call(fit_sparse_joint, arguments),
-                                   karst_convergence_warning = function(w) invokeRestart("muffleWarning"))
-      dispersion <- sparse_joint_intermediate_dispersion(first)
+      # A first fit whose posterior mode could not be found gives no
+      # dispersion: the weight is then 1, as for a dispersion that is not
+      # finite.
+      first <- tryCatch(withCallingHandlers(do.call(fit_sparse_joint, arguments),
+                                            karst_convergence_warning = function(w) invokeRestart("muffleWarning")),
+                        karst_inner_failure = function(e) NULL)
+      dispersion <- if (is.null(first)) NA_real_ else sparse_joint_intermediate_dispersion(first)
       intermediate_weight <- if (is.finite(dispersion)) 1 / max(1, dispersion) else 1
     }
     validate_scalar(intermediate_weight, "intermediate_weight", lower = .Machine$double.eps, upper = 1)
@@ -1082,26 +1147,52 @@ fit_sparse_joint <- function(counts,
     started <- proc.time()[["elapsed"]]
     arguments <- mget(names(formals(sys.function())), envir = environment())
     arguments$counts <- data
-    # Only the chosen candidate's convergence is warned about.
+    # Only the chosen candidate's convergence is warned about. A candidate
+    # whose posterior mode could not be found (karst_inner_failure) has no
+    # result and is not chosen.
     fits <- lapply(history, function(h) {
       arguments$history <- h
-      withCallingHandlers(do.call(fit_sparse_joint, arguments),
-                          karst_convergence_warning = function(w) invokeRestart("muffleWarning"))
+      tryCatch(withCallingHandlers(do.call(fit_sparse_joint, arguments),
+                                   karst_convergence_warning = function(w) invokeRestart("muffleWarning")),
+               karst_inner_failure = function(e) e)
     })
-    objective <- vapply(fits, function(f) f$diagnostics$objective, numeric(1))
-    convergence <- vapply(fits, function(f) f$diagnostics$convergence, numeric(1))
+    failed <- vapply(fits, inherits, logical(1), what = "karst_inner_failure")
+    objective <- vapply(fits, function(f) if (inherits(f, "karst_inner_failure")) NA_real_ else
+      f$diagnostics$objective, numeric(1))
+    convergence <- vapply(fits, function(f) if (inherits(f, "karst_inner_failure")) NA_real_ else
+      f$diagnostics$convergence, numeric(1))
     chosen <- sparse_joint_choose_candidate(objective, convergence)
     if (is.na(chosen)) {
+      candidates <- paste(format(history), collapse = ", ")
+      if (all(failed)) {
+        stop(errorCondition(sprintf(paste0("No candidate history (%s) could be used: the posterior mode at the ",
+                                           "fitted scales could not be found at any."), candidates),
+                            class = "karst_inner_failure", call = NULL))
+      }
+      if (any(failed)) {
+        stop(sprintf(paste0("No candidate history (%s) could be used: the posterior mode at the fitted scales ",
+                            "could not be found at %d, and the scale optimisation failed at the others. ",
+                            "Give `history` to fit one of the others."),
+                     candidates, sum(failed)), call. = FALSE)
+      }
       stop(sprintf(paste0("No candidate history (%s) has a finite marginal likelihood: the scale optimisation ",
-                          "failed at each. Give `history` to fit one of them."),
-                   paste(format(history), collapse = ", ")), call. = FALSE)
+                          "failed at each. Give `history` to fit one of them."), candidates), call. = FALSE)
     }
     fit <- fits[[chosen]]
     fit$diagnostics$history_profile <- data.frame(history = history, objective = objective,
                                                   convergence = convergence)
+    # Only when a candidate failed, or had its posterior mode found from the
+    # initial latent values alone, so that other fits stay as they were.
+    if (any(failed)) fit$diagnostics$history_profile$inner_failure <- failed
+    restart <- vapply(fits, function(f) {
+      if (inherits(f, "karst_inner_failure") || is.null(f$diagnostics$posterior_restart)) NA_real_ else
+        f$diagnostics$posterior_restart
+    }, numeric(1))
+    if (any(!is.na(restart))) fit$diagnostics$history_profile$posterior_restart <- restart
     if (balance_level == "free" && initial_state == "balance") {
       fit$diagnostics$history_profile$balance_level <- vapply(fits, function(f) {
-        if (is.null(f$diagnostics$balance_level)) NA_real_ else f$diagnostics$balance_level
+        if (inherits(f, "karst_inner_failure") || is.null(f$diagnostics$balance_level)) NA_real_ else
+          f$diagnostics$balance_level
       }, numeric(1))
     }
     if (is.finite(dispersion)) fit$diagnostics$intermediate_dispersion <- dispersion
@@ -1246,6 +1337,10 @@ fit_sparse_joint <- function(counts,
   }
   if (!is.null(settings$intermediate_weight)) fit$diagnostics$intermediate_weight <- settings$intermediate_weight
   if (is.finite(dispersion)) fit$diagnostics$intermediate_dispersion <- dispersion
+  # Only when the posterior mode was found from the initial latent values
+  # alone (sparse_joint_inner_mode()): the objective at that mode. Candidate
+  # histories are compared on `objective`, nlminb's, as before.
+  if (!is.null(solver$restart)) fit$diagnostics$posterior_restart <- solver$restart
   sparse_joint_convergence_warning(fit$diagnostics$optimisation)
   fit
 }

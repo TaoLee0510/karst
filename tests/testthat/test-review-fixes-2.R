@@ -59,10 +59,229 @@ test_that("a free balance level is refused for the pairwise and state-space meth
   }
 })
 
-test_that("a failed inner optimisation is an error, not a mode", {
-  objective <- list(fn = function(par) NaN, env = list(last.par = c(g = 1)))
-  expect_error(sparse_joint_inner_mode(objective, numeric(0)), class = "karst_inner_failure")
-  expect_invisible(sparse_joint_inner_mode(list(fn = function(par) 3), numeric(0)))
+# A stand-in for a TMB objective: `values` are what successive calls of fn()
+# return; each call records the inner start it would use.
+mock_inner_objective <- function(values) {
+  env <- new.env()
+  env$par <- c(scale = 0, g = 0)
+  env$random <- 2L
+  env$last.par.best <- c(scale = 0, g = 5)
+  env$random.start <- expression(last.par.best[random])
+  env$starts <- numeric(0)
+  fn <- function(par) {
+    env$starts <- c(env$starts, unname(eval(env$random.start, env)))
+    values[[min(length(env$starts), length(values))]]
+  }
+  list(fn = fn, env = env)
+}
+
+test_that("the posterior mode is searched once more from the initial values before it fails", {
+  # found at once: one search, from TMB's best mode
+  first <- mock_inner_objective(3)
+  expect_invisible(sparse_joint_inner_mode(first, numeric(0)))
+  expect_equal(first$env$starts, 5)
+  # failed from TMB's best mode, found from the initial values
+  second <- mock_inner_objective(c(NaN, 4))
+  found <- sparse_joint_inner_mode(second, numeric(0))
+  expect_equal(as.numeric(found), 4)
+  expect_true(isTRUE(attr(found, "restart")))
+  expect_equal(second$env$starts, c(5, 0))
+  expect_identical(second$env$random.start, expression(last.par.best[random]))
+  # failed from both: an error, and TMB's own start restored
+  failed <- mock_inner_objective(c(NaN, Inf))
+  expect_error(sparse_joint_inner_mode(failed, numeric(0)), class = "karst_inner_failure")
+  expect_equal(failed$env$starts, c(5, 0))
+  expect_identical(failed$env$random.start, expression(last.par.best[random]))
+})
+
+test_that("a candidate history whose posterior mode cannot be found is not chosen", {
+  sim <- simulate_sparse_joint_counts()
+  real <- sparse_joint_inner_mode
+  calls <- 0L
+  # The first candidate's posterior fails, the second's is found.
+  local_mocked_bindings(sparse_joint_inner_mode = function(objective, par_fixed, start = NULL) {
+    calls <<- calls + 1L
+    if (calls == 1L) stop(errorCondition("mocked", class = "karst_inner_failure"))
+    real(objective, par_fixed, start)
+  })
+  fit <- suppressWarnings(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05,
+                                           max_cn = 4, history = c(sim$dt, 300)))
+  profile <- fit$diagnostics$history_profile
+  expect_equal(profile$inner_failure, c(TRUE, FALSE))
+  expect_true(is.na(profile$objective[[1L]]) && is.na(profile$convergence[[1L]]))
+  expect_true(is.finite(profile$objective[[2L]]))
+  expect_equal(fit$settings$history, 300)
+  alone <- suppressWarnings(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05,
+                                             max_cn = 4, history = 300))
+  expect_equal(fit$summary, alone$summary)
+  # Every candidate failed: the fit stops, with the class of the failure.
+  local_mocked_bindings(sparse_joint_inner_mode = function(objective, par_fixed, start = NULL) {
+    stop(errorCondition("mocked", class = "karst_inner_failure"))
+  })
+  expect_error(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05, max_cn = 4,
+                                history = c(sim$dt, 300)),
+               "posterior mode at the fitted scales could not be found at any", class = "karst_inner_failure")
+  # One history: no candidate to fall back on.
+  expect_error(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05, max_cn = 4,
+                                history = sim$dt),
+               class = "karst_inner_failure")
+})
+
+test_that("the second search uses TMB's real objective and the problem's own initial values", {
+  sim <- simulate_sparse_joint_counts()
+  fit <- suppressWarnings(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05,
+                                           max_cn = 4, history = sim$dt))
+  problem <- sparse_joint_problem(fit$data, fit$settings)
+  make <- function() TMB::MakeADFun(problem$tmb_data, problem$parameters, map = problem$map,
+                                    random = problem$random, DLL = "karst", silent = TRUE,
+                                    inner.control = fit$settings$inner_control)
+  # In a fit: TMB's best mode so far far off, the search from it fails.
+  objective <- make()
+  env <- objective$env
+  scales <- env$par[-env$random]
+  reference <- make()$fn(scales)   # a fresh objective starts at the initial values
+  bad <- env$last.par.best
+  bad[env$random] <- 1e4
+  assign("last.par.best", bad, envir = env)
+  tmb_start <- env$random.start
+  expect_false(is.finite(objective$fn(scales)))
+  found <- sparse_joint_inner_mode(objective, scales)
+  expect_true(isTRUE(attr(found, "restart")))
+  expect_equal(as.numeric(found), as.numeric(reference))
+  expect_identical(env$random.start, tmb_start)
+  # In a rebuild TMB starts from the stored mode (the objective is taped
+  # there); the rebuild passes on the problem's own initial values for the
+  # second search.
+  real <- sparse_joint_inner_mode
+  passed <- NULL
+  local_mocked_bindings(sparse_joint_inner_mode = function(objective, par_fixed, start = NULL) {
+    passed <<- start
+    real(objective, par_fixed, start)
+  })
+  rebuilt <- sparse_joint_rebuild(fit)
+  map <- problem$map
+  map$log_scale <- factor(rep(NA, length(problem$parameters$log_scale)))
+  env <- rebuilt$objective$env
+  expect_identical(passed, unname(sparse_joint_latent_vector(problem$parameters, map,
+                                                             unique(names(env$par)[env$random]))))
+  expect_identical(length(passed), length(env$random))
+  expect_null(rebuilt$solver$restart)
+  # ... and when the search from the stored mode fails, the second finds the
+  # mode that a search from the initial values finds.
+  bad <- env$last.par.best
+  bad[env$random] <- 1e4
+  assign("last.par.best", bad, envir = env)
+  found <- real(rebuilt$objective, numeric(0), passed)
+  expect_true(isTRUE(attr(found, "restart")))
+  initial <- problem$parameters
+  initial$log_scale <- fit$posterior$log_scale
+  fresh <- TMB::MakeADFun(problem$tmb_data, initial, map = map, random = problem$random, DLL = "karst",
+                          silent = TRUE, inner.control = fit$settings$inner_control)
+  expect_equal(as.numeric(found), as.numeric(fresh$fn(numeric(0))))
+  # posterior = FALSE passes the same start
+  passed <- NULL
+  sparse_joint_rebuild(fit, posterior = FALSE)
+  expect_identical(passed, unname(sparse_joint_latent_vector(problem$parameters, map,
+                                                             unique(names(env$par)[env$random]))))
+})
+
+test_that("the initial latent values are ordered as in TMB's parameter vector", {
+  check <- function(fit) {
+    problem <- sparse_joint_problem(fit$data, fit$settings)
+    objective <- TMB::MakeADFun(problem$tmb_data, problem$parameters, map = problem$map,
+                                random = problem$random, DLL = "karst", silent = TRUE)
+    latent <- unique(names(objective$env$par)[objective$env$random])
+    expect_setequal(latent, problem$random)
+    expect_identical(sparse_joint_latent_vector(problem$parameters, problem$map, latent),
+                     unname(objective$env$par[objective$env$random]))
+  }
+  two <- simulate_sparse_joint_counts()
+  check(suppressWarnings(fit_sparse_joint(two$counts, dt = two$dt, beta = two$beta, major_frequency = 0.05,
+                                          max_cn = 4, history = two$dt)))
+  sim <- simulate_series_counts()
+  for (method in c("anchored", "pairwise", "state_space")) {
+    check(suppressWarnings(fit_sparse_joint(sim$counts, times = sim$times, beta = sim$beta, max_cn = 4,
+                                            history = 60, series = method)))
+  }
+  # in the order given; a mapped parameter: one value per level, entries
+  # mapped to NA left out
+  expect_equal(sparse_joint_latent_vector(list(a = 1:2, z = c(1, 2, 3, 4), s = 9),
+                                          list(z = factor(c(2, NA, 1, NA))), c("z", "a")),
+               c(3, 1, 1, 2))
+})
+
+test_that("candidates that failed beside ones whose optimisation failed, and the restart record", {
+  sim <- simulate_sparse_joint_counts()
+  real <- sparse_joint_inner_mode
+  calls <- 0L
+  local_mocked_bindings(sparse_joint_inner_mode = function(objective, par_fixed, start = NULL) {
+    calls <<- calls + 1L
+    if (calls == 1L) stop(errorCondition("mocked", class = "karst_inner_failure"))
+    real(objective, par_fixed, start)
+  })
+  # the free level of the balance prior: NA for the failed candidate
+  free <- suppressWarnings(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05,
+                                            max_cn = 4, history = c(sim$dt, 300), balance_level = "free"))
+  expect_true(is.na(free$diagnostics$history_profile$balance_level[[1L]]))
+  expect_true(is.finite(free$diagnostics$history_profile$balance_level[[2L]]))
+  # one failed, the other's optimisation failed: an error, not of the class
+  calls <- 0L
+  local_mocked_bindings(sparse_joint_choose_candidate = function(objective, convergence) NA_integer_)
+  err <- tryCatch(suppressWarnings(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta,
+                                                    major_frequency = 0.05, max_cn = 4,
+                                                    history = c(sim$dt, 300))),
+                  error = function(e) e)
+  expect_match(conditionMessage(err), "could not be found at 1, and the scale optimisation failed at the others")
+  expect_false(inherits(err, "karst_inner_failure"))
+})
+
+test_that("a posterior mode found by the second search is recorded", {
+  sim <- simulate_sparse_joint_counts()
+  real <- sparse_joint_inner_mode
+  calls <- 0L
+  # the first candidate's mode is reported as found by the second search
+  local_mocked_bindings(sparse_joint_inner_mode = function(objective, par_fixed, start = NULL) {
+    calls <<- calls + 1L
+    value <- real(objective, par_fixed, start)
+    if (calls == 1L) structure(as.numeric(value), restart = TRUE) else value
+  })
+  fit <- suppressWarnings(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05,
+                                           max_cn = 4, history = c(sim$dt, 300)))
+  restart <- fit$diagnostics$history_profile$posterior_restart
+  expect_true(is.finite(restart[[1L]]) && is.na(restart[[2L]]))
+  expect_null(fit$diagnostics$history_profile$inner_failure)
+  calls <- 0L
+  one <- suppressWarnings(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05,
+                                           max_cn = 4, history = sim$dt))
+  expect_true(is.finite(one$diagnostics$posterior_restart))
+  expect_null(one$diagnostics$history_profile)
+})
+
+test_that("the first fits of the intermediate weight and of initial_state = 'auto' fall back on failure", {
+  real <- sparse_joint_inner_mode
+  calls <- 0L
+  local_mocked_bindings(sparse_joint_inner_mode = function(objective, par_fixed, start = NULL) {
+    calls <<- calls + 1L
+    if (calls == 1L) stop(errorCondition("mocked", class = "karst_inner_failure"))
+    real(objective, par_fixed, start)
+  })
+  # the first fit (at the shortest history) sets the weight of the time
+  # points in between: failed, the weight is 1
+  sim <- simulate_series_counts()
+  fit <- suppressWarnings(fit_sparse_joint(sim$counts, times = sim$times, beta = sim$beta, max_cn = 4,
+                                           history = c(60, 300)))
+  expect_equal(fit$diagnostics$intermediate_weight, 1)
+  expect_null(fit$diagnostics$intermediate_dispersion)
+  expect_null(fit$diagnostics$history_profile$inner_failure)
+  # the check fit of initial_state = "auto": failed, the balance is kept
+  calls <- 0L
+  two <- simulate_sparse_joint_counts()
+  auto <- suppressWarnings(fit_sparse_joint(two$counts, dt = two$dt, beta = two$beta, major_frequency = 0.05,
+                                            max_cn = 4, history = two$dt, initial_state = "auto"))
+  check <- auto$diagnostics$initial_state_check
+  expect_equal(check$chosen, "balance")
+  expect_true(is.na(check$level) && is.na(check$level_sd) && is.na(check$check_convergence))
+  expect_equal(auto$diagnostics$initial_state, "balance")
 })
 
 test_that("a fit with no usable candidate history stops", {

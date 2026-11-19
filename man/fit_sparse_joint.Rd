@@ -99,9 +99,10 @@ points) chooses between the two: a first fit with the balance prior, its
 level free (\code{balance_level = "free"}) and the history at the interval
 measures how much larger the cloud of non-major karyotypes is than the
 balance over the interval allows; if the log of that factor exceeds
-\code{auto_level}, the fit is \code{"free"}, otherwise \code{"balance"}.
-\code{diagnostics$initial_state_check} records the level, its standard
-deviation and the choice, and \code{diagnostics$initial_state} the state
+\code{auto_level}, the fit is \code{"free"}, otherwise \code{"balance"}; if the posterior
+mode of that first fit cannot be found, the level is \code{NA} and the fit
+\code{"balance"}. \code{diagnostics$initial_state_check} records the level, its
+standard deviation and the choice, and \code{diagnostics$initial_state} the state
 fitted. A cloud that large comes from a true missegregation rate above
 \code{beta} or from cells called a copy off, where the balance prior ranked
 neighbours worse than chance on simulated data; but also from a history
@@ -122,8 +123,16 @@ between the first and the last time point and 30, 100, 300, 1000 and 3000
 divisions at \code{birth_rate} that are longer than that interval: the model is fitted at
 each and the fit with the highest marginal likelihood is kept, so a fit
 takes up to six times as long; \code{diagnostics$history_profile} lists the
-candidates. A single value fixes the history; several values are the
-candidates. Up to karst 8327282 the history was the interval itself
+candidates. The posterior mode at a candidate's fitted scales is searched
+from TMB's best mode so far and, if that fails, once more from the
+initial latent values; a column \code{posterior_restart} (only when it was
+needed; \code{diagnostics$posterior_restart} for the fit kept, or for a single
+history) gives the objective at the mode so found, while candidates are
+compared on nlminb's \code{objective}. A candidate at which both searches fail
+is not chosen: its objective and convergence are \code{NA}, and a column
+\code{inner_failure} marks it (only when a candidate failed); when no
+candidate is left the fit stops. A single value fixes the history;
+several values are the candidates. Up to karst 8327282 the history was the interval itself
 (\code{history = dt}). With time points a few weeks apart that is far shorter than
 the population has been evolving: the balance prior then holds the
 neighbours of the major karyotypes far below their observed abundance, and
@@ -182,7 +191,8 @@ weight of the time points in between, in (0, 1]. \code{NULL} estimates it: the
 inverse of the dispersion of the majors' counts at those time points in a
 first fit (at the shortest history), at most 1, so that a population that
 drifts between time points (small passaging bottlenecks) leans on the
-first and the last. Not used by the other two methods.}
+first and the last; 1 if that dispersion is not finite or the posterior
+mode of that first fit cannot be found. Not used by the other two methods.}
 }
 \value{
 An \code{karst_sparse_joint_fit} object. \code{summary} has one row per

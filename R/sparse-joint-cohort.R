@@ -401,6 +401,9 @@ fit_sparse_joint_cohort <- function(samples,
       seconds = proc.time()[["elapsed"]] - started
     )
   ), class = "karst_sparse_joint_cohort_fit")
+  # Only when the posterior mode was found from the initial latent values
+  # alone (sparse_joint_inner_mode()): the objective at that mode.
+  if (!is.null(solver$restart)) fit$diagnostics$posterior_restart <- solver$restart
   sparse_joint_convergence_warning(fit$diagnostics$optimisation)
   fit
 }

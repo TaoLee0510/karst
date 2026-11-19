@@ -537,6 +537,12 @@ was unchanged; not recomputed with the current code), and integrating the initia
 quadrature moved the flat direction to the next sparse quantity; neither is
 used.
 
+The mode $\hat u(\hat\psi)$ is found by Newton's method started, as during
+the optimisation, from the best mode found so far; where that start lies far
+from the mode at $\hat\psi$ the search can fail, and it is then made once more
+from the initial values. A candidate history at which both searches fail is
+not kept, and a fit with no candidate left is stopped.
+
 Conditional on $\hat\psi$, the posterior of $u$ is approximated by a Gaussian
 distribution centred at $\hat u$ with covariance $\bigl(H_E\bigr)^{-1}$,
 where $H_E$ is the \emph{expected} information: the Hessian of $\ell$ with the
@@ -1451,7 +1457,8 @@ balance).
 single TMB objective function.
 \item \textbf{Hyperparameter estimation} by (\ref{eq:laplace}), with
 prior-centred values if the optimisation fails, at every candidate history;
-the candidate with the lowest objective is kept.
+the candidate with the lowest objective is kept, among those at which the
+posterior mode was found.
 \item \textbf{Posterior approximation}: mode $\hat u$ and expected information
 $H_E$, factorised once.
 \item \textbf{Relative fitness}, (\ref{eq:relative})--(\ref{eq:relative-var}),

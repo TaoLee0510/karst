@@ -74,7 +74,8 @@ both ways, or any other argument, is an error.
      30, 100, 300, 1000 and 3000 divisions at `birth_rate` that are longer
      than the interval: the model (steps 6-8) is fitted at each and the fit
      with the lowest objective is kept (`diagnostics$history_profile`). A
-     given `history` fixes it.
+     candidate at which the posterior mode cannot be found (step 8) is not
+     kept; with none left the fit stops. A given `history` fixes it.
 
 6. **Assemble the count model (compiled with TMB).**
    - Latent variables: per state, the log expected count at the first time point
@@ -101,10 +102,14 @@ both ways, or any other argument, is an error.
    warning when not. If `nlminb` fails, the prior-centred scales (about 1% per
    step) are used, and `convergence` is 1 with the reason "nlminb failed" in
    `diagnostics$optimisation`. If the inner solve fails at the scales kept,
-   the fit stops with an error.
+   also from the initial values (step 8), that candidate history is not
+   kept; with one history, or none left, the fit stops with an error.
 
-8. **Compute the posterior.** The posterior mode at those scales, with the
-   covariance taken as the inverse of the *expected* information: the Hessian
+8. **Compute the posterior.** The posterior mode at those scales (TMB's
+   Newton search from its best mode so far; if that fails, once more from the
+   initial latent values; if that fails too, an error of class
+   `karst_inner_failure`), with the covariance taken as the inverse of the
+   *expected* information: the Hessian
    with the counts replaced by their fitted expectations, which is positive
    definite where the observed Hessian may not be. It is factorised once
    (sparse Cholesky).

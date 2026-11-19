@@ -64,9 +64,11 @@ record_of <- function(build, part, item) {
 candidates_of <- function(record) {
   if (!is.null(record[["fits"]])) return(unlist(lapply(record[["fits"]], candidates_of)))
   d <- record[["diagnostics"]]
-  if (!is.null(d[["history_profile"]])) return(d[["history_profile"]][["convergence"]] == 0)
+  # a candidate whose posterior mode could not be found (convergence NA,
+  # karst 1.1.1 on) was not accepted
+  if (!is.null(d[["history_profile"]])) return(d[["history_profile"]][["convergence"]] %in% 0)
   if (!is.null(d[["history_profiles"]])) {
-    return(unlist(lapply(d[["history_profiles"]], function(p) p[["convergence"]] == 0)))
+    return(unlist(lapply(d[["history_profiles"]], function(p) p[["convergence"]] %in% 0)))
   }
   if (!is.null(d[["convergence"]])) d[["convergence"]] == 0 else logical()
 }

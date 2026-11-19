@@ -65,7 +65,7 @@
   {for every history $h\in H$ (one fit each)};
 
 \node[box, w=12.6cm, below=0.55cm of loop] (best) {%
-  \textbf{8 History}\quad keep the candidate with the lowest objective (\code{history\_profile}).};
+  \textbf{8 History}\quad keep the candidate with the lowest objective among those whose posterior mode was found (\code{history\_profile}).};
 \node[box, w=12.6cm, below=0.4cm of best] (post) {%
   \textbf{9 Posterior}\quad Gaussian at the mode $\hat u$ with covariance $H_E^{-1}$; $H_E$ is the
   expected information (counts replaced by their fitted expectations), factorised once by sparse

@@ -1,3 +1,45 @@
+# karst 1.1.1 (2026-11-19)
+
+The posterior mode is searched once more before a fit fails. Fits in which
+the search for the posterior mode at the fitted scales did not fail are
+unchanged.
+
+## Changed results
+
+- When TMB's Newton search for the posterior mode at the fitted scales fails
+  (the objective is not finite), it is made once more from the initial latent
+  values, as the convergence check does, and TMB's own start is restored
+  afterwards. Only when both fail is it an error (class
+  `karst_inner_failure`). In a fit, TMB starts from its best mode so far,
+  found during the scale optimisation, which can lie far from the mode at the
+  fitted scales. When the posterior is rebuilt, including in each fold of
+  the cross-validation of `as_alfak()`, TMB starts from the fit's stored mode
+  and the second search from the problem's own initial latent values. 1.1.0
+  left out a fold whose first search failed, so the cross-validation of such
+  fits can change.
+- A fit whose posterior mode was found only by the second search records the
+  objective at that mode in `diagnostics$posterior_restart` (also a cohort
+  fit). Its
+  `objective`, by which candidate histories are compared, stays nlminb's, as
+  in every earlier version. Its convergence check normally reports
+  "objective not finite": the check's own evaluation starts where the first
+  search did.
+- A candidate history at which the posterior mode cannot be found is not
+  chosen: in `diagnostics$history_profile` its objective and convergence are
+  `NA`, and a column `inner_failure` marks it. A column `posterior_restart`
+  gives the objective of each candidate whose mode needed the second search.
+  Both columns appear only when needed. The fit stops only when no candidate
+  is left, with class `karst_inner_failure` when every candidate failed so.
+- In 1.1.0 one such candidate stopped the whole fit. This happened for 85 of
+  the 6099 KARST fit tasks of the ALFA-K paper benchmark (round 2c60af1),
+  84 of which had fitted in round e7e32f8. In the two of them checked, the
+  failing candidate was not the one chosen, and the fit with the second
+  search is the same as in round e7e32f8.
+- When the posterior mode cannot be found, the first fit that sets the
+  weight of the intermediate time points falls back to weight 1, as for a
+  dispersion that is not finite. The check fit of `initial_state = "auto"`
+  likewise keeps the balance, as for a level that is not finite.
+
 # karst 1.1.0 (2026-11-18)
 
 Fixes from the code review of 2026-11-18. Fits of valid input are unchanged

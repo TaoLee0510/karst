@@ -71,7 +71,11 @@ runs <- do.call(rbind, lapply(c(fit_dirs("abm"), fit_dirs("misseg"), expected_di
         dt_convergence = first_or_na(r$history_profile$convergence),
         candidates = if (is.null(r$history_profile)) NA_integer_ else nrow(r$history_profile),
         candidates_unconverged = if (is.null(r$history_profile)) NA_integer_ else
-          sum(r$history_profile$convergence != 0),
+          sum(r$history_profile$convergence != 0, na.rm = TRUE),
+        # karst 1.1.1 on: candidates whose posterior mode could not be found
+        # (convergence NA), not chosen
+        candidates_failed = if (is.null(r$history_profile)) NA_integer_ else
+          sum(is.na(r$history_profile$convergence)),
         coverage = if (is.null(r$domain_coverage)) NA_real_ else min(r$domain_coverage$fraction),
         stringsAsFactors = FALSE)
 }))
