@@ -144,8 +144,12 @@ the datasets follow one landscape and on simulated cohorts from different
 landscapes predicted much worse than fitting each dataset alone.
 \code{trend = "select"}, the default, fits both and keeps the one with the
 higher marginal likelihood; on simulated cohorts it chose the shared trend
-for datasets of one landscape and separate trends otherwise. It takes twice
-as long. The marginal likelihoods are in \code{diagnostics$trend_objective}.
+for datasets of one landscape and separate trends otherwise (compared on
+nlminb's objective, karst 1.1.1 and earlier). It takes twice
+as long. The two are compared on the objective (negative log marginal
+likelihood) at the posterior mode each fit reports,
+\code{diagnostics$trend_posterior_objective}; \code{diagnostics$trend_objective} has
+nlminb's objectives, by which they were compared up to karst 1.1.1.
 The scale optimisation is checked as in \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}:
 \code{diagnostics$trend_convergence} tells whether each trend's was accepted,
 and \code{diagnostics$optimisation} how the kept one was checked; its

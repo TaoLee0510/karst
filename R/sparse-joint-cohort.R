@@ -28,8 +28,12 @@
 #' landscapes predicted much worse than fitting each dataset alone.
 #' `trend = "select"`, the default, fits both and keeps the one with the
 #' higher marginal likelihood; on simulated cohorts it chose the shared trend
-#' for datasets of one landscape and separate trends otherwise. It takes twice
-#' as long. The marginal likelihoods are in `diagnostics$trend_objective`.
+#' for datasets of one landscape and separate trends otherwise (compared on
+#' nlminb's objective, karst 1.1.1 and earlier). It takes twice
+#' as long. The two are compared on the objective (negative log marginal
+#' likelihood) at the posterior mode each fit reports,
+#' `diagnostics$trend_posterior_objective`; `diagnostics$trend_objective` has
+#' nlminb's objectives, by which they were compared up to karst 1.1.1.
 #' The scale optimisation is checked as in [fit_sparse_joint()]:
 #' `diagnostics$trend_convergence` tells whether each trend's was accepted,
 #' and `diagnostics$optimisation` how the kept one was checked; its
@@ -133,18 +137,24 @@ fit_sparse_joint_cohort <- function(samples,
     failed <- vapply(fits, inherits, logical(1), what = "error")
     if (all(failed)) stop(fits[[1L]])
     objective <- vapply(fits, function(fit) if (inherits(fit, "error")) Inf else fit$diagnostics$objective, numeric(1))
+    posterior_objective <- vapply(fits, function(fit) if (inherits(fit, "error")) NA_real_ else
+      fit$diagnostics$posterior_objective, numeric(1))
     convergence <- vapply(fits, function(fit) if (inherits(fit, "error")) NA_real_ else fit$diagnostics$convergence,
                           numeric(1))
-    # A fit whose scale optimisation failed has no marginal likelihood to
-    # compare; without one on either side there is nothing to choose by. One
-    # that was not accepted is chosen only if neither was.
-    chosen <- sparse_joint_choose_candidate(objective, convergence)
+    # Compared, as candidate histories are, on the objective at the posterior
+    # mode each fit reports. A fit whose scale optimisation failed has no
+    # marginal likelihood to compare; without one on either side there is
+    # nothing to choose by. One that was not accepted is chosen only if
+    # neither was.
+    chosen <- sparse_joint_choose_candidate(ifelse(is.finite(objective), posterior_objective, NA_real_),
+                                            convergence)
     if (is.na(chosen)) {
       stop("Neither trend has a finite marginal likelihood (the scale optimisation failed for both); ",
            "choose one with `trend = \"shared\"` or `trend = \"sample\"`.", call. = FALSE)
     }
     best <- fits[[chosen]]
     best$diagnostics$trend_objective <- objective
+    best$diagnostics$trend_posterior_objective <- posterior_objective
     best$diagnostics$trend_convergence <- convergence
     best$diagnostics$seconds <- sum(vapply(fits[!failed], function(fit) fit$diagnostics$seconds, numeric(1)))
     best$diagnostics$history_profiles <- history_profiles
@@ -385,6 +395,9 @@ fit_sparse_joint_cohort <- function(samples,
                  calibration = calibration, birth_rate = birth_rate),
     diagnostics = list(
       convergence = optimum$convergence, message = optimum$message, objective = optimum$objective,
+      # The objective at the posterior mode this fit reports; the trends are
+      # compared on it.
+      posterior_objective = solver$value,
       optimisation = optimum$check,
       finite_uncertainty = all(is.finite(state_hat[, 2L])) && all(is.finite(m_hat[, 2L])) &&
         all(is.finite(landscape$relative_sd)),

@@ -146,7 +146,7 @@ core (Figure~\ref{fig:flow-core}).}
 \includegraphics[width=\textwidth,height=0.86\textheight,keepaspectratio]{flowcharts/flow_core.pdf}
 \caption{The two-time-point fit (template \texttt{pair}). Steps 4--7 are
 repeated for every candidate history $h$, and the candidate with the lowest
-objective is kept. The anchored, pairwise and state-space methods replace the
+objective at its posterior mode is kept. The anchored, pairwise and state-space methods replace the
 domain, the priors and the likelihood
 (Figures~\ref{fig:flow-anchored}--\ref{fig:flow-state-space}) and share the
 other steps.}
@@ -541,7 +541,19 @@ The mode $\hat u(\hat\psi)$ is found by Newton's method started, as during
 the optimisation, from the best mode found so far; where that start lies far
 from the mode at $\hat\psi$ the search can fail, and it is then made once more
 from the initial values. A candidate history at which both searches fail is
-not kept, and a fit with no candidate left is stopped.
+not kept, and a fit with no candidate left is stopped. Candidate histories
+are compared on the objective (\ref{eq:laplace}) at the mode the fit
+reports, among those whose optimisation gave a finite objective. It differs
+from the value at which \texttt{nlminb} stopped when that search ends at
+another mode: by more than $10^{-3}$ for about a fifth of the candidates of
+the development benchmark and of the ABM simulations of the ALFA-K paper
+benchmark, and markedly when the mode was found only from the initial values
+(higher by a median of $8.95$ in the ABM simulations). Up to karst 1.1.1 the candidates were compared on
+\texttt{nlminb}'s value. Comparing them on the value at the reported mode
+changed the history of 5 of 168 development datasets and of 9 of 377 ABM fits
+in the comparison made before the change
+(\texttt{validation/sparse\_joint/history\_choice}), with no consistent
+change in accuracy.
 
 Conditional on $\hat\psi$, the posterior of $u$ is approximated by a Gaussian
 distribution centred at $\hat u$ with covariance $\bigl(H_E\bigr)^{-1}$,
@@ -790,11 +802,12 @@ $\gamma_s$ has prior (\ref{eq:coef-prior}). In the joint specification,
 $\gamma_s=\gamma$ for all datasets, with covariates centred on the average of
 the dataset means and distances measured to the major karyotypes of all
 datasets. Both specifications share the same hyperparameters, and by default
-the one with the higher Laplace marginal likelihood is selected. In simulated
+the one with the higher Laplace marginal likelihood is selected, taken at the
+posterior mode each fit reports as for candidate histories. In simulated
 cohorts, a joint trend improved estimates for datasets from a common landscape
 but substantially degraded them for datasets from different landscapes; the
-marginal likelihood selected per-dataset trends for 12 of 12 cohorts drawn
-from different landscapes. Cohorts use independent initial abundances by
+marginal likelihood (then \texttt{nlminb}'s value) selected per-dataset trends
+for 12 of 12 cohorts drawn from different landscapes. Cohorts use independent initial abundances by
 default. Under the balance prior, the outer optimisation failed at the
 prior-centred hyperparameters for 2 of 12 simulated development cohorts,
 leaving no marginal likelihood by which to select the trend; for the
@@ -1457,8 +1470,9 @@ balance).
 single TMB objective function.
 \item \textbf{Hyperparameter estimation} by (\ref{eq:laplace}), with
 prior-centred values if the optimisation fails, at every candidate history;
-the candidate with the lowest objective is kept, among those at which the
-posterior mode was found.
+the candidate with the lowest objective at its posterior mode is kept, among
+those with a finite \texttt{nlminb} objective at which the posterior mode was
+found.
 \item \textbf{Posterior approximation}: mode $\hat u$ and expected information
 $H_E$, factorised once.
 \item \textbf{Relative fitness}, (\ref{eq:relative})--(\ref{eq:relative-var}),

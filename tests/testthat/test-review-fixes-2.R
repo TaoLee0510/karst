@@ -108,8 +108,9 @@ test_that("a candidate history whose posterior mode cannot be found is not chose
                                            max_cn = 4, history = c(sim$dt, 300)))
   profile <- fit$diagnostics$history_profile
   expect_equal(profile$inner_failure, c(TRUE, FALSE))
-  expect_true(is.na(profile$objective[[1L]]) && is.na(profile$convergence[[1L]]))
-  expect_true(is.finite(profile$objective[[2L]]))
+  expect_true(is.na(profile$objective[[1L]]) && is.na(profile$posterior_objective[[1L]]) &&
+                is.na(profile$convergence[[1L]]))
+  expect_true(is.finite(profile$objective[[2L]]) && is.finite(profile$posterior_objective[[2L]]))
   expect_equal(fit$settings$history, 300)
   alone <- suppressWarnings(fit_sparse_joint(sim$counts, dt = sim$dt, beta = sim$beta, major_frequency = 0.05,
                                              max_cn = 4, history = 300))

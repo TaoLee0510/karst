@@ -431,19 +431,21 @@ sparse_joint_optimise_scales <- function(objective, control, lower = log(1e-4), 
   record(best, stage, best$check, length(results), evaluations)
 }
 
-# The candidate (history or trend) to keep: the lowest finite objective. With
-# the internal option `karst.choose_accepted`, the lowest among those whose
-# optimisation was accepted (all, if none was): one that was not accepted may
-# owe its objective to a degenerate Laplace approximation. Off by default: it
-# can also pass over a much better model whose optimisation was not accepted.
-sparse_joint_choose_candidate <- function(objective, convergence) {
-  usable <- is.finite(objective)
+# The candidate (history or trend) to keep: the lowest finite `value`, the
+# objective at each candidate's posterior mode (NA for a candidate that cannot
+# be used). With the internal option `karst.choose_accepted`, the lowest
+# among those whose optimisation was accepted (all, if none was): one that was
+# not accepted may owe its objective to a degenerate Laplace approximation.
+# Off by default: it can also pass over a much better model whose optimisation
+# was not accepted.
+sparse_joint_choose_candidate <- function(value, convergence) {
+  usable <- is.finite(value)
   pool <- which(usable)
   if (isTRUE(getOption("karst.choose_accepted", FALSE)) && any(usable & convergence == 0)) {
     pool <- which(usable & convergence == 0)
   }
   if (!length(pool)) return(NA_integer_)
-  pool[[which.min(objective[pool])]]
+  pool[[which.min(value[pool])]]
 }
 
 # Warning for a fit whose scale optimisation was not accepted; `check` is its

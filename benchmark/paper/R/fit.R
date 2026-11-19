@@ -122,15 +122,18 @@ fit_karst <- function(yi, outdir, minobs, n0, nb, pm, settings = bench_settings,
   # multi-time-point fit left with two time points (05a8855 on: pairwise or state space
   # after leaving time points out) is a two-time-point fit and has no `series`
   # (`samples_fitted` 2). From the ac36fd1 round on, `objective` (the fit's
-  # negative log marginal likelihood, which picks the history and the
-  # missegregation rate) and `beta` (the rate fitted) are recorded too. From
+  # negative log marginal likelihood, nlminb's; it picked the history up to
+  # karst 1.1.1, and picks the missegregation rate in scripts/beta_picks.R) and `beta` (the rate fitted) are recorded too. From karst
+  # 1.1.2 on, `posterior_objective` (the objective at the posterior mode the
+  # fit reports, which picks the history; also a column of `history_profile`). From
   # 827c4b5 on, `initial_state` (the state fitted: "balance" or "free") and,
   # for two time points under initial_state = "auto", `initial_state_check`
   # (the cloud's log level over the balance, its sd, the threshold, the
   # choice and the check fit's convergence).
   info <- if (failed) list(condition_class = class(fit)[[1L]], samples = ncol(x), fit_peak_mb = fit_peak_mb,
                            beta = pm) else
-    list(objective = fit$diagnostics$objective, beta = fit$data$beta, beta_profile = fit$diagnostics$beta_profile,
+    list(objective = fit$diagnostics$objective, posterior_objective = fit$diagnostics$posterior_objective,
+         beta = fit$data$beta, beta_profile = fit$diagnostics$beta_profile,
          initial_state = fit$diagnostics$initial_state, initial_state_check = fit$diagnostics$initial_state_check,
          domain_coverage = fit$diagnostics$domain_coverage, history = fit$diagnostics$history,
          history_profile = fit$diagnostics$history_profile, convergence = fit$diagnostics$convergence,

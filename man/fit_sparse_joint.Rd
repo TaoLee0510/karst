@@ -123,15 +123,18 @@ between the first and the last time point and 30, 100, 300, 1000 and 3000
 divisions at \code{birth_rate} that are longer than that interval: the model is fitted at
 each and the fit with the highest marginal likelihood is kept, so a fit
 takes up to six times as long; \code{diagnostics$history_profile} lists the
-candidates. The posterior mode at a candidate's fitted scales is searched
-from TMB's best mode so far and, if that fails, once more from the
-initial latent values; a column \code{posterior_restart} (only when it was
-needed; \code{diagnostics$posterior_restart} for the fit kept, or for a single
-history) gives the objective at the mode so found, while candidates are
-compared on nlminb's \code{objective}. A candidate at which both searches fail
-is not chosen: its objective and convergence are \code{NA}, and a column
-\code{inner_failure} marks it (only when a candidate failed); when no
-candidate is left the fit stops. A single value fixes the history;
+candidates. They are compared on \code{posterior_objective}, the objective
+(negative log marginal likelihood) at the posterior mode each fit
+reports, among those whose scale optimisation gave a finite \code{objective}
+(nlminb's, by which they were compared up to karst 1.1.1). The posterior
+mode at a candidate's fitted scales is searched from TMB's best mode so
+far and, if that fails, once more from the initial latent values; a
+column \code{posterior_restart} (only when it was needed;
+\code{diagnostics$posterior_restart} for the fit kept, or for a single
+history) gives the objective at the mode so found. A candidate at which
+both searches fail is not chosen: its objectives and convergence are
+\code{NA}, and a column \code{inner_failure} marks it (only when a candidate
+failed); when no candidate is left the fit stops. A single value fixes the history;
 several values are the candidates. Up to karst 8327282 the history was the interval itself
 (\code{history = dt}). With time points a few weeks apart that is far shorter than
 the population has been evolving: the balance prior then holds the
@@ -299,8 +302,11 @@ when not, with a warning of class \code{karst_convergence_warning};
 \code{restarts}, \code{evaluations}, \code{nlminb_convergence}, \code{nlminb_message},
 \code{min_eigen}, \code{projected_gradient}, \code{objective_difference},
 \code{joint_difference}, \code{flat_direction}, \code{flat_composition}). The fit itself
-is the same as before this check (karst ff13cf4); so is the choice of
-history, by the lowest objective.
+is the same as before this check (karst ff13cf4). \code{diagnostics$objective}
+is nlminb's objective; \code{diagnostics$posterior_objective} is the objective
+at the posterior mode the fit reports, which candidate histories are
+compared on. The two differ when the search for that mode ends at another
+mode than the one nlminb's objective was taken at.
 
 Most fits that are not accepted have a karyotype with very few cells, whose
 initial abundance or birth rate the data hardly constrain. A count at the

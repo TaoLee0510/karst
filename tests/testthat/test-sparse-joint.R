@@ -302,9 +302,13 @@ test_that("by default the history is chosen among the interval and longer divisi
   chosen <- fit()
   profile <- chosen$diagnostics$history_profile
   expect_equal(profile$history, sparse_joint_history_candidates(sim$dt, 1))
-  best <- sparse_joint_choose_candidate(profile$objective, profile$convergence)
+  # compared on the objective at each candidate's posterior mode
+  best <- sparse_joint_choose_candidate(ifelse(is.finite(profile$objective), profile$posterior_objective, NA_real_),
+                                        profile$convergence)
+  expect_equal(best, which.min(profile$posterior_objective))
   expect_equal(chosen$settings$history, profile$history[[best]])
   expect_equal(chosen$diagnostics$objective, profile$objective[[best]])
+  expect_equal(chosen$diagnostics$posterior_objective, profile$posterior_objective[[best]])
   expect_equal(chosen$summary, fit(history = chosen$settings$history)$summary)
   # The behaviour of karst 8327282 and earlier: the interval itself.
   interval <- fit(history = sim$dt)

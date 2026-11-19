@@ -258,9 +258,9 @@ sparse_joint_latent_vector <- function(parameters, map, latent) {
 #
 # Returns the mode, a solver for right-hand sides, the variances of selected
 # latent variables, draws of all latent variables about the mode, the names of
-# the latent variables, the fitted expected counts, and `restart`: the
-# objective at the mode when it was found only from `start` (see
-# sparse_joint_inner_mode()), NULL otherwise.
+# the latent variables, the fitted expected counts, `value`: the objective at
+# the mode, and `restart`: that objective when the mode was found only from
+# `start` (see sparse_joint_inner_mode()), NULL otherwise.
 sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random, par_fixed, inner_control,
                                    start = NULL) {
   found <- sparse_joint_inner_mode(objective, par_fixed, start)
@@ -290,7 +290,7 @@ sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random,
   expected_counts <- if (series_method) computed$counts else if (is.null(expected[["y"]])) cbind(expected$y0, expected$y1) else expected[["y"]]
   list(
     mode = unname(mode[latent]), names = names(mode)[latent], solve = solve,
-    restart = if (isTRUE(attr(found, "restart"))) as.numeric(found),
+    value = as.numeric(found), restart = if (isTRUE(attr(found, "restart"))) as.numeric(found),
     # Fitted expected counts, for comparison with the observed ones: one
     # column per timepoint, and the first two separately.
     expected = expected_counts, expected_t0 = expected_counts[, 1L], expected_t1 = expected_counts[, 2L],
@@ -730,8 +730,11 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #' `restarts`, `evaluations`, `nlminb_convergence`, `nlminb_message`,
 #' `min_eigen`, `projected_gradient`, `objective_difference`,
 #' `joint_difference`, `flat_direction`, `flat_composition`). The fit itself
-#' is the same as before this check (karst ff13cf4); so is the choice of
-#' history, by the lowest objective.
+#' is the same as before this check (karst ff13cf4). `diagnostics$objective`
+#' is nlminb's objective; `diagnostics$posterior_objective` is the objective
+#' at the posterior mode the fit reports, which candidate histories are
+#' compared on. The two differ when the search for that mode ends at another
+#' mode than the one nlminb's objective was taken at.
 #'
 #' Most fits that are not accepted have a karyotype with very few cells, whose
 #' initial abundance or birth rate the data hardly constrain. A count at the
@@ -855,15 +858,18 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
 #'   divisions at `birth_rate` that are longer than that interval: the model is fitted at
 #'   each and the fit with the highest marginal likelihood is kept, so a fit
 #'   takes up to six times as long; `diagnostics$history_profile` lists the
-#'   candidates. The posterior mode at a candidate's fitted scales is searched
-#'   from TMB's best mode so far and, if that fails, once more from the
-#'   initial latent values; a column `posterior_restart` (only when it was
-#'   needed; `diagnostics$posterior_restart` for the fit kept, or for a single
-#'   history) gives the objective at the mode so found, while candidates are
-#'   compared on nlminb's `objective`. A candidate at which both searches fail
-#'   is not chosen: its objective and convergence are `NA`, and a column
-#'   `inner_failure` marks it (only when a candidate failed); when no
-#'   candidate is left the fit stops. A single value fixes the history;
+#'   candidates. They are compared on `posterior_objective`, the objective
+#'   (negative log marginal likelihood) at the posterior mode each fit
+#'   reports, among those whose scale optimisation gave a finite `objective`
+#'   (nlminb's, by which they were compared up to karst 1.1.1). The posterior
+#'   mode at a candidate's fitted scales is searched from TMB's best mode so
+#'   far and, if that fails, once more from the initial latent values; a
+#'   column `posterior_restart` (only when it was needed;
+#'   `diagnostics$posterior_restart` for the fit kept, or for a single
+#'   history) gives the objective at the mode so found. A candidate at which
+#'   both searches fail is not chosen: its objectives and convergence are
+#'   `NA`, and a column `inner_failure` marks it (only when a candidate
+#'   failed); when no candidate is left the fit stops. A single value fixes the history;
 #'   several values are the candidates. Up to karst 8327282 the history was the interval itself
 #'   (`history = dt`). With time points a few weeks apart that is far shorter than
 #'   the population has been evolving: the balance prior then holds the
@@ -1157,11 +1163,17 @@ fit_sparse_joint <- function(counts,
                karst_inner_failure = function(e) e)
     })
     failed <- vapply(fits, inherits, logical(1), what = "karst_inner_failure")
-    objective <- vapply(fits, function(f) if (inherits(f, "karst_inner_failure")) NA_real_ else
-      f$diagnostics$objective, numeric(1))
-    convergence <- vapply(fits, function(f) if (inherits(f, "karst_inner_failure")) NA_real_ else
-      f$diagnostics$convergence, numeric(1))
-    chosen <- sparse_joint_choose_candidate(objective, convergence)
+    diagnostic <- function(name) vapply(fits, function(f) if (inherits(f, "karst_inner_failure")) NA_real_ else
+      f$diagnostics[[name]], numeric(1))
+    objective <- diagnostic("objective")
+    posterior_objective <- diagnostic("posterior_objective")
+    convergence <- diagnostic("convergence")
+    # Compared on the objective at the posterior mode each candidate's fit
+    # reports, which can differ from nlminb's objective (validation/
+    # sparse_joint/history_choice); only candidates whose scale optimisation
+    # gave a finite objective take part.
+    chosen <- sparse_joint_choose_candidate(ifelse(is.finite(objective), posterior_objective, NA_real_),
+                                            convergence)
     if (is.na(chosen)) {
       candidates <- paste(format(history), collapse = ", ")
       if (all(failed)) {
@@ -1180,6 +1192,7 @@ fit_sparse_joint <- function(counts,
     }
     fit <- fits[[chosen]]
     fit$diagnostics$history_profile <- data.frame(history = history, objective = objective,
+                                                  posterior_objective = posterior_objective,
                                                   convergence = convergence)
     # Only when a candidate failed, or had its posterior mode found from the
     # initial latent values alone, so that other fits stay as they were.
@@ -1305,6 +1318,9 @@ fit_sparse_joint <- function(counts,
                  calibration = calibration, birth_rate = birth_rate),
     diagnostics = list(
       convergence = optimum$convergence, message = optimum$message, objective = optimum$objective,
+      # The objective at the posterior mode this fit reports; candidate
+      # histories are compared on it.
+      posterior_objective = solver$value,
       optimisation = optimum$check,
       finite_uncertainty = all(is.finite(g_hat[, 2L])) && all(is.finite(relative$sd)),
       n_states = n, n_major = domain$n_major, n_edges = length(kernel$from),
@@ -1338,8 +1354,7 @@ fit_sparse_joint <- function(counts,
   if (!is.null(settings$intermediate_weight)) fit$diagnostics$intermediate_weight <- settings$intermediate_weight
   if (is.finite(dispersion)) fit$diagnostics$intermediate_dispersion <- dispersion
   # Only when the posterior mode was found from the initial latent values
-  # alone (sparse_joint_inner_mode()): the objective at that mode. Candidate
-  # histories are compared on `objective`, nlminb's, as before.
+  # alone (sparse_joint_inner_mode()): the objective at that mode.
   if (!is.null(solver$restart)) fit$diagnostics$posterior_restart <- solver$restart
   sparse_joint_convergence_warning(fit$diagnostics$optimisation)
   fit

@@ -73,9 +73,13 @@ both ways, or any other argument, is an error.
    - By default `h` is chosen by marginal likelihood among the interval and
      30, 100, 300, 1000 and 3000 divisions at `birth_rate` that are longer
      than the interval: the model (steps 6-8) is fitted at each and the fit
-     with the lowest objective is kept (`diagnostics$history_profile`). A
-     candidate at which the posterior mode cannot be found (step 8) is not
-     kept; with none left the fit stops. A given `history` fixes it.
+     with the lowest objective at the posterior mode it reports (step 8) is
+     kept, among those whose scale optimisation gave a finite objective
+     (`diagnostics$history_profile`: `objective`, nlminb's, and
+     `posterior_objective`, the one compared; up to 1.1.1 the candidates were
+     compared on nlminb's). A candidate at which the posterior mode cannot be
+     found (step 8) is not kept; with none left the fit stops. A given
+     `history` fixes it.
 
 6. **Assemble the count model (compiled with TMB).**
    - Latent variables: per state, the log expected count at the first time point
@@ -108,7 +112,8 @@ both ways, or any other argument, is an error.
 8. **Compute the posterior.** The posterior mode at those scales (TMB's
    Newton search from its best mode so far; if that fails, once more from the
    initial latent values; if that fails too, an error of class
-   `karst_inner_failure`), with the covariance taken as the inverse of the
+   `karst_inner_failure`) and the objective there
+   (`diagnostics$posterior_objective`), with the covariance taken as the inverse of the
    *expected* information: the Hessian
    with the counts replaced by their fitted expectations, which is positive
    definite where the observed Hessian may not be. It is factorised once
@@ -223,7 +228,8 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
 - `fit_sparse_joint_cohort()`: several two-time-point datasets at once. Each keeps its domain
   and initial abundances; a karyotype shares its fitness across datasets with
   an estimated deviation; the trend is shared or per dataset, whichever has
-  the higher marginal likelihood. Its default is `initial_state = "free"`.
+  the higher marginal likelihood, compared as the candidate histories are
+  (step 5). Its default is `initial_state = "free"`.
 - More than two time points of one population: `fit_sparse_joint(counts, times = ...)`
   with one column per time point. The later time points are compared with the same
   dynamics started at the first time point, each with its own depth. By default

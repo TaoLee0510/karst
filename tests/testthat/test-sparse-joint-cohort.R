@@ -106,12 +106,16 @@ test_that("the trend is per dataset, shared, or chosen by marginal likelihood", 
   expect_equal(c(in_a$source, in_b$source), c("trend", "trend"))
   expect_false(isTRUE(all.equal(in_a$fitness_mean, in_b$fitness_mean)))
   expect_true(is.finite(predict(sample, far)$relative_sd))
-  # selection keeps the fit with the lower negative log marginal likelihood
+  # selection keeps the fit with the lower negative log marginal likelihood,
+  # taken at the posterior mode each fit reports
   chosen <- fit("select")
   objective <- c(shared = shared$diagnostics$objective, sample = sample$diagnostics$objective)
+  posterior <- c(shared = shared$diagnostics$posterior_objective, sample = sample$diagnostics$posterior_objective)
+  expect_true(all(is.finite(posterior)))
   expect_equal(chosen$diagnostics$trend_objective, objective)
-  expect_equal(chosen$diagnostics$trend, names(which.min(objective)))
-  expect_equal(chosen$landscape, if (which.min(objective) == 1L) shared$landscape else sample$landscape)
+  expect_equal(chosen$diagnostics$trend_posterior_objective, posterior)
+  expect_equal(chosen$diagnostics$trend, names(which.min(posterior)))
+  expect_equal(chosen$landscape, if (which.min(posterior) == 1L) shared$landscape else sample$landscape)
 })
 
 test_that("with balance, each dataset's history is chosen as for a single dataset", {

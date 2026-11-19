@@ -1,3 +1,42 @@
+# karst 1.1.2 (2026-11-19)
+
+Candidate histories, and the two trends of a cohort, are compared on the
+objective at the posterior mode each fit reports. A fit with a single history
+is unchanged apart from the new record, unless it is a cohort fit that
+chooses its trend (`trend = "select"`, the default).
+
+## Changed results
+
+- Up to 1.1.1 candidates were compared on nlminb's objective: the Laplace
+  objective at the inner mode the scale optimisation ended with. The
+  posterior a fit reports is at the mode found by the last search at the
+  fitted scales (`sparse_joint_inner_mode()`). That mode can differ, and so can
+  its objective: by more than 1e-3 for about a fifth of the candidates of the
+  development benchmark and of the ABM simulations of the ALFA-K paper
+  benchmark. A candidate whose mode was found only by the second search of
+  1.1.1 is usually at a worse mode (median +8.95 on the ABM). It could still
+  be chosen on nlminb's objective, and so was reported at a mode other than
+  the one it was chosen for.
+- Each candidate history is now compared on that objective. As before, only
+  candidates whose scale optimisation gave a finite objective take part. With
+  `trend = "select"`, `fit_sparse_joint_cohort()` compares its two trends the
+  same way. The per-dataset histories of a cohort are chosen by
+  `fit_sparse_joint()`, so they follow the new rule.
+- Before the change, the effect was measured on 168 development datasets and
+  377 ABM and missegregation fits (validation/sparse_joint/history_choice).
+  The history changed at 5 and 9 of them, with no consistent change in
+  accuracy: development RMSE ratio median 1.000; Spearman correlation on the
+  random ABM set +0.005, 3 better and 0 worse.
+
+## New records
+
+- `diagnostics$posterior_objective` of every fit and cohort fit: the
+  objective at the posterior mode it reports.
+- `diagnostics$history_profile` has a column `posterior_objective`, the value
+  compared. `objective` stays nlminb's.
+- `diagnostics$trend_posterior_objective` of a cohort fit with
+  `trend = "select"`: the value compared. `trend_objective` stays nlminb's.
+
 # karst 1.1.1 (2026-11-19)
 
 The posterior mode is searched once more before a fit fails. Fits in which
