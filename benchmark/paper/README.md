@@ -274,6 +274,9 @@ no folder of the method to link.
 |---|---|---|
 | b9a275e (1.0.0, the rename; stopped with every fit but one done, superseded by e7e32f8) | `results_b9a275e/` | |
 | e7e32f8 (1.0.0 with the fixes of the code review of 2026-11-17; all KARST fits redone) | `results_e7e32f8/` | `docs/report_e7e32f8.md` |
+| 2c60af1 (1.1.0, fixes of the code review of 2026-11-18; complete, but 85 KARST fit tasks failed when one candidate history's posterior mode was not found) | `results_2c60af1/` | |
+| 50415cf (1.1.1, the posterior mode searched once more; stopped soon after submission, superseded by cd342db) | `results_50415cf/` (partial) | |
+| cd342db (1.1.2, candidate histories compared on the objective at the posterior mode; all KARST fits redone) | `results_cd342db/` | |
 
 The same round fits KARST with `initial_state = "free"` to the Salehi data
 (method `karst_free`, both designs) into `results_<commit>_free/`, for the
