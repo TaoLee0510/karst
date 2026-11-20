@@ -1,6 +1,6 @@
 Package: karst
 Title: KARST: Karyotype Abundance-Based Reconstruction of Fitness Landscape from Sparse Time Points
-Version: 1.1.2
+Version: 1.1.3
 Authors@R: c(
     person(given = "Richard", family = "Beck",
            email = "richard.beck@moffitt.org", role = "aut"),

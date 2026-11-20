@@ -4,10 +4,12 @@ test_that("every fit records the objective at the posterior mode it reports", {
                                            max_cn = 4, history = 300))
   value <- one$diagnostics$posterior_objective
   expect_true(is.finite(value))
-  # the same value from the posterior rebuilt at the fitted scales, whose
-  # search starts from the stored mode
+  # the same value from a search at the fitted scales started at the stored
+  # mode (the rebuilt objective; the rebuild itself takes the stored mode and
+  # reports this value)
   rebuilt <- sparse_joint_rebuild(one)
-  expect_equal(rebuilt$solver$value, value, tolerance = 1e-6)
+  expect_equal(rebuilt$solver$value, value)
+  expect_equal(as.numeric(rebuilt$objective$fn(numeric(0))), value, tolerance = 1e-6)
 })
 
 test_that("candidate histories are compared on the objective at the posterior mode", {

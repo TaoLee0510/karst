@@ -406,6 +406,9 @@ test_that("a free level of the balance prior and initial_state = \"auto\"", {
   expect_silent(sparse_joint_rebuild(free_level, posterior = FALSE))
   expect_null(fixed$posterior$balance_level)
   expect_equal(sparse_joint_rebuild(fixed, posterior = FALSE)$g, fixed$posterior$g, tolerance = 1e-6)
+  # The stored settings recreate the fit's objective: its stored mode is a mode there.
+  expect_lt(sparse_joint_rebuild(free_level)$solver$gradient, 1e-6)
+  expect_lt(sparse_joint_rebuild(fixed)$solver$gradient, 1e-6)
   # "auto": the level decides; with the threshold far above or below it, the
   # fit is the balance or the free one.
   auto_args <- args[names(args) != "history"]

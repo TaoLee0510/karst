@@ -143,13 +143,17 @@ alfak_row_summary <- function(x, f) {
 # mode is then found again with the scales fixed, and the prediction for each
 # held-out karyotype is compared with its fitness from all the data.
 # Karyotypes outside the domain are not tested: their fitness never came from
-# their own counts.
+# their own counts. Attribute `folds`: the folds whose posterior mode was
+# found (`rebuilt`), of them those found only by the second search
+# (`restarted`, sparse_joint_inner_mode()), and those whose mode was not found
+# (`failed`, left out); as_alfak() moves it to its `rebuild` record.
 sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
+  folds <- c(rebuilt = 0L, restarted = 0L, failed = 0L)
   empty <- list(R2R = NA_real_, predictions = numeric(0), observations = numeric(0),
                 xval_data = data.frame(k = character(0), observation = numeric(0), prediction = numeric(0),
                                        stringsAsFactors = FALSE),
                 tmp = matrix(numeric(0), ncol = 2L, dimnames = list(NULL, c("test_f", "est_f"))))
-  if (!length(fq)) return(empty)
+  if (!length(fq)) return(structure(empty, folds = folds))
   summary <- fit$summary
   n <- nrow(summary)
   n_major <- fit$diagnostics$n_major
@@ -207,7 +211,12 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
     mode <- tryCatch(sparse_joint_rebuild(fit, weight, prior_mean, prior_sd, design = design, posterior = FALSE,
                                           drift_weight = drift_weight),
                      error = function(e) NULL)
-    if (is.null(mode)) return(NULL)
+    if (is.null(mode)) {
+      folds[["failed"]] <<- folds[["failed"]] + 1L
+      return(NULL)
+    }
+    folds[["rebuilt"]] <<- folds[["rebuilt"]] + 1L
+    if (isTRUE(attr(mode, "restart"))) folds[["restarted"]] <<- folds[["restarted"]] + 1L
     held_out <- self * exp(mode$g)
     # Anchor the refit on the majors outside the fold, whose relative fitness
     # it shares with the full fit up to a constant.
@@ -217,15 +226,16 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
     cbind(test_f = observation[tested], est_f = (relative + level) / divisor[tested])
   })
   tmp <- do.call(rbind, pairs)
-  if (is.null(tmp)) return(empty)
+  if (is.null(tmp)) return(structure(empty, folds = folds))
   tmp <- tmp[stats::complete.cases(tmp), , drop = FALSE]
   observations <- tmp[, "test_f"]
   predictions <- tmp[, "est_f"]
-  list(R2R = if (nrow(tmp) >= 2L) alfak_r2r(observations, predictions) else NA_real_,
-       predictions = predictions, observations = observations,
-       xval_data = data.frame(k = rownames(tmp), observation = unname(observations),
-                              prediction = unname(predictions), stringsAsFactors = FALSE),
-       tmp = tmp)
+  structure(list(R2R = if (nrow(tmp) >= 2L) alfak_r2r(observations, predictions) else NA_real_,
+                 predictions = predictions, observations = observations,
+                 xval_data = data.frame(k = rownames(tmp), observation = unname(observations),
+                                        prediction = unname(predictions), stringsAsFactors = FALSE),
+                 tmp = tmp),
+            folds = folds)
 }
 
 #' Convert a sparse joint fit to the outputs of alfak
@@ -315,7 +325,14 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
 #' @return An `karst_alfak_output` list with `bootstrap_res`, `landscape`,
 #'   `landscape_posterior_samples`, `xval` (`R2R`, `predictions`,
 #'   `observations`, `xval_data`, and `tmp`, the paired matrix of earlier
-#'   alfak versions), `landscape_data` (`NULL` unless requested) and `fit`.
+#'   alfak versions), `landscape_data` (`NULL` unless requested), `fit`, and
+#'   `rebuild`, how the posterior of the fit was rebuilt (not written by
+#'   [write_alfak_outputs()]): the posterior is taken at the fit's stored
+#'   mode, and `gradient` is the largest absolute gradient of the joint
+#'   objective over the latent variables there (near 0 at an exact mode);
+#'   `xval_folds` counts the cross-validation folds whose mode was found, of
+#'   them those found only by the second search, and those left out because
+#'   no mode was found.
 #' @export
 as_alfak <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_efflux = FALSE,
                       xval = TRUE, landscape_data_output = FALSE, first_time = 0) {
@@ -430,6 +447,11 @@ as_alfak <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_e
   } else {
     sparse_joint_alfak_xval(fit, character(0), observation, level, divisor)
   }
+  # How the posterior was rebuilt: the largest gradient of the joint objective
+  # at the fit's stored mode, where the posterior is taken (`gradient`), and
+  # the cross-validation folds.
+  rebuild <- list(gradient = solver$gradient, xval_folds = attr(cross_validation, "folds"))
+  attr(cross_validation, "folds") <- NULL
 
   landscape_data <- if (landscape_data_output) {
     model <- structure(list(fit = fit, level = level, correct_efflux = correct_efflux),
@@ -438,7 +460,7 @@ as_alfak <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_e
   } else NULL
 
   structure(list(bootstrap_res = bootstrap_res, landscape = landscape, landscape_posterior_samples = unname(samples),
-                 xval = cross_validation, landscape_data = landscape_data, fit = fit),
+                 xval = cross_validation, landscape_data = landscape_data, fit = fit, rebuild = rebuild),
             class = "karst_alfak_output")
 }
 

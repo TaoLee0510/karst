@@ -70,6 +70,8 @@ test_that("two-timepoint fits are the same with either template", {
   expect_equal(predict(series, "2.2.3.3"), predict(pair, "2.2.3.3"), tolerance = 1e-6)
   # The rebuilt posterior of a series fit is its own.
   expect_equal(sparse_joint_rebuild(series, posterior = FALSE)$g, series$posterior$g, tolerance = 1e-6)
+  # The stored settings recreate the fit's objective: its stored mode is a mode there.
+  expect_lt(sparse_joint_rebuild(series)$solver$gradient, 1e-6)
 })
 
 test_that("compiled series model evaluates the closed form at every time point", {
@@ -131,6 +133,8 @@ test_that("a series fit uses every time point", {
   expect_equal(prediction$in_domain, c(TRUE, FALSE))
   expect_true(all(is.finite(prediction$relative_fitness)) && all(prediction$relative_sd > 0))
   expect_equal(sparse_joint_rebuild(fit, posterior = FALSE)$g, fit$posterior$g, tolerance = 1e-6)
+  # The stored settings recreate the fit's objective: its stored mode is a mode there.
+  expect_lt(sparse_joint_rebuild(fit)$solver$gradient, 1e-6)
   # The main entry point takes the intervals or the times.
   entry <- fit_karst(sim$counts, dt = c(20, 20, 20), beta = sim$beta,
                       sparse_joint_control = list(birth_rate = 1, major_frequency = 0.05, max_cn = 4,
@@ -190,6 +194,8 @@ test_that("intermediate time points can count for the majors only", {
   # A rebuilt posterior reproduces the fit's own.
   rebuilt <- sparse_joint_rebuild(majors)
   expect_equal(rebuilt$solver$mode, unname(unlist(majors$posterior[problem$random])), tolerance = 1e-6)
+  # The stored settings recreate the fit's objective: its stored mode is a mode there.
+  expect_lt(rebuilt$solver$gradient, 1e-6)
   # The majors come from the first and the last time point.
   ends <- sim$counts[, c(1, 4)]
   expect_setequal(problem$domain$labels[seq_len(n_major)],

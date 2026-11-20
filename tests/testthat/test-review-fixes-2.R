@@ -150,16 +150,19 @@ test_that("the second search uses TMB's real objective and the problem's own ini
   expect_true(isTRUE(attr(found, "restart")))
   expect_equal(as.numeric(found), as.numeric(reference))
   expect_identical(env$random.start, tmb_start)
-  # In a rebuild TMB starts from the stored mode (the objective is taped
-  # there); the rebuild passes on the problem's own initial values for the
-  # second search.
+  # In a rebuild of a changed problem (a cross-validation fold; here weights
+  # of 1, the fit's own, so that the mode is the fit's) TMB starts from the
+  # stored mode (the objective is taped there); the rebuild passes on the
+  # problem's own initial values for the second search. The fit's own
+  # posterior is rebuilt with no search (test-rebuild-stored-mode.R).
+  ones <- rep(1, length(problem$tmb_data$weight))
   real <- sparse_joint_inner_mode
   passed <- NULL
   local_mocked_bindings(sparse_joint_inner_mode = function(objective, par_fixed, start = NULL) {
     passed <<- start
     real(objective, par_fixed, start)
   })
-  rebuilt <- sparse_joint_rebuild(fit)
+  rebuilt <- sparse_joint_rebuild(fit, weight = ones)
   map <- problem$map
   map$log_scale <- factor(rep(NA, length(problem$parameters$log_scale)))
   env <- rebuilt$objective$env
@@ -181,7 +184,7 @@ test_that("the second search uses TMB's real objective and the problem's own ini
   expect_equal(as.numeric(found), as.numeric(fresh$fn(numeric(0))))
   # posterior = FALSE passes the same start
   passed <- NULL
-  sparse_joint_rebuild(fit, posterior = FALSE)
+  sparse_joint_rebuild(fit, weight = ones, posterior = FALSE)
   expect_identical(passed, unname(sparse_joint_latent_vector(problem$parameters, map,
                                                              unique(names(env$par)[env$random]))))
 })

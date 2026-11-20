@@ -259,11 +259,22 @@ sparse_joint_latent_vector <- function(parameters, map, latent) {
 # Returns the mode, a solver for right-hand sides, the variances of selected
 # latent variables, draws of all latent variables about the mode, the names of
 # the latent variables, the fitted expected counts, `value`: the objective at
-# the mode, and `restart`: that objective when the mode was found only from
-# `start` (see sparse_joint_inner_mode()), NULL otherwise.
+# the mode, `restart`: that objective when the mode was found only from
+# `start` (see sparse_joint_inner_mode()), NULL otherwise, and `stored`: TRUE
+# when the mode was given.
+#
+# `stored`, from sparse_joint_rebuild() for a fit's own posterior: the full
+# parameter vector of the fit's stored mode and scales. The posterior is then
+# taken there, with no search, and `value` is `stored_value`, the objective the
+# fit reported at that mode.
 sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random, par_fixed, inner_control,
-                                   start = NULL) {
-  found <- sparse_joint_inner_mode(objective, par_fixed, start)
+                                   start = NULL, stored = NULL, stored_value = NA_real_) {
+  if (is.null(stored)) {
+    found <- sparse_joint_inner_mode(objective, par_fixed, start)
+  } else {
+    found <- stored_value
+    assign("last.par", stored, envir = objective$env)
+  }
   mode <- objective$env$last.par
   latent <- objective$env$random
   report <- objective$report(mode)
@@ -291,6 +302,7 @@ sparse_joint_posterior <- function(objective, tmb_data, parameters, map, random,
   list(
     mode = unname(mode[latent]), names = names(mode)[latent], solve = solve,
     value = as.numeric(found), restart = if (isTRUE(attr(found, "restart"))) as.numeric(found),
+    stored = !is.null(stored),
     # Fitted expected counts, for comparison with the observed ones: one
     # column per timepoint, and the first two separately.
     expected = expected_counts, expected_t0 = expected_counts[, 1L], expected_t1 = expected_counts[, 2L],
@@ -617,8 +629,10 @@ sparse_joint_problem <- function(data, settings) {
 # with the scales fixed at their fitted values. `weight`,
 # `zeta_prior_mean`/`zeta_prior_sd`, `design` and (state space) `drift_weight`
 # replace the defaults, for instance to hold out the counts of some states. Returns the problem, the solver of
-# `sparse_joint_posterior()` and the TMB objective; with `posterior = FALSE`
-# only the mode, as a list of the latent parameters.
+# `sparse_joint_posterior()` (for the fit's own posterior with `gradient`, see
+# below) and the TMB objective; with `posterior = FALSE` only the mode, as a
+# list of the latent parameters, after a search with attribute `restart` TRUE
+# when it was found by the second search.
 sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zeta_prior_sd = NULL,
                                  design = NULL, posterior = TRUE, drift_weight = NULL) {
   if (is.null(fit$settings) || is.null(fit$posterior)) {
@@ -643,14 +657,40 @@ sparse_joint_rebuild <- function(fit, weight = NULL, zeta_prior_mean = NULL, zet
   inner_control <- fit$settings$inner_control
   objective <- TMB::MakeADFun(tmb_data, parameters, map = map, random = problem$random, DLL = "karst",
                               silent = TRUE, inner.control = inner_control)
-  # The inner search starts from the stored mode; should it fail, it is made
-  # once more from the problem's own initial latent values.
+  latent_of <- function(mode) {
+    lapply(stats::setNames(nm = problem$random), function(name) unname(mode[names(mode) == name]))
+  }
+  # The fit's own posterior (nothing replaced) is taken at its stored mode, with
+  # no new search: that is the mode the fit reports, and its summary comes
+  # from it. A new search from there can end elsewhere: TMB's search fails at
+  # a mode whose inner Hessian is numerically singular, and moves on from a
+  # mode at which the fit's search stopped early; karst 1.1.1 and 1.1.2 then
+  # searched again from the initial latent values and could end at another,
+  # worse mode. `gradient`: the largest absolute gradient of the joint objective
+  # over the latent variables at the stored mode (0 at an exact mode).
+  # A fit that did not store every latent variable (made before one existed)
+  # has no complete stored mode and is searched, as a fold is.
+  own <- is.null(weight) && is.null(zeta_prior_mean) && is.null(zeta_prior_sd) && is.null(design) &&
+    is.null(drift_weight) && all(problem$random %in% stored)
+  if (own) {
+    stored_mode <- objective$env$par
+    if (!posterior) return(latent_of(stored_mode))
+    gradient <- max(abs(as.numeric(objective$env$f(stored_mode, order = 1L))[objective$env$random]))
+    value <- if (is.null(fit$diagnostics$posterior_objective)) NA_real_ else fit$diagnostics$posterior_objective
+    solver <- sparse_joint_posterior(objective, tmb_data, parameters, map, problem$random, numeric(0), inner_control,
+                                     stored = stored_mode, stored_value = value)
+    solver$gradient <- gradient
+    return(list(problem = problem, solver = solver, objective = objective, tmb_data = tmb_data))
+  }
+  # Otherwise (a cross-validation fold, or a fit without a complete stored
+  # mode) the inner search starts from the stored mode; should it fail, it is
+  # made once more from the problem's own initial latent values
+  # (sparse_joint_inner_mode()).
   start <- sparse_joint_latent_vector(problem$parameters, map,
                                       unique(names(objective$env$par)[objective$env$random]))
   if (!posterior) {
-    sparse_joint_inner_mode(objective, numeric(0), start)
-    mode <- objective$env$last.par
-    return(lapply(stats::setNames(nm = problem$random), function(name) unname(mode[names(mode) == name])))
+    found <- sparse_joint_inner_mode(objective, numeric(0), start)
+    return(structure(latent_of(objective$env$last.par), restart = isTRUE(attr(found, "restart"))))
   }
   solver <- sparse_joint_posterior(objective, tmb_data, parameters, map, problem$random, numeric(0), inner_control,
                                    start)

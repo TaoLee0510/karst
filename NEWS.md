@@ -1,3 +1,45 @@
+# karst 1.1.3 (2026-11-20)
+
+`as_alfak()` takes a fit's posterior at the mode the fit reports. Fits are
+unchanged. `as_alfak()` and `alfak_compat()` change only in their draws, and
+only for fits at whose stored mode TMB's search failed or moved on.
+
+## Changed results
+
+- `as_alfak()` rebuilds a fit's posterior to draw from it. Up to 1.1.2 the
+  rebuild searched for the mode again, starting at the stored one, and in two
+  cases did not end there:
+  - Where the inner Hessian at the stored mode is numerically singular, TMB's
+    search does not move but fails, because its Laplace value is not finite.
+    1.1.1 and 1.1.2 then searched from the initial latent values and could
+    end at another, worse mode; 1.1.0 stopped with an error.
+  - Where the fit's own search had stopped short of the mode (the largest
+    gradient over the latent variables up to 6.3 in round cd342db), the new
+    search moved on.
+- The draws of `bootstrap_res.Rds` and `landscape_posterior_samples.Rds` then
+  came from the covariance at the other point: their correlations between
+  karyotypes, and the spread of the drawn initial abundances. The landscape's
+  `mean`, `median` and `sd` were not affected; they come from the fit.
+- Now the fit's own posterior is taken at its stored mode, with no new search,
+  as the fit computed it. Cross-validation folds, whose problem differs from
+  the fit's, still search, from the stored mode and then from the initial
+  values. So does a fit that did not store every latent variable.
+- In round cd342db of the ALFA-K paper benchmark (5,985 fits rebuilt):
+  - 7 rebuilds ended at another mode after TMB failed at the stored one. In
+    the worst two the objective rose by 14.1 and 10.3.
+  - 3 more moved by more than 1e-4 from a stored mode at which the fit's
+    search had stopped early; the largest move was 0.40.
+
+## New records
+
+- `as_alfak()` returns `rebuild`, which `write_alfak_outputs()` does not
+  write. `gradient` is the largest absolute gradient of the joint objective
+  over the latent variables at the stored mode. `xval_folds` counts the
+  cross-validation folds whose mode was found, of them those found only by the
+  second search, and those left out because no mode was found.
+- The solver of `sparse_joint_rebuild()` has `stored` and, for a fit's own
+  posterior, `gradient`; its `value` is then the objective the fit reported.
+
 # karst 1.1.2 (2026-11-19)
 
 Candidate histories, and the two trends of a cohort, are compared on the

@@ -65,6 +65,8 @@ test_that("the pairwise method fits each pair as two time points with one landsc
     value <- fit$posterior[[name]]
     if (name == "zeta") value[rebuilt$problem$tmb_data$member > 0] else value
   }))), tolerance = 1e-6)
+  # The stored settings recreate the fit's objective: its stored mode is a mode there.
+  expect_lt(rebuilt$solver$gradient, 1e-6)
 })
 
 test_that("the state-space method follows the anchored fit when there is no drift", {
@@ -77,6 +79,8 @@ test_that("the state-space method follows the anchored fit when there is no drif
   expect_equal(dim(fit$posterior$zeta_later), c(nrow(fit$summary), 3L))
   rebuilt <- sparse_joint_rebuild(fit)
   expect_equal(rebuilt$solver$mode, unname(unlist(fit$posterior[rebuilt$problem$random])), tolerance = 1e-6)
+  # The stored settings recreate the fit's objective: its stored mode is a mode there.
+  expect_lt(rebuilt$solver$gradient, 1e-6)
   # Nearly no drift: the closed form from time point to time point, as the anchored
   # model with every time point for every karyotype, up to the second order in
   # the mutational flux.

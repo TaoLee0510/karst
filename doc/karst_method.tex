@@ -541,7 +541,14 @@ The mode $\hat u(\hat\psi)$ is found by Newton's method started, as during
 the optimisation, from the best mode found so far; where that start lies far
 from the mode at $\hat\psi$ the search can fail, and it is then made once more
 from the initial values. A candidate history at which both searches fail is
-not kept, and a fit with no candidate left is stopped. Candidate histories
+not kept, and a fit with no candidate left is stopped. When the posterior of
+a fit is rebuilt (to draw from it for \texttt{alfak}'s files), it is taken
+at the stored mode with no new search, as the fit computed it; the covariance
+comes from the expected information below, which does not need TMB's Laplace
+value. Up to karst 1.1.2 the rebuild searched again. Where the inner Hessian
+at the stored mode is numerically singular, that search fails there; 1.1.1
+and 1.1.2 then searched from the initial values and could end at another,
+worse mode. Candidate histories
 are compared on the objective (\ref{eq:laplace}) at the mode the fit
 reports, among those whose optimisation gave a finite objective. It differs
 from the value at which \texttt{nlminb} stopped when that search ends at

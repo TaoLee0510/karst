@@ -47,7 +47,14 @@ reported frequencies.}
 An \code{karst_alfak_output} list with \code{bootstrap_res}, \code{landscape},
 \code{landscape_posterior_samples}, \code{xval} (\code{R2R}, \code{predictions},
 \code{observations}, \code{xval_data}, and \code{tmp}, the paired matrix of earlier
-alfak versions), \code{landscape_data} (\code{NULL} unless requested) and \code{fit}.
+alfak versions), \code{landscape_data} (\code{NULL} unless requested), \code{fit}, and
+\code{rebuild}, how the posterior of the fit was rebuilt (not written by
+\code{\link[=write_alfak_outputs]{write_alfak_outputs()}}): the posterior is taken at the fit's stored
+mode, and \code{gradient} is the largest absolute gradient of the joint
+objective over the latent variables there (near 0 at an exact mode);
+\code{xval_folds} counts the cross-validation folds whose mode was found, of
+them those found only by the second search, and those left out because
+no mode was found.
 }
 \description{
 Produces, from a fit of \code{\link[=fit_sparse_joint]{fit_sparse_joint()}}, the objects that

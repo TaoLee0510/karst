@@ -12,6 +12,8 @@ test_that("a rebuilt posterior reproduces the fit", {
   expect_equal(mode$g, fit$posterior$g, tolerance = 1e-6)
   expect_equal(mode$zeta, fit$posterior$zeta, tolerance = 1e-6)
   solver <- sparse_joint_rebuild(fit)$solver
+  # The stored settings recreate the fit's objective: its stored mode is a mode there.
+  expect_lt(solver$gradient, 1e-6)
   expect_equal(sqrt(solver$variance(which(solver$names == "g"))), fit$summary$log_birth_sd, tolerance = 1e-6)
   set.seed(4)
   draws <- solver$draw(3000)

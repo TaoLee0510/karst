@@ -125,7 +125,12 @@ fit_karst <- function(yi, outdir, minobs, n0, nb, pm, settings = bench_settings,
   # negative log marginal likelihood, nlminb's; it picked the history up to
   # karst 1.1.1, and picks the missegregation rate in scripts/beta_picks.R) and `beta` (the rate fitted) are recorded too. From karst
   # 1.1.2 on, `posterior_objective` (the objective at the posterior mode the
-  # fit reports, which picks the history; also a column of `history_profile`). From
+  # fit reports, which picks the history; also a column of `history_profile`);
+  # from 1.1.3 on, each minobs's `rebuild` (as_alfak()'s record of how the
+  # posterior was rebuilt: `gradient`, the largest gradient over the latent
+  # variables at the fit's stored mode, where the posterior is taken, and
+  # `xval_folds`, the cross-validation folds whose mode was found, of them
+  # those found only by the second search, and those left out). From
   # 827c4b5 on, `initial_state` (the state fitted: "balance" or "free") and,
   # for two time points under initial_state = "auto", `initial_state_check`
   # (the cloud's log level over the balance, its sd, the threshold, the
@@ -151,18 +156,21 @@ fit_karst <- function(yi, outdir, minobs, n0, nb, pm, settings = bench_settings,
       next
     }
     start <- proc.time()[["elapsed"]]
+    # karst 1.1.3 on: how as_alfak() rebuilt the posterior (as_alfak()'s `rebuild`)
+    rebuild <- NULL
     result <- tryCatch({
       args <- list(fit, minobs = m, nboot = settings$nboot, n0 = n0, nb = nb,
                    correct_efflux = settings$correct_efflux)
       if (time0) args$first_time <- times[1]
       out <- do.call(karst::as_alfak, args)
+      rebuild <- out$rebuild
       karst::write_alfak_outputs(out, dir)
       NULL
     }, error = function(e) conditionMessage(e))
     write_run(dir, if (is.null(result)) "ok" else "failed", proc.time()[["elapsed"]] - start,
               if (is.null(result)) NA_character_ else result,
               c(list(fit_seconds = fit_seconds, freq_origin = if (time0) "time0" else "first_sample",
-                     package = find.package("karst")), info))
+                     package = find.package("karst"), rebuild = rebuild), info))
   }
   invisible(!failed)
 }

@@ -177,7 +177,9 @@ Every row has `relative_fitness`, `relative_sd` and `relative_sd_model`.
 
 14. **Draw from the posterior in place of the bootstrap.** The posterior is
     rebuilt from the stored settings and mode and all latent variables are
-    drawn jointly. Draws are mapped to relative fitness (domain states
+    drawn jointly. The posterior is taken at the stored mode, with no new
+    search (karst 1.1.3); `as_alfak()` records the gradient there in
+    `rebuild`. Draws are mapped to relative fitness (domain states
     through g, trend predictions through the coefficients plus the residual,
     with the reference drawn alongside). Each karyotype receives independent
     noise for the part of its calibrated standard deviation the model does
