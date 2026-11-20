@@ -1,4 +1,4 @@
-# KARST
+# KARST <img src="man/figures/logo.png" align="right" height="139" alt="KARST logo" />
 
 **KARST: Karyotype Abundance-based Reconstruction of fitness landscape from
 Sparse Time points.**
