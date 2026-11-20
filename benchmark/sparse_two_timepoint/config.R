@@ -20,16 +20,33 @@
 #   simulations, was added later as a fifth class. Its landscapes come after
 #   the others (L13-L15 of each split), so that the identifiers and seeds of
 #   the first twelve stay as they were.
+# - The held-out split has 100 landscapes per wavelength (2026-11-20), as the
+#   ALFA-K paper simulates 100 per wavelength. The first three of each class
+#   are L01-L15 as before (identifiers, seeds and data unchanged); the other 97
+#   of each class are L16-L500, class by class in the order of
+#   `wavelength_classes`. The development split keeps its fifteen.
+#
+# STT_OUTPUT_DIR names the results folder when `output_dir` is not given, so
+# that a round can have a folder of its own (the default is
+# benchmark/results/sparse_two_timepoint).
 
-stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_two_timepoint")) {
+stt_default_output_dir <- function() {
+  folder <- Sys.getenv("STT_OUTPUT_DIR", "")
+  if (nzchar(folder)) folder else file.path("benchmark", "results", "sparse_two_timepoint")
+}
+
+stt_config <- function(output_dir = stt_default_output_dir()) {
   wavelength_classes <- data.frame(
     wavelength_class = c("w0.4", "w0.8", "w1.2", "w1.6", "w0.2"),
     wavelength = c(0.4, 0.8, 1.2, 1.6, 0.2),
     stringsAsFactors = FALSE
   )
   landscapes_per_class <- 3L
-  make_split <- function(split, seed_base) {
-    grid <- wavelength_classes[rep(seq_len(nrow(wavelength_classes)), each = landscapes_per_class), ]
+  heldout_per_class <- 100L
+  make_split <- function(split, seed_base, per_class = landscapes_per_class) {
+    classes <- seq_len(nrow(wavelength_classes))
+    grid <- wavelength_classes[c(rep(classes, each = landscapes_per_class),
+                                 rep(classes, each = per_class - landscapes_per_class)), ]
     index <- seq_len(nrow(grid))
     data.frame(
       landscape_id = sprintf("%s_L%02d", split, index),
@@ -48,11 +65,13 @@ stt_config <- function(output_dir = file.path("benchmark", "results", "sparse_tw
                interval = interval, bottleneck = bottleneck, shift = shift, role = role,
                stringsAsFactors = FALSE)
   }
-  landscapes <- rbind(make_split("dev", 71000L), make_split("heldout", 82000L))
+  landscapes <- rbind(make_split("dev", 71000L), make_split("heldout", 82000L, heldout_per_class))
   # Control cohorts ("other_landscapes") are drawn from the twelve landscapes of
   # the four original wavelength classes (L01-L12 of each split), so that a
-  # class added later (0.2, L13-L15) leaves their members as they were.
-  cohort_pool <- landscapes[landscapes$wavelength_class %in% wavelength_classes$wavelength_class[1:4],
+  # class or landscapes added later (0.2, L13-L15; L16-L500) leave their
+  # members as they were.
+  number <- as.integer(sub("^.*_L", "", landscapes$landscape_id))
+  cohort_pool <- landscapes[landscapes$wavelength_class %in% wavelength_classes$wavelength_class[1:4] & number <= 12L,
                             c("landscape_id", "split")]
   # What a cohort method needs to find the other datasets of its cohort.
   cohort_method <- function(members, ...) {

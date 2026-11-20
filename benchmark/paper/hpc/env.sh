@@ -66,6 +66,7 @@ container_rscript() {
     --env "SCORE_METHODS=${SCORE_METHODS:-}" \
     --env "COMPARE_METHOD=${COMPARE_METHOD:-karst}" \
     --env "COMPARE_OLD_METHOD=${COMPARE_OLD_METHOD:-${COMPARE_METHOD:-karst}}" \
+    --env "STT_OUTPUT_DIR=${STT_OUTPUT_DIR:-}" \
     --env "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID:-}" \
     --env "OMP_NUM_THREADS=1" \
     --env "OPENBLAS_NUM_THREADS=1" \

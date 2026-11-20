@@ -42,13 +42,30 @@ Choices that follow from this comparison:
   2026-11-18 after the others (landscapes L13-L15 of each split), so that the
   first twelve keep their identifiers and seeds. So far it is generated and
   fitted for the held-out split only.
+- **100 held-out landscapes per wavelength** (2026-11-20), as the ALFA-K paper
+  simulates 100 landscapes per wavelength. The first three of each class are
+  L01-L15 as before (identifiers, seeds and data unchanged); the other 97 of
+  each class are L16-L500, class by class (0.4, 0.8, 1.2, 1.6, 0.2), with
+  seeds 82016-82500. The development split keeps its fifteen landscapes.
 - **Nullisomy is lethal.** Daughters with a copy number outside 1–8 die. The
-  original ALFA-K simulator lets nullisomic cells live; its populations then
+  ALFA-K paper's simulations (alfakR 4ad82b0, "fix 0 CN bug") also kill a
+  daughter with a zero-copy chromosome; none of their 525 simulations has one.
+  alfakR versions before 4ad82b0 let nullisomic cells live: their populations
   fix a zero-copy chromosome, which never occurs in the real inputs and which
-  `alfak` cannot fit because it discards every nullisomic neighbour.
+  `alfak` cannot fit because it discards every nullisomic neighbour. The upper
+  limit of 8 is this benchmark's own; the paper's simulator has none (up to 8
+  copies in its main set, 10 at the highest missegregation rates).
 
-Truth is the Gaussian-random-field landscape of the ALFA-K simulations, and the
-simulator (`abm.cpp`) keeps their division and missegregation rules.
+Truth is the Gaussian-random-field landscape of the ALFA-K simulations, with
+the same formula and generating settings (10 centroids with coordinates −10
+to 20, a diploid founder with fitness above 0.4), and the simulator
+(`abm.cpp`) keeps their division and missegregation rules. It differs from the
+paper's simulator in three rules: the upper copy-number limit above; a clone
+with fitness ≤ 0 does not divide but survives until passaging thins it out,
+where the paper's simulator kills it at once (this changes no dataset at
+wavelengths ≥ 0.4 and little at 0.2: `doc/notes/nonpositive_fitness.md`); and
+the number of dividing cells is binomial rather than a capped Poisson. The
+KARST report (`doc/report`) compares the two simulation set-ups item by item.
 `run.R --stage=validate` checks it against closed-form results: the daughter
 distribution against the missegregation kernel, viability losses, growth,
 selection between two clones, passaging, and reproducibility.
@@ -58,7 +75,7 @@ on the same landscape. Patient 1 makes the single-dataset scoreboard (96
 development datasets); all eight form the cohort for cross-dataset learning.
 The control cohort of a landscape (`other_landscapes`) is patient 1 of the
 next seven, cyclically, of the twelve landscapes of the four original
-wavelength classes of its split, so that the 0.2 class does not change it.
+wavelength classes of its split, so that landscapes added later do not change it.
 
 | Scenario | Cells at t0 / t1 | Interval (days) |
 | --- | --- | --- |
@@ -161,6 +178,23 @@ largest datasets (`minobs = 5` at 3000 cells), so raise the worker count only
 with memory to spare.
 The held-out landscapes are for the final confirmation only and need
 `--split=heldout --unseal-heldout`.
+
+### A round in a folder of its own
+
+`STT_OUTPUT_DIR` names the results folder that `stt_config()` uses when no
+folder is given (every script here and `validation/sparse_joint/far_distance.R`;
+the HPC image receives it from `../paper/hpc/env.sh`), so that a round can be
+run beside the earlier ones. `round_tasks.R` writes the task table of the fits a
+round still needs, listed from the configuration (the datasets need not exist
+yet) and leaving out fits already in the folder:
+
+```sh
+export STT_OUTPUT_DIR=benchmark/results/sparse_two_timepoint_<round>
+T=benchmark/sparse_two_timepoint/round_tasks.R
+Rscript $T --split=heldout --methods=karst_sparse_joint_balance,karst_sparse_joint --roles=core,stress karst.tsv
+Rscript $T --split=heldout --methods=alfak_minobs10,alfak_minobs20 --landscapes=16-500 alfak.tsv
+Rscript $T --split=heldout --methods=karst_sparse_joint_balance --sweep=far far.tsv
+```
 
 ### Adding landscapes
 
