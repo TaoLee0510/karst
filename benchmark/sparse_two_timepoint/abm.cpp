@@ -7,11 +7,16 @@
 // missing from the other (-1). When the population exceeds max_population it
 // is thinned binomially, which models passaging.
 //
-// Two things differ from the ALFA-K simulator. Daughters with a copy number
-// outside [min_cn, max_cn] die: real data contain no nullisomic karyotypes,
-// and both fitting methods assume nullisomy is not viable. And the number of
-// dividing cells is binomial rather than a capped Poisson, so the mean growth
-// factor per step is exactly 1 + fitness * delta_t for a clone of any size.
+// Three things differ from the ALFA-K simulator (alfakR 4ad82b0, which made
+// the paper's simulations). Daughters with a copy number outside
+// [min_cn, max_cn] die: real data contain no nullisomic karyotypes, and both
+// fitting methods assume nullisomy is not viable. ALFA-K kills zero-copy
+// daughters too, but has no upper limit. A clone with fitness <= 0 does not
+// divide and survives until passaging thins it out; ALFA-K kills it in that
+// step (the effect is assessed in doc/notes/nonpositive_fitness.md). And the
+// number of dividing cells is binomial rather than a capped Poisson, so the
+// mean growth factor per step is exactly 1 + fitness * delta_t for a clone of
+// any size.
 //
 // Faithful divisions are added in bulk; only divisions with at least one
 // missegregation are simulated one by one. This is the same process, not an
