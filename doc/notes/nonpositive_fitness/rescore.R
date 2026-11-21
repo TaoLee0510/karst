@@ -4,11 +4,18 @@
 #   death    (dies at rate |f|, the signed scale the paper scores on) rate = log1p(f dt)/dt
 #   exclude  (lethal at once, as in the paper ABM: no finite rate)   f <= 0 nodes not scored
 # Run from the repository root:  Rscript doc/notes/nonpositive_fitness/rescore.R
-# Notes: doc/notes/nonpositive_fitness.md. OWN_RESULTS is the own benchmark's held-out
-# results (datasets/, nodes/, fits/, dataset_index_heldout.csv); the default is the
-# copy made by doc/report/build/fetch_own.sh.
-here <- "doc/notes/nonpositive_fitness"
-own <- Sys.getenv("OWN_RESULTS", "doc/report/data/own_e7e32f8")
+# Notes: doc/notes/nonpositive_fitness.md. KARST_OWN_ROUND names the own benchmark's
+# round (default 6ae2a24); results are read from and written to round_<round>/ of this
+# folder. OWN_RESULTS is that round's held-out results (datasets/, nodes/, fits/,
+# dataset_index_heldout.csv); the default is the copy made by
+# doc/report/build/fetch_own.sh. NF_HERE is this folder (default
+# doc/notes/nonpositive_fitness), NF_CORES the workers (default SLURM_CPUS_PER_TASK, else 3).
+here <- Sys.getenv("NF_HERE", "doc/notes/nonpositive_fitness")
+round <- Sys.getenv("KARST_OWN_ROUND", "6ae2a24")
+own <- Sys.getenv("OWN_RESULTS", file.path("doc/report/data", paste0("own_", round)))
+out_dir <- file.path(here, paste0("round_", round))
+dir.create(out_dir, showWarnings = FALSE)
+cores <- as.integer(Sys.getenv("NF_CORES", Sys.getenv("SLURM_CPUS_PER_TASK", "3")))
 for (p in c("landscape.R", "config.R", "score.R")) source(file.path("benchmark/sparse_two_timepoint", p))
 idx <- read.csv(file.path(own, "dataset_index_heldout.csv"), stringsAsFactors = FALSE)
 idx <- idx[idx$scoreboard & idx$role == "core", ]
@@ -32,9 +39,9 @@ one <- function(id) {
     }))
   }))
 }
-r <- do.call(rbind, parallel::mclapply(idx$dataset_id, one, mc.cores = 3))
+r <- do.call(rbind, parallel::mclapply(idx$dataset_id, one, mc.cores = cores))
 r <- merge(r, idx[c("dataset_id", "landscape_id", "wavelength_class", "scenario")], by = "dataset_id")
-saveRDS(r, file.path(here, "rescore.rds"))
+saveRDS(r, file.path(out_dir, "rescore.rds"))
 # sanity: clip reproduces the benchmark's metrics
 m <- read.csv(file.path(own, "metrics_heldout.csv"), stringsAsFactors = FALSE)
 chk <- merge(r[r$convention == "clip", ], m[c("dataset_id", "method", "stratum", "rmse", "spearman")], by = c("dataset_id", "method", "stratum"))
