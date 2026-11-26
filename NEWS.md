@@ -1,3 +1,40 @@
+# karst 1.1.4 (2026-11-23)
+
+A second target for the cross-validation of `as_alfak()` and
+`alfak_compat()`, so that their scores can be put on alfak's scale. The
+default is unchanged: fits, landscapes, draws and scores are the same as in
+1.1.3.
+
+## New options
+
+- `as_alfak(xval_target = "own")` compares each held-out prediction with the
+  karyotype's fitness from its own counts, the counterpart of alfak's target
+  (one bootstrap draw of its first-stage fitness):
+  - every other latent variable stays at the fit's mode;
+  - the karyotype's own terms of the objective are minimised over its birth
+    rate and its own abundances, without the landscape prior on its birth
+    rate. These are its counts, its initial abundance term and, in the
+    state-space method, its own transitions.
+- `xval_resample` (default `TRUE`) first resamples the counts once, cell by
+  cell at each time point, as alfak's bootstrap resamples cells; `xval_seed`
+  (default 1) seeds it, and the global random state is left as it was.
+- Only karyotypes with at least one cell in the counts the fit uses are then
+  tested. `xval` also holds `target = "own"`.
+- `alfak_compat()` passes `xval_target` on.
+- The default, `xval_target = "model"`, compares with the model's fitness from
+  all the data, as before. That target comes from the same smooth model as
+  the prediction, so the default scores are high and not on alfak's scale.
+
+## Checks
+
+- At the fit's mode, the R version of each karyotype's own terms (new file
+  `R/sparse-joint-own.R`, all four methods) equals the TMB objective's to
+  3e-13 (`tests/testthat/test-sparse-joint-own.R`).
+- In round 6ae2a24 of the ALFA-K paper benchmark, 213 fits rescored with the
+  full `as_alfak(xval_target = "own")`, refitting every fold, gave the same
+  scores as the post-hoc computation (difference 0)
+  (`benchmark/paper/docs/xv_target_6ae2a24_Ver2.md`).
+
 # karst 1.1.3 (2026-11-20)
 
 `as_alfak()` takes a fit's posterior at the mode the fit reports. Fits are

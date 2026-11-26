@@ -16,6 +16,7 @@ alfak_compat(
   allow_noninteger_counts = FALSE,
   correct_efflux = FALSE,
   landscape_data_output = FALSE,
+  xval_target = c("model", "own"),
   ...
 )
 }
@@ -28,7 +29,7 @@ column per time point, and \code{dt}, the time per unit of the column names.}
 \item{passage_times}{Optional times of the time points, one per column of
 \code{yi$x}.}
 
-\item{minobs, nboot, n0, nb, correct_efflux, landscape_data_output}{See
+\item{minobs, nboot, n0, nb, correct_efflux, landscape_data_output, xval_target}{See
 \code{\link[=as_alfak]{as_alfak()}}.}
 
 \item{pm}{Missegregation rate per chromosome copy and division.}

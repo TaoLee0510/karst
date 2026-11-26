@@ -13,7 +13,10 @@ as_alfak(
   correct_efflux = FALSE,
   xval = TRUE,
   landscape_data_output = FALSE,
-  first_time = 0
+  first_time = 0,
+  xval_target = c("model", "own"),
+  xval_resample = TRUE,
+  xval_seed = 1L
 )
 }
 \arguments{
@@ -42,12 +45,23 @@ any karyotypes on the same scale as \code{landscape}.}
 \item{first_time}{Time of the first time point on alfak's time axis (the
 first passage time, or column name times \code{dt}); sets the time 0 of the
 reported frequencies.}
+
+\item{xval_target}{What a held-out prediction is compared with: \code{"model"}
+(the default), the model's fitness from all the data; \code{"own"}, the
+karyotype's fitness from its own counts (see Details).}
+
+\item{xval_resample}{Logical; with \code{xval_target = "own"}, resample the
+counts once before estimating (alfak's one bootstrap draw), or use the
+counts as they are.}
+
+\item{xval_seed}{Seed of that resampling.}
 }
 \value{
 An \code{karst_alfak_output} list with \code{bootstrap_res}, \code{landscape},
 \code{landscape_posterior_samples}, \code{xval} (\code{R2R}, \code{predictions},
 \code{observations}, \code{xval_data}, and \code{tmp}, the paired matrix of earlier
 alfak versions), \code{landscape_data} (\code{NULL} unless requested), \code{fit}, and
+With \code{xval_target = "own"}, \code{xval} also holds \code{target = "own"}.
 \code{rebuild}, how the posterior of the fit was rebuilt (not written by
 \code{\link[=write_alfak_outputs]{write_alfak_outputs()}}): the posterior is taken at the fit's stored
 mode, and \code{gradient} is the largest absolute gradient of the joint
@@ -120,4 +134,21 @@ karyotypes also leave the trend's reference points: the distance
 covariate is measured to the remaining major karyotypes. Only karyotypes
 inside the model domain are tested, and a fold holding every major
 karyotype is skipped. \code{R2R} is alfak's statistic on these pairs.
+
+What a held-out prediction is compared with (\code{xval_target}). alfak
+compares it with one bootstrap draw of the karyotype's first-stage fitness,
+an estimate from its own counts with their sampling noise. By default
+(\code{"model"}) it is compared here with the model's fitness from all the
+data, which comes from the same smooth model as the prediction and lies
+close to it, so that the scores are higher than alfak's and not on its
+scale. With \code{"own"} it is compared with the karyotype's fitness from its
+own counts: every other latent variable of the fit stays at the fit's mode,
+and the karyotype's own terms of the objective (its counts, its initial
+abundance term and, in the state-space method, its own transitions) are
+minimised over its birth rate and its own abundances, without the
+landscape prior on its birth rate. With \code{xval_resample = TRUE} its counts
+are first resampled once, cell by cell at each time point, as alfak's
+bootstrap resamples cells (with seed \code{xval_seed}; the global random state
+is left as it was). Only karyotypes with at least one cell in the counts
+the fit uses are then tested.
 }

@@ -147,7 +147,11 @@ alfak_row_summary <- function(x, f) {
 # found (`rebuilt`), of them those found only by the second search
 # (`restarted`, sparse_joint_inner_mode()), and those whose mode was not found
 # (`failed`, left out); as_alfak() moves it to its `rebuild` record.
-sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
+# `target`, when given (named by karyotype, on the scale of `observation`),
+# replaces the fitness from all the data as what each prediction is compared
+# with (as_alfak(xval_target = "own")); a karyotype whose target is NA is not
+# tested.
+sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor, target = NULL) {
   folds <- c(rebuilt = 0L, restarted = 0L, failed = 0L)
   empty <- list(R2R = NA_real_, predictions = numeric(0), observations = numeric(0),
                 xval_data = data.frame(k = character(0), observation = numeric(0), prediction = numeric(0),
@@ -223,7 +227,8 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
     w <- weight_major[major] / sum(weight_major[major])
     shift <- sum(w * (held_out[major] - summary$fitness_mean[major]))
     relative <- held_out[state] - shift - reference
-    cbind(test_f = observation[tested], est_f = (relative + level) / divisor[tested])
+    test_f <- if (is.null(target)) observation[tested] else target[tested]
+    cbind(test_f = test_f, est_f = (relative + level) / divisor[tested])
   })
   tmp <- do.call(rbind, pairs)
   if (is.null(tmp)) return(structure(empty, folds = folds))
@@ -303,6 +308,23 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
 #' inside the model domain are tested, and a fold holding every major
 #' karyotype is skipped. `R2R` is alfak's statistic on these pairs.
 #'
+#' What a held-out prediction is compared with (`xval_target`). alfak
+#' compares it with one bootstrap draw of the karyotype's first-stage fitness,
+#' an estimate from its own counts with their sampling noise. By default
+#' (`"model"`) it is compared here with the model's fitness from all the
+#' data, which comes from the same smooth model as the prediction and lies
+#' close to it, so that the scores are higher than alfak's and not on its
+#' scale. With `"own"` it is compared with the karyotype's fitness from its
+#' own counts: every other latent variable of the fit stays at the fit's mode,
+#' and the karyotype's own terms of the objective (its counts, its initial
+#' abundance term and, in the state-space method, its own transitions) are
+#' minimised over its birth rate and its own abundances, without the
+#' landscape prior on its birth rate. With `xval_resample = TRUE` its counts
+#' are first resampled once, cell by cell at each time point, as alfak's
+#' bootstrap resamples cells (with seed `xval_seed`; the global random state
+#' is left as it was). Only karyotypes with at least one cell in the counts
+#' the fit uses are then tested.
+#'
 #' @param fit An `karst_sparse_joint_fit`, or an
 #'   `karst_sparse_joint_rate_fit`, whose point fit is then used.
 #' @param minobs Minimum number of cells, over all time points, of a frequent
@@ -314,6 +336,13 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
 #'   rates, converted as alfak converts them (see Details).
 #' @param xval Logical; run the cross-validation. With `FALSE`, `xval` holds
 #'   no pairs and `R2R` is `NA`.
+#' @param xval_target What a held-out prediction is compared with: `"model"`
+#'   (the default), the model's fitness from all the data; `"own"`, the
+#'   karyotype's fitness from its own counts (see Details).
+#' @param xval_resample Logical; with `xval_target = "own"`, resample the
+#'   counts once before estimating (alfak's one bootstrap draw), or use the
+#'   counts as they are.
+#' @param xval_seed Seed of that resampling.
 #' @param landscape_data_output Logical; also return `landscape_data`, the
 #'   counterpart of alfak's Kriging models: a list with elements `mean` and
 #'   `median`, each an object whose [predict()] method returns the fitness of
@@ -326,6 +355,7 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
 #'   `landscape_posterior_samples`, `xval` (`R2R`, `predictions`,
 #'   `observations`, `xval_data`, and `tmp`, the paired matrix of earlier
 #'   alfak versions), `landscape_data` (`NULL` unless requested), `fit`, and
+#'   With `xval_target = "own"`, `xval` also holds `target = "own"`.
 #'   `rebuild`, how the posterior of the fit was rebuilt (not written by
 #'   [write_alfak_outputs()]): the posterior is taken at the fit's stored
 #'   mode, and `gradient` is the largest absolute gradient of the joint
@@ -335,7 +365,8 @@ sparse_joint_alfak_xval <- function(fit, fq, observation, level, divisor) {
 #'   no mode was found.
 #' @export
 as_alfak <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_efflux = FALSE,
-                      xval = TRUE, landscape_data_output = FALSE, first_time = 0) {
+                      xval = TRUE, landscape_data_output = FALSE, first_time = 0, xval_target = c("model", "own"),
+                      xval_resample = TRUE, xval_seed = 1L) {
   if (inherits(fit, "karst_sparse_joint_rate_fit")) fit <- fit$fits[[fit$point]]
   if (!inherits(fit, "karst_sparse_joint_fit")) {
     stop("`fit` must come from fit_sparse_joint() or fit_sparse_joint_rates().", call. = FALSE)
@@ -350,7 +381,9 @@ as_alfak <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_e
     validate_scalar(n0, "n0", lower = .Machine$double.eps)
     validate_scalar(nb, "nb", lower = .Machine$double.eps)
   }
-  for (flag in c("correct_efflux", "xval", "landscape_data_output")) {
+  xval_target <- match.arg(xval_target)
+  validate_scalar(xval_seed, "xval_seed")
+  for (flag in c("correct_efflux", "xval", "landscape_data_output", "xval_resample")) {
     value <- get(flag)
     if (!is.logical(value) || length(value) != 1L || is.na(value)) {
       stop(sprintf("`%s` must be TRUE or FALSE.", flag), call. = FALSE)
@@ -442,8 +475,16 @@ as_alfak <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_e
   )
 
   observation <- stats::setNames(landscape$mean, k)
+  # Targets from each karyotype's own counts, on the landscape's scale, for
+  # the karyotypes of the folds (each frequent karyotype and its neighbours).
+  target <- NULL
+  if (xval && xval_target == "own") {
+    members <- unique(c(fq, alfak_neighbours(fq)))
+    own <- sparse_joint_own_fitness(fit, members, resample = xval_resample, seed = xval_seed)
+    target <- stats::setNames((as.numeric(own) - fit$trend$reference$fitness + level) / divisor[members], members)
+  }
   cross_validation <- if (xval) {
-    sparse_joint_alfak_xval(fit, fq, observation, level, divisor)
+    sparse_joint_alfak_xval(fit, fq, observation, level, divisor, target)
   } else {
     sparse_joint_alfak_xval(fit, character(0), observation, level, divisor)
   }
@@ -452,6 +493,7 @@ as_alfak <- function(fit, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7, correct_e
   # the cross-validation folds.
   rebuild <- list(gradient = solver$gradient, xval_folds = attr(cross_validation, "folds"))
   attr(cross_validation, "folds") <- NULL
+  if (!is.null(target)) cross_validation$target <- "own"
 
   landscape_data <- if (landscape_data_output) {
     model <- structure(list(fit = fit, level = level, correct_efflux = correct_efflux),
@@ -521,7 +563,7 @@ write_alfak_outputs <- function(x, outdir) {
 #' @param outdir Directory for the output files.
 #' @param passage_times Optional times of the time points, one per column of
 #'   `yi$x`.
-#' @param minobs,nboot,n0,nb,correct_efflux,landscape_data_output See
+#' @param minobs,nboot,n0,nb,correct_efflux,landscape_data_output,xval_target See
 #'   [as_alfak()].
 #' @param pm Missegregation rate per chromosome copy and division.
 #' @param allow_noninteger_counts Logical; round non-integer counts with a
@@ -533,7 +575,8 @@ write_alfak_outputs <- function(x, outdir) {
 #' @export
 alfak_compat <- function(yi, outdir, passage_times = NULL, minobs = 20, nboot = 45, n0 = 1e5, nb = 1e7,
                   pm = 0.00005, allow_noninteger_counts = FALSE, correct_efflux = FALSE,
-                  landscape_data_output = FALSE, ...) {
+                  landscape_data_output = FALSE, xval_target = c("model", "own"), ...) {
+  xval_target <- match.arg(xval_target)
   extra <- names(list(...))
   unsupported <- intersect(extra, c("nn_prior", "nn_prior_sd", "nn_prior_sd_floor", "krig_bootstrap_mode"))
   if (length(unsupported)) {
@@ -575,7 +618,8 @@ alfak_compat <- function(yi, outdir, passage_times = NULL, minobs = 20, nboot = 
   fit <- if (ncol(x) == 2L) fit_sparse_joint(x, dt = interval, beta = pm, ...) else
     fit_sparse_joint(x, times = as.numeric(times), beta = pm, ...)
   out <- as_alfak(fit, minobs = minobs, nboot = nboot, n0 = n0, nb = nb, correct_efflux = correct_efflux,
-                   landscape_data_output = landscape_data_output, first_time = as.numeric(times)[1L])
+                   landscape_data_output = landscape_data_output, first_time = as.numeric(times)[1L],
+                   xval_target = xval_target)
   write_alfak_outputs(out, outdir)
   invisible(out$xval$R2R)
 }
