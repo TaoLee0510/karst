@@ -1,146 +1,146 @@
-# Fig. 2d 排序检查：alfak2 两个时间点为什么排得差（05a8855 轮）
+# Fig. 2d ranking check: why alfak2 ranks poorly with two time points (round 05a8855)
 
-日期：2026-11-16。只读 05a8855 轮已有的拟合和预报，不重新拟合，不改 alfak2。
+Date: 2026-11-16. Only the existing fits and forecasts of round 05a8855 are read; nothing is refitted and alfak2 is not changed.
 
-> 用语：输入的各列称"时间点"。Salehi 的一条"轨迹"由若干次传代组成；"两次传代的轨迹"指首尾之间只有一个间隔。
+> Terminology: the input columns are called "time points". A Salehi "trajectory" consists of several passages; "a trajectory of two passages" means there is only one interval between the first and the last.
 
-## 问题
+## Question
 
-Fig. 2d 比较每个预报在下一次传代时的两个距离：
+Fig. 2d compares two distances for each forecast at the next passage:
 
-- 预测的变化：亲代分布到预报分布的 Wasserstein 距离；
-- 观测的变化：亲代分布到子代分布的 Wasserstein 距离。
+- predicted change: the Wasserstein distance from the parental distribution to the forecast distribution;
+- observed change: the Wasserstein distance from the parental distribution to the daughter distribution.
 
-这两个距离跨谱系的 Spearman 相关，在 05a8855 轮是：
+The Spearman correlation of these two distances across lineages, in round 05a8855, is:
 
 | | n | Spearman | Pearson |
 | --- | --- | --- | --- |
-| alfak2，两个时间点 | 53 | 0.251 | 0.477 |
-| alfakR，两个时间点 | 44 | 0.447 | 0.759 |
+| alfak2, two time points | 53 | 0.251 | 0.477 |
+| alfakR, two time points | 44 | 0.447 | 0.759 |
 
-本检查要回答的是：alfak2 的 Spearman 为什么低。
+The question this check has to answer is why alfak2's Spearman is low.
 
-## 结论
+## Conclusions
 
-1. **0.25 对 0.45 不是两种方法之间稳定的差别。**
-   - 在两种方法都有预报的全部 471 行上（同一轨迹、同一 minobs、同一子代传代），alfak2 是 0.29，alfakR 是 0.32。配对差值 −0.03，95% 区间 −0.19 到 0.15。
-   - 文章的规则按各自的 CV 分数挑拟合，只剩 53 行和 44 行，而且只来自 6 个谱系。挑出的子集不同、行数又少，才造成了 0.25 对 0.45。
-2. **真正的差别只出现在两次传代的轨迹上**，也就是首尾之间只有一个间隔，大多是 15 天。
-   - 这里 alfak2 是 0.45，alfakR 是 0.60，差值 −0.15。按谱系分簇的 95% 区间是 −0.19 到 −0.02，按来源系是 −0.29 到 −0.01。3 次及以上传代的轨迹上，两者持平，或 alfak2 略好。
-   - 原因是 alfak2 所选的历史长度。这个历史长度决定了预测变化的大小：在对数尺度上斜率为 −0.70，历史长 10 倍，预测的变化约为 1/5。但它和观测到的变化几乎无关（0.15）。
-   - 扣除历史长度的影响后，alfak2 的 Spearman 是 0.61，与 alfakR 的 0.60 持平（alfakR 同样扣除后是 0.63）。
-   - alfak2 按 CV 挑出的子集里，这种轨迹占比更大：53 行中 21 行，alfakR 是 44 行中 10 行。
-3. **其余三个假设都不成立。**
-   - **H2 打分用的核型：** 两种方法的景观核型完全相同，观测轴在 471 行里全部一致。
-   - **H3 数据量或错分率：** 两种方法的预测变化几乎全部来自选择。预测幅度和数据量无关。
-   - **H4 模型本身的性质：** 在有真值的 ABM 模拟上，alfak2 的排序比 alfakR 好（0.82–0.87 对 0.75–0.76，用真值景观做的上限是 0.89）。它预测的适应度方差也更接近真值。
-4. **两种方法在 Salehi 上都只有 0.3 左右，原因是观测到的变化里很大一部分与选择无关。**
-   - 观测变化与亲代的多样性相关（0.45），与亲代细胞落在景观内的比例负相关（−0.54）。
-   - 扣除多样性和核型数后，两者都升到约 0.45。
+1. **0.25 vs 0.45 is not a stable difference between the two methods.**
+   - On all 471 rows where both methods have forecasts (same trajectory, same minobs, same daughter passage), alfak2 is 0.29 and alfakR is 0.32. Paired difference −0.03, 95% interval −0.19 to 0.15.
+   - The paper's rule picks fits by each method's own CV score, which leaves only 53 and 44 rows, and these come from only 6 lineages. The different picked subsets, together with the small number of rows, are what produced 0.25 vs 0.45.
+2. **The real difference appears only on trajectories of two passages**, that is, with only one interval between the first and the last, mostly 15 days.
+   - Here alfak2 is 0.45 and alfakR is 0.60, a difference of −0.15. The 95% interval clustered by lineage is −0.19 to −0.02, and by source line −0.29 to −0.01. On trajectories with 3 or more passages, the two are level, or alfak2 is slightly better.
+   - The cause is the history length that alfak2 chooses. This history length determines the size of the predicted change: on the log scale the slope is −0.70, so a 10 times longer history gives a predicted change of about 1/5. But it is almost unrelated to the observed change (0.15).
+   - After removing the effect of history length, alfak2's Spearman is 0.61, level with alfakR's 0.60 (alfakR after the same removal is 0.63).
+   - In the subset that alfak2 picks by CV, such trajectories make up a larger share: 21 of 53 rows, against 10 of 44 rows for alfakR.
+3. **None of the other three hypotheses holds.**
+   - **H2 karyotypes used for scoring:** the landscape karyotypes of the two methods are exactly the same, and the observed axis agrees on all 471 rows.
+   - **H3 amount of data or missegregation rate:** the predicted change of both methods comes almost entirely from selection. The predicted magnitude is unrelated to the amount of data.
+   - **H4 properties of the model itself:** on ABM simulations with known truth, alfak2 ranks better than alfakR (0.82–0.87 vs 0.75–0.76; the upper bound using the true landscape is 0.89). Its predicted fitness variance is also closer to the truth.
+4. **Both methods reach only about 0.3 on Salehi, because a large part of the observed change is unrelated to selection.**
+   - The observed change correlates with parental diversity (0.45), and negatively with the fraction of parental cells inside the landscape (−0.54).
+   - After removing diversity and karyotype count, both rise to about 0.45.
 
-## H1：挑选
+## H1: picking
 
-表 `s1_selection.tsv`、`s1_paired_difference.tsv`、`s1_by_length.tsv`。
+Tables `s1_selection.tsv`, `s1_paired_difference.tsv`, `s1_by_length.tsv`.
 
-配对差值是 alfak2 − alfakR。区间按两种单位分簇：6 个谱系（文章 Fig. 2c 的单位）和 12 个来源系（如 SA609、SA906b）。
+The paired difference is alfak2 − alfakR. The intervals are clustered by two units: 6 lineages (the unit of the paper's Fig. 2c) and 12 source lines (such as SA609, SA906b).
 
-| 行集合 | n | alfak2 | alfakR | 差值 | 95% 区间，按谱系 | 按来源系 |
+| Row set | n | alfak2 | alfakR | Difference | 95% interval, by lineage | By source line |
 | --- | --- | --- | --- | --- | --- | --- |
-| 文章规则，各挑各的 | 53 / 44 | 0.251 | 0.446 | 行不同，无法配对 | | |
-| 共同的行，全部 minobs | 471 | 0.294 | 0.323 | −0.03 | −0.19, 0.15 | −0.20, 0.13 |
-| 共同的行，minobs 5 / 10 / 20 | 177 / 163 / 131 | 0.29 / 0.29 / 0.25 | 0.36 / 0.18 / 0.24 | −0.07 / +0.10 / +0.02 | 均含 0 | |
-| 按 alfak2 的挑选 | 53 | 0.251 | 0.397 | −0.15 | −0.38, 0.33 | −0.45, 0.20 |
-| 按 alfakR 的挑选 | 44 | 0.269 | 0.446 | −0.18 | −0.48, 0.03 | −0.41, −0.01 |
+| Paper rule, each method picks its own | 53 / 44 | 0.251 | 0.446 | rows differ, cannot be paired | | |
+| Common rows, all minobs | 471 | 0.294 | 0.323 | −0.03 | −0.19, 0.15 | −0.20, 0.13 |
+| Common rows, minobs 5 / 10 / 20 | 177 / 163 / 131 | 0.29 / 0.29 / 0.25 | 0.36 / 0.18 / 0.24 | −0.07 / +0.10 / +0.02 | all contain 0 | |
+| alfak2's picking | 53 | 0.251 | 0.397 | −0.15 | −0.38, 0.33 | −0.45, 0.20 |
+| alfakR's picking | 44 | 0.269 | 0.446 | −0.18 | −0.48, 0.03 | −0.41, −0.01 |
 
-在挑出的子集上 alfakR 高约 0.15–0.18，但只有一种分簇方式下勉强不含 0。
+On the picked subsets alfakR is higher by about 0.15–0.18, but only under one of the two clusterings does the interval narrowly exclude 0.
 
-**按轨迹长度**（共同的行）：
+**By trajectory length** (common rows):
 
-| 传代次数 | n | alfak2 | alfakR | 差值 | 95% 区间，按谱系 | 按来源系 |
+| Passages | n | alfak2 | alfakR | Difference | 95% interval, by lineage | By source line |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2（一个间隔） | 147 | 0.445 | 0.597 | −0.15 | −0.19, −0.02 | −0.29, −0.01 |
+| 2 (one interval) | 147 | 0.445 | 0.597 | −0.15 | −0.19, −0.02 | −0.29, −0.01 |
 | 3 | 107 | 0.491 | 0.447 | +0.04 | −0.20, 0.44 | −0.20, 0.41 |
 | 4 | 91 | 0.193 | 0.118 | +0.08 | −0.23, 0.43 | −0.21, 0.36 |
-| 5 及以上 | 126 | 0.043 | −0.050 | +0.09 | −0.28, 0.50 | −0.22, 0.36 |
+| 5 or more | 126 | 0.043 | −0.050 | +0.09 | −0.28, 0.50 | −0.22, 0.36 |
 
-- **两次传代的差值在两种分簇下都不含 0。**
-- **轨迹越长，两者都越差。** 首尾相隔很久，而预报只看下一次传代。
+- **For two passages, the difference excludes 0 under both clusterings.**
+- **The longer the trajectory, the worse both methods are.** The first and last passages are far apart, while the forecast only looks at the next passage.
 
-## H2：坐标轴上用的是哪些核型
+## H2: which karyotypes are used on the axes
 
-表 `s2_axes.tsv`、`s2_by_coverage.tsv`、`s2_coverage_medians.tsv`。
+Tables `s2_axes.tsv`, `s2_by_coverage.tsv`, `s2_coverage_medians.tsv`.
 
-- **两种方法的轴相同。** alfak2 输出的景观与 alfakR 的核型集合相同，471 行的观测轴全部一致。按方案原来的设想，"两边的轴不同"不成立。
-- **覆盖率。** 亲代细胞落在景观内的比例中位数为 0.79，落在 alfak2 模型域内的为 0.69。
-- **按覆盖率分组没有一致的模式。** 各组几乎都来自一两个谱系。
-- **换一种轴：**
+- **The axes of the two methods are the same.** The landscape that alfak2 outputs has the same karyotype set as alfakR's, and the observed axes of the 471 rows all agree. The plan's original assumption, "the two sides have different axes", does not hold.
+- **Coverage.** The median fraction of parental cells inside the landscape is 0.79, and inside the alfak2 model domain 0.69.
+- **Grouping by coverage shows no consistent pattern.** Almost every group comes from one or two lineages.
+- **Other axes:**
 
-  | 轴 | alfak2 | alfakR |
+  | Axis | alfak2 | alfakR |
   | --- | --- | --- |
-  | 文章的轴（景观内核型） | 0.294 | 0.323 |
-  | 全部观测到的核型，景观外细胞在预报中保持不变 | −0.274 | −0.216 |
-  | 平均核型的欧氏距离 | 0.359 | 0.361 |
+  | The paper's axis (karyotypes in the landscape) | 0.294 | 0.323 |
+  | All observed karyotypes, cells outside the landscape kept unchanged in the forecast | −0.274 | −0.216 |
+  | Euclidean distance between mean karyotypes | 0.359 | 0.361 |
 
-  用全部核型时，两者都变成负相关：景观外细胞带来的变化，任何景观都预测不了。
+  With all karyotypes, both become negatively correlated: no landscape can predict the change brought by cells outside the landscape.
 
-## H3：预测变化的大小由什么决定
+## H3: what determines the size of the predicted change
 
-表 `s3_spearman_features.tsv`、`s3_partial.tsv`、`s3_scale.tsv`。
+Tables `s3_spearman_features.tsv`, `s3_partial.tsv`, `s3_scale.tsv`.
 
-- **预测变化几乎全部来自选择。** 只按选择算的变化，即亲代频率乘以 exp(适应度 × 天数)，与实际预报的 Spearman 是 1.000（alfak2）和 0.996（alfakR），比值中位数 0.99。预报里的错分扩散和随机性可以忽略。
+- **The predicted change comes almost entirely from selection.** The change computed from selection alone, i.e. parental frequency multiplied by exp(fitness × days), has a Spearman of 1.000 (alfak2) and 0.996 (alfakR) with the actual forecast, and a median ratio of 0.99. Missegregation diffusion and randomness in the forecast are negligible.
 
-  因此方案里"错分率设为 0 重新预报"那一步，改用这个确定性的计算代替，不需要新的模拟。
-- **预测变化跟着亲代细胞之间的选择走。** 它与 Price 向量（适应度与拷贝数的协方差）的 Spearman 是 0.94 和 0.91，与适应度方差是 0.79 和 0.81。
-- **尺度不同，排序相近。**
-  - alfak2 的适应度方差中位数是 alfakR 的 0.32 倍，预测变化是 0.61 倍。
-  - 两者预测变化的排序相关为 0.73。
-  - Spearman 不受整体尺度影响。
-- **与数据量无关。**
-  - 方差比（alfak2/alfakR）与细胞数的相关是 0.05，与主要核型数是 −0.15。
-  - alfak2 的预测变化与亲代细胞数的相关是 0.19，与景观内核型数是 0.03。
-- **观测变化本身（两种方法相同）：**
-  - 与亲代多样性（熵）相关 0.45；
-  - 与亲代细胞落在景观内的比例相关 −0.54：景观内细胞越少，归一化后的分布越嘈杂；
-  - 与 alfak2 模型域的覆盖相关 −0.51。
+  The plan's step "re-forecast with the missegregation rate set to 0" is therefore replaced by this deterministic calculation; no new simulations are needed.
+- **The predicted change follows the selection among parental cells.** Its Spearman with the Price vector (covariance of fitness and copy number) is 0.94 and 0.91, and with the fitness variance 0.79 and 0.81.
+- **Different scales, similar ranking.**
+  - alfak2's median fitness variance is 0.32 times alfakR's, and its predicted change 0.61 times.
+  - The rank correlation between the two methods' predicted changes is 0.73.
+  - Spearman is not affected by the overall scale.
+- **Unrelated to the amount of data.**
+  - The correlation of the variance ratio (alfak2/alfakR) with the number of cells is 0.05, and with the number of major karyotypes −0.15.
+  - The correlation of alfak2's predicted change with the number of parental cells is 0.19, and with the number of karyotypes in the landscape 0.03.
+- **The observed change itself (the same for both methods):**
+  - correlation 0.45 with parental diversity (entropy);
+  - correlation −0.54 with the fraction of parental cells inside the landscape: the fewer cells inside the landscape, the noisier the normalised distribution;
+  - correlation −0.51 with the coverage of the alfak2 model domain.
 
-  扣除多样性和核型数之后，偏相关是 alfak2 0.46、alfakR 0.44。
+  After removing diversity and karyotype count, the partial correlation is 0.46 for alfak2 and 0.44 for alfakR.
 
-## 方案外的探索：alfak2 所选的历史长度
+## Exploration outside the plan: the history length chosen by alfak2
 
-表 `s3_history_by_length.tsv`、`s3_history_groups_length2.tsv`，图 `figures/salehi_fig2d_length2_by_history.png`。
+Tables `s3_history_by_length.tsv`, `s3_history_groups_length2.tsv`, figure `figures/salehi_fig2d_length2_by_history.png`.
 
-两次传代的轨迹上，alfak2 选的历史有三种：等于间隔、2 个间隔，或 3.3–12 个间隔（以 30 天和 100 天为主）。
+On trajectories of two passages, alfak2 chooses three kinds of history: equal to the interval, 2 intervals, or 3.3–12 intervals (mostly 30 days and 100 days).
 
-| 传代次数 | 历史/间隔 与 alfak2 预测变化 | 与观测变化 | log 斜率 | alfak2 | alfak2 扣除历史 | alfakR | alfakR 扣除历史 |
+| Passages | History/interval vs alfak2 predicted change | vs observed change | log slope | alfak2 | alfak2, history removed | alfakR | alfakR, history removed |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2 | −0.50 | 0.15 | −0.70 | 0.445 | 0.608 | 0.597 | 0.632 |
 | 3 | −0.18 | −0.14 | −0.28 | 0.491 | 0.479 | 0.447 | 0.436 |
 | 4 | −0.07 | 0.06 | −0.34 | 0.193 | 0.198 | 0.118 | 0.118 |
-| 5 及以上 | 0.17 | −0.13 | 0.49 | 0.043 | 0.067 | −0.050 | −0.027 |
+| 5 or more | 0.17 | −0.13 | 0.49 | 0.043 | 0.067 | −0.050 | −0.027 |
 
-两次传代的轨迹，按 alfak2 的历史分组：
+Trajectories of two passages, grouped by alfak2's history:
 
-| 历史 | n | alfak2 | alfakR | 预测变化中位数，alfak2 / alfakR | 适应度方差比 |
+| History | n | alfak2 | alfakR | Median predicted change, alfak2 / alfakR | Fitness variance ratio |
 | --- | --- | --- | --- | --- | --- |
-| 等于间隔 | 45 | 0.69 | 0.67 | 0.67 / 1.10 | 0.49 |
-| 2 个间隔 | 54 | 0.64 | 0.63 | 0.42 / 1.11 | 0.14 |
-| 超过 2 个间隔 | 48 | 0.41 | 0.55 | 0.22 / 0.62 | 0.08 |
+| Equal to the interval | 45 | 0.69 | 0.67 | 0.67 / 1.10 | 0.49 |
+| 2 intervals | 54 | 0.64 | 0.63 | 0.42 / 1.11 | 0.14 |
+| More than 2 intervals | 48 | 0.41 | 0.55 | 0.22 / 0.62 | 0.08 |
 
-**解读：**
-- 历史越长，alfak2 认为亲代的组成是更长时间选择的结果，于是给出更小的适应度差异和更小的预测变化。
-- 在只有一个间隔的数据上，历史的选择与这段时间实际变化多少无关，所以它给预测幅度加入了噪声。在每个历史组内部，alfak2 与 alfakR 持平。
-- 这和 2026-11-12 交接文档里短间隔弱点的"历史"一项（A）是同一个问题。
+**Interpretation:**
+- The longer the history, the more alfak2 treats the parental composition as the result of selection over a longer time, so it gives smaller fitness differences and a smaller predicted change.
+- On data with only one interval, the history choice is unrelated to how much actually changed in that period, so it adds noise to the predicted magnitude. Within each history group, alfak2 and alfakR are level.
+- This is the same problem as the "history" item (A) of the short-interval weakness in the 2026-11-12 handoff document.
 
-**ABM 上没有这个效应**（表 `s4_abm_history.tsv`）：
-- w2_ends 同样只有一个间隔（约 7 天），alfak2 的历史也很分散：等于间隔的只占 17%，其余是 30 到 3000 天。
-- 但历史与预测变化的相关只有 −0.05。
-- 为什么 Salehi 不同，这次没有查。
+**The ABM does not show this effect** (table `s4_abm_history.tsv`):
+- w2_ends also has only one interval (about 7 days), and alfak2's history is also widely spread: equal to the interval in only 17%, the rest 30 to 3000 days.
+- But the correlation between history and predicted change is only −0.05.
+- Why Salehi differs was not investigated this time.
 
-## H4：有真值的 ABM 模拟
+## H4: ABM simulations with known truth
 
-表 `s4_abm.tsv`、`s4_abm_pooled_minobs5.tsv`。从预报起点到下一个采样时间点（约 7 天），400 个模拟，minobs 5：
+Tables `s4_abm.tsv`, `s4_abm_pooled_minobs5.tsv`. From the forecast start to the next sampling time point (about 7 days), 400 simulations, minobs 5:
 
-| 设计 | 方法 | Fig. 2d 的模拟版 | 用真值景观的上限 | 适应度方差 与真值的排序 | 适应度方差 / 真值（中位数） |
+| Design | Method | Simulated version of Fig. 2d | Upper bound with the true landscape | Fitness variance, ranking against truth | Fitness variance / truth (median) |
 | --- | --- | --- | --- | --- | --- |
 | w2_ends | alfak2 | 0.821 | 0.894 | 0.774 | 0.80 |
 | w2_ends | alfakR | 0.759 | 0.892 | 0.251 | 2.13 |
@@ -149,44 +149,44 @@ Fig. 2d 比较每个预报在下一次传代时的两个距离：
 | w8_ends | alfak2 | 0.842 | 0.894 | 0.814 | 0.78 |
 | w8_ends | alfakR | 0.752 | 0.888 | 0.544 | 1.75 |
 
-- **每个波长、每个设计都一样。** alfak2 的排序更接近上限。
-- **适应度方差的尺度：** alfak2 略小（约 0.8 倍），alfakR 偏大（约 1.8–2.1 倍）。
-- **Price 向量与真值的夹角中位数：** alfak2 8–20°，alfakR 15–36°。
+- **The same for every wavelength and every design.** alfak2's ranking is closer to the upper bound.
+- **Scale of the fitness variance:** alfak2 is slightly smaller (about 0.8 times), alfakR too large (about 1.8–2.1 times).
+- **Median angle between the Price vector and the truth:** alfak2 8–20°, alfakR 15–36°.
 
-所以，预测变化幅度的排序本身不是 alfak2 的弱点。
+So ranking the magnitude of the predicted change is not in itself a weakness of alfak2.
 
-## 对 alfak2 的含义
+## Implications for alfak2
 
-- 不需要为 Fig. 2d 改动 alfak2 的默认设置。总体排序与 alfakR 持平，模拟上更好。
-- 唯一可改进的地方是单个短间隔时的历史选择。这需要另外出方案，例如以下几种，再在模拟数据和 Salehi 上验证：
-  - 只有一个间隔时把历史固定为间隔；
-  - 对各个历史候选做平均，而不是只取一个；
-  - 只在证据足够时才选更长的历史。
-- 本检查没有做这些。
+- There is no need to change alfak2's defaults for Fig. 2d. The overall ranking is level with alfakR, and better on simulations.
+- The only place that could be improved is the history choice with a single short interval. This needs a separate plan, for example one of the following, followed by validation on simulated data and on Salehi:
+  - fix the history to the interval when there is only one interval;
+  - average over the history candidates instead of taking only one;
+  - choose a longer history only when the evidence is sufficient.
+- This check did none of these.
 
-## 方法与文件
+## Methods and files
 
-- **脚本**（新文件，未改动现有脚本）：
-  - `scripts/fig2d_check.R`：在 HPC 上逐个拟合目录计算，`--stage=salehi|abm --index=N`；
-  - `scripts/fig2d_check_analyse.R`：本地分析；
-  - `hpc/fig2d_check_task.sh`：阵列任务。
-- **核对：**
-  - 本检查重算的两条轴与 benchmark 表中的值逐行相同：97 个被挑中的行全部找到。
-  - 文章规则下的 Spearman 完全复现：0.251 / 0.477，0.447 / 0.759。
-- **偏离方案的地方：**
-  - H2 改为检查覆盖率和换轴，因为两边的核型集合相同；
-  - H3 用确定性的"只有选择"变化代替重新预报。
-- **HPC**（qos xxlarge，每个任务 1 CPU、8 GB、4 小时）：
+- **Scripts** (new files; existing scripts not changed):
+  - `scripts/fig2d_check.R`: computes on HPC one fit directory at a time, `--stage=salehi|abm --index=N`;
+  - `scripts/fig2d_check_analyse.R`: local analysis;
+  - `hpc/fig2d_check_task.sh`: array task.
+- **Checks:**
+  - The two axes recomputed by this check are identical, row by row, to the values in the benchmark table: all 97 picked rows were found.
+  - The Spearman values under the paper's rule are reproduced exactly: 0.251 / 0.477, 0.447 / 0.759.
+- **Deviations from the plan:**
+  - H2 was changed to checking coverage and alternative axes, because the karyotype sets of the two sides are the same;
+  - H3 uses the deterministic "selection only" change instead of re-forecasting.
+- **HPC** (qos xxlarge, 1 CPU, 8 GB, 4 hours per task):
 
-  | 作业 | 内容 | 结果 |
+  | Job | Content | Result |
   | --- | --- | --- |
-  | 21969835 | Salehi 测试 | 完成 |
-  | 21969836 | ABM 测试 | 失败：模拟计数是 data frame，脚本已修正 |
-  | 21969982 | ABM 测试 | 完成 |
-  | 21969984 | Salehi，27 个任务 | 全部完成，每个约 1 分钟 |
-  | 21970013 | ABM，99 个任务 | 全部完成，每个约 1.5 分钟 |
+  | 21969835 | Salehi test | done |
+  | 21969836 | ABM test | failed: the simulated counts are a data frame; script fixed |
+  | 21969982 | ABM test | done |
+  | 21969984 | Salehi, 27 tasks | all done, about 1 minute each |
+  | 21970013 | ABM, 99 tasks | all done, about 1.5 minutes each |
 
-  - 加时监控：21969846 和 21969847 在改到 xxlarge 前已在 small 上启动；21969985、21970012、21970014 在 xxlarge 上。各自的作业结束后都已取消。
-- **结果：**
-  - HPC 上在 `results_05a8855/analysis/fig2d_check/`，本地有一份副本：每块的行在 `salehi/`、`abm/`，表是 `s*_*.tsv`，图在 `figures/`。
-  - 本地分析用的表和元数据拷自 HPC：`results_05a8855/tables/salehi_scores.Rds`、`salehi_inputs.Rds`，以及 `results_05a8855/paper_meta/metadata.csv`。
+  - Add-hours monitors: 21969846 and 21969847 had started on small before the switch to xxlarge; 21969985, 21970012 and 21970014 ran on xxlarge. Each was cancelled after its job ended.
+- **Results:**
+  - On HPC in `results_05a8855/analysis/fig2d_check/`, with a local copy: the per-block rows are in `salehi/` and `abm/`, the tables are `s*_*.tsv`, and the figures are in `figures/`.
+  - The tables and metadata used for the local analysis were copied from HPC: `results_05a8855/tables/salehi_scores.Rds`, `salehi_inputs.Rds`, and `results_05a8855/paper_meta/metadata.csv`.

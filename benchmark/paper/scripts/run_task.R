@@ -22,7 +22,8 @@
 # (karst_beta_auto, a task of scripts/compose_beta.R's table, with pm = the
 # picked rate). A candidate's ABM landscape scores are kept as
 # score_landscape.Rds, so that score.Rds is written with the forecasts; the
-# missegregation simulations have no forecasts, and their score.Rds is final.
+# missegregation simulations have no forecasts (except with MISSEG_FORECAST=TRUE,
+# below), and their score.Rds is final.
 
 args <- commandArgs(TRUE)
 for (f in list.files("R", full.names = TRUE)) source(f)
@@ -128,7 +129,9 @@ for (m in minobs[vapply(minobs, fit_ok, logical(1))]) {
     next
   }
   if (!forecast_complete(dir)) {
-    if (task$source == "abm") {
+    # the missegregation simulations get forecasts only for a study that asks
+    # for them (MISSEG_FORECAST=TRUE, scripts/fig2d_truth.R --source=misseg)
+    if (task$source == "abm" || (task$source == "misseg" && identical(Sys.getenv("MISSEG_FORECAST"), "TRUE"))) {
       forecast(dir, function() forecast_abm_dir(dir, sim$abm_output$x, task$pm))
     } else if (task$source == "salehi" && !is.null(sim_time)) {
       forecast(dir, function() forecast_salehi_dir(dir, yi, sim_time, task$pm, task$nb), list(sim_time = sim_time))

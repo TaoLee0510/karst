@@ -56,3 +56,40 @@ HANDOFF_CLAUDE_*.md
 
 # Slides for talks, kept local
 /doc/ppt/
+
+# Benchmark: track code and Markdown only. Results, data, task tables, frozen
+# result snapshots, built libraries and binaries stay local. The rc freeze's
+# folders are excluded here as well as in .git/info/exclude, because the
+# re-includes above would otherwise reach into them.
+/benchmark/**
+!/benchmark/**/
+!/benchmark/**/*.R
+!/benchmark/**/*.r
+!/benchmark/**/*.sh
+!/benchmark/**/*.cpp
+!/benchmark/**/*.h
+!/benchmark/**/*.hpp
+!/benchmark/**/*.c
+!/benchmark/**/*.py
+!/benchmark/**/*.md
+!/benchmark/paper/.gitignore
+/benchmark/data/
+/benchmark/results/
+/benchmark/paper/results_*/
+/benchmark/kester/results/
+/benchmark/rc_1.1.4/data/
+/benchmark/rc_1.1.4/results/
+/benchmark/rc_1.1.4/results_rc/
+/benchmark/rc_1.1.4/verify/
+/benchmark/rc_1.1.4/Code/env/lib/
+/benchmark/rc_1.1.4/Code/freeze/manifest/
+/benchmark/rc_1.1.4/Code/freeze/logs/
+/benchmark/rc_1.1.4/rerun/
+/benchmark/**/results/
+/benchmark/**/results_*/
+/benchmark/**/out/
+/benchmark/**/logs/
+/benchmark/**/fits/
+/benchmark/**/analysis/
+/benchmark/**/PR_*.md
+/benchmark/**/HANDOFF_CLAUDE_*.md

@@ -5,7 +5,9 @@
 # Reads BENCH_RESULTS/tables/abm_{dfl,dfp,initial,runs}.Rds and
 # misseg_dfl.Rds (scripts/collect_abm.R) and the paper's ABM_summaries.Rds.
 # Writes tables to BENCH_RESULTS/analysis/abm/ and figures to
-# BENCH_RESULTS/figures/.
+# BENCH_RESULTS/figures/ (with XV_SOURCE=alfak_target: KARST's
+# cross-validation scored against alfak's targets, into
+# analysis_xv_alfak_target/ and figures_xv_alfak_target/; R/xv_source.R).
 #
 # Fits ("fit" column, R/labels.R):
 #   karst 2 time points    karst, first and last time point of the window
@@ -26,8 +28,9 @@ for (f in list.files("R", full.names = TRUE)) source(f)
 suppressPackageStartupMessages(library(ggplot2))
 paths <- bench_paths()
 tab <- file.path(paths$results, "tables")
-out <- file.path(paths$results, "analysis", "abm")
-fig <- file.path(paths$results, "figures")
+out <- file.path(analysis_root(paths), "abm")
+fig <- figures_root(paths)
+require_same_ksets(c("abm", "misseg"), paths)
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 dir.create(fig, recursive = TRUE, showWarnings = FALSE)
 options(width = 200)
@@ -83,12 +86,12 @@ select_best_xv <- function(d, by = c("fit", "sim_id", "window")) {
 }
 
 ## Data -----------------------------------------------------------------------
-dfl <- label_fits(readRDS(file.path(tab, "abm_dfl.Rds")))
+dfl <- label_fits(read_bench_table("abm_dfl", paths))
 lscape_cols <- c("r", "rfq", "rnn", "rd2", "rho", "rhofq", "rhonn", "rhod2", "R", "Rfq", "Rnn", "Rd2")
 for (v in c(lscape_cols, "Rxv")) dfl[[v]][!is.finite(dfl[[v]])] <- -Inf
 clip <- function(x) pmax(-1, x)
 
-dfp <- readRDS(file.path(tab, "abm_dfp.Rds"))
+dfp <- read_bench_table("abm_dfp", paths)
 paper_dfp <- readRDS(file.path(paths$data, "processed", "ABM_summaries.Rds"))$dfp
 paper_dfp <- data.frame(prediction = paper_dfp$prediction, baseline = paper_dfp$baseline,
                         passage = paper_dfp$passage - 1L, metric = paper_dfp$metric, angle = paper_dfp$angle,
@@ -201,7 +204,7 @@ s2f <- do.call(rbind, lapply(split(dfl, dfl[c("fit", "window", "w")], drop = TRU
 write_tab(s2f, "supp2f_flows")
 
 ## Supp. Fig. 3: missegregation rate -------------------------------------------
-mis <- drop_excluded(label_fits(readRDS(file.path(tab, "misseg_dfl.Rds"))))
+mis <- drop_excluded(label_fits(read_bench_table("misseg_dfl", paths)))
 mis$r[!is.finite(mis$r)] <- NA
 s3 <- summarise_by(mis, c("fit", "window", "pmis"), "r")
 write_tab(s3, "supp3_misseg_pearson")

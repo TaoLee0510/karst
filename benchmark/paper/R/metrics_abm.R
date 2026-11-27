@@ -38,7 +38,9 @@ forecast_scores <- function(lscape, preds, sim_x, last_time = 120) {
   preds <- as.data.frame(Reduce(`+`, lapply(preds, function(df) as.matrix(df[-1]))) / length(preds))
   tt <- as.numeric(colnames(sim_x))
   t0 <- max(tt[tt < last_time])
-  measure_tps <- utils::head(tt[tt >= t0], 11)
+  # the start and the next 10 sampling times, or as many as the forecasts
+  # report (ABM_FORECAST_HORIZON, R/config.R)
+  measure_tps <- utils::head(tt[tt >= t0], min(11L, nrow(preds)))
   yi <- sim_x[, colnames(sim_x) %in% measure_tps]
   y <- preds * 0
   rx <- rownames(yi)[rownames(yi) %in% lscape$k]
@@ -84,16 +86,36 @@ forecast_scores <- function(lscape, preds, sim_x, last_time = 120) {
 
 # Everything S04 saves for one fit directory. `info` identifies the fit.
 # `with_forecast`: the forecasts are complete (run_task.R passes
-# forecast_complete(), R/forecast.R).
-abm_fit_summary <- function(fit_dir, sim, info, last_time = 120, with_forecast = TRUE) {
+# forecast_complete(), R/forecast.R). `f`: the true fitness of the
+# landscape's karyotypes, when already known. A landscape of version B
+# (R/align.R) has a column `dist`: its accuracy is reported by distance
+# class to the observed karyotypes (rfq, rnn, rd2 then hold classes 0, 1 and
+# 2), and its forecasts are sparse; they are expanded over every karyotype of
+# the landscape that a forecast or the simulation's counts at the scored times
+# hold, which gives the scores of the whole landscape.
+abm_fit_summary <- function(fit_dir, sim, info, last_time = 120, with_forecast = TRUE, f = NULL) {
   lscape <- readRDS(file.path(fit_dir, "landscape.Rds"))
   xval <- readRDS(file.path(fit_dir, "xval.Rds"))
-  f <- grf_fitness(lscape$k, info$w, sim$true_landscape)
-  out <- list(info = info, summary = landscape_scores(lscape, f, xval))
+  if (is.null(f)) f <- grf_fitness(lscape$k, info$w, sim$true_landscape)
+  accuracy <- lscape
+  if (!is.null(lscape$dist)) {
+    accuracy$fq <- lscape$dist == 0L
+    accuracy$nn <- lscape$dist == 1L
+  }
+  out <- list(info = info, summary = landscape_scores(accuracy, f, xval))
   if (with_forecast) {
     paths <- list.files(file.path(fit_dir, "abm_preds"), full.names = TRUE)
     if (!length(paths)) stop("No forecasts in ", fit_dir)
-    out <- c(out, forecast_scores(lscape, lapply(paths, readRDS), sim$abm_output$x, last_time))
+    preds <- lapply(paths, readRDS)
+    if (is_sparse_forecast(preds[[1]])) {
+      x <- sim$abm_output$x
+      tt <- as.numeric(colnames(x))
+      t0 <- max(tt[tt < last_time])
+      seen <- rownames(x)[rowSums(x[, tt %in% utils::head(tt[tt >= t0], 11), drop = FALSE]) > 0]
+      preds <- align_densify(preds, intersect(seen, lscape$k))
+      lscape <- lscape[match(names(preds[[1]])[-1], lscape$k), ]
+    }
+    out <- c(out, forecast_scores(lscape, preds, sim$abm_output$x, last_time))
   }
   out
 }

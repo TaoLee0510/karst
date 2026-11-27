@@ -27,7 +27,7 @@ suppressPackageStartupMessages({
 })
 paths <- bench_paths()
 exclude <- Sys.getenv("FIG456_EXCLUDE", "1") != "0"
-out <- file.path(paths$results, "analysis", "fig456")
+out <- file.path(analysis_root(paths), "fig456")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 is_wgd <- function(k, cut = 3) mean(k) > cut
 get_mode <- function(x) {

@@ -46,7 +46,7 @@ salehi_prediction_scores <- function(preds, dj, meta, inputs, inputs_dir, treat_
   if (!any(frequent)) frequent <- yb > 0
   yd <- yb * frequent / sum(yb * frequent)
   kd <- colSums(yd * k)
-  denoised <- c(euclidean = sqrt(sum((kd - kt)^2)), wasserstein = transport::wasserstein(st, transport::wpp(k, mass = yd)),
+  denoised <- c(euclidean = sqrt(sum((kd - kt)^2)), wasserstein = wasserstein_safe(st, transport::wpp(k, mass = yd)),
                 cosine = cosine(yd, yt), overlap = overlap(yd, yt))
   df <- do.call(rbind, lapply(seq_len(nrow(preds)), function(tt) {
     yp <- as.numeric(preds[tt, ])
@@ -56,8 +56,8 @@ salehi_prediction_scores <- function(preds, dj, meta, inputs, inputs_dir, treat_
     out <- rbind(
       data.frame(pred0 = sqrt(sum((kp - kb)^2)), pred = sqrt(sum((kp - kt)^2)), base = sqrt(sum((kb - kt)^2)),
                  metric = "euclidean"),
-      data.frame(pred0 = transport::wasserstein(sb, sp), pred = transport::wasserstein(st, sp),
-                 base = transport::wasserstein(st, sb), metric = "wasserstein"),
+      data.frame(pred0 = wasserstein_safe(sb, sp), pred = wasserstein_safe(st, sp),
+                 base = wasserstein_safe(st, sb), metric = "wasserstein"),
       data.frame(pred0 = cosine(yp, yb), pred = cosine(yp, yt), base = cosine(yb, yt), metric = "cosine"),
       data.frame(pred0 = overlap(yp, yb), pred = overlap(yp, yt), base = overlap(yb, yt), metric = "overlap"))
     out$tt <- tt
@@ -98,7 +98,7 @@ salehi_sister_metrics <- function(x1, x2) {
   euclid <- function(a, b) { ya <- a / sum(a); yb <- b / sum(b); sqrt(sum((vec(ya) - vec(yb))^2)) }
   cosine <- function(a, b) { ya <- a / sum(a); yb <- b / sum(b); sum(ya * yb) / (sqrt(sum(ya^2)) * sqrt(sum(yb^2))) }
   wass <- function(a, b) {
-    transport::wasserstein(transport::wpp(k, mass = a / sum(a)), transport::wpp(k, mass = b / sum(b)))
+    wasserstein_safe(transport::wpp(k, mass = a / sum(a)), transport::wpp(k, mass = b / sum(b)))
   }
   funs <- list(overlap = overlap, euclidean = euclid, cosine = cosine, wasserstein = wass)
   df <- do.call(rbind, lapply(names(funs), function(mn) {
@@ -237,6 +237,19 @@ salehi_fit_scores <- function(fit_dir, traj_id, lineages, meta, inputs_dir) {
   if (!ok || !length(paths) || (ours && !forecast_complete(fit_dir))) return(cbind(head, empty))
   preds <- lapply(paths, readRDS)
   inputs <- list.files(inputs_dir)
+  # Version B (R/align.R): sparse forecasts, expanded over every karyotype of
+  # the landscape that a forecast, the parent or a daughter holds.
+  if (is_sparse_forecast(preds[[1]])) {
+    k <- readRDS(file.path(fit_dir, "landscape.Rds"))$k
+    seen <- unlist(lapply(li$dec1, function(dj) {
+      fj <- paste(meta[meta$uid == dj, c("datasetname", "timepoint")], collapse = "_")
+      hit <- inputs[grepl(fj, inputs)]
+      if (!length(hit)) return(NULL)
+      x <- readRDS(file.path(inputs_dir, hit[1]))$x
+      rownames(x)[rowSums(x) > 0]
+    }))
+    preds <- align_densify(preds, intersect(unique(seen), k))
+  }
   xp <- lapply(li$dec1, salehi_prediction_scores, preds = preds, meta = meta, inputs = inputs,
                inputs_dir = inputs_dir, treat_lut = treat_lut)
   xp <- do.call(rbind, xp[!vapply(xp, is.null, logical(1))])

@@ -4,7 +4,9 @@
 #
 # Reads BENCH_RESULTS/tables/salehi_{scores,reference,novel}.Rds
 # (scripts/collect_salehi.R). Writes tables to BENCH_RESULTS/analysis/salehi/
-# and figures to BENCH_RESULTS/figures/.
+# and figures to BENCH_RESULTS/figures/ (with XV_SOURCE=alfak_target: KARST's
+# cross-validation scored against alfak's targets, into
+# analysis_xv_alfak_target/ and figures_xv_alfak_target/; R/xv_source.R).
 #
 # Fits ("fit" column, R/labels.R), each trajectory being 2 to 10 consecutive
 # passages:
@@ -33,8 +35,9 @@ for (f in list.files("R", full.names = TRUE)) source(f)
 suppressPackageStartupMessages(library(ggplot2))
 paths <- bench_paths()
 tab <- file.path(paths$results, "tables")
-out <- file.path(paths$results, "analysis", "salehi")
-fig <- file.path(paths$results, "figures")
+out <- file.path(analysis_root(paths), "salehi")
+fig <- figures_root(paths)
+require_same_ksets("salehi", paths)
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 dir.create(fig, recursive = TRUE, showWarnings = FALSE)
 options(width = 200)
@@ -78,7 +81,7 @@ by_fit <- function(d, fun) {
 
 meta <- utils::read.csv(paths$salehi_meta)
 runs <- readRDS(file.path(tab, "salehi_runs.Rds"))
-scores <- readRDS(file.path(tab, "salehi_scores.Rds"))
+scores <- read_bench_table("salehi_scores", paths)
 scores$fit_ok <- salehi_fit_ok(scores, runs)  # before label_fits(), which copies rows under other methods
 # A fit of the run table without scores (a task killed before its fit ended,
 # collected with ALLOW_MISSING=1, R/tasks.R) counts as failed.
@@ -279,6 +282,7 @@ sel <- by_fit(scores, function(x) {
 })
 sel$fit <- factor(sel$fit, fit_levels)
 sel_eval <- sel[sel$eval_tp, ]
+saveRDS(sel_eval, file.path(out, "sel_eval.Rds"))  # for scripts/beta_grid_compare.R
 
 # Fig. 2e-f: fraction beating the parent-passage baseline
 f2e <- stats::aggregate(win ~ fit + type + metric + tt, data = sel, FUN = mean)

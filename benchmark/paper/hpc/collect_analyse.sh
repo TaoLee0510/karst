@@ -24,13 +24,19 @@
 # tables (R/tasks.R; BENCH_TASKS, default tasks/<commit>) and stop when an
 # output is missing; ALLOW_MISSING=1 collects a fit without run.Rds as
 # failed.
+# XV_SOURCE=alfak_target (R/xv_source.R) runs the analyses with KARST's
+# cross-validation scored against alfak's targets (scripts/xv_alfak_target.R
+# first), writing to analysis_xv_alfak_target/ and figures_xv_alfak_target/.
 set -euo pipefail
 cd "${BENCH_DIR:-$PWD}"
 source hpc/env.sh
 load_hpc_environment
 steps=("$@")
 if [[ ${#steps[@]} -eq 0 ]]; then
-  steps=(sacct collect_abm analyse_abm example_abm check_ksets collect_salehi analyse_salehi cv_score_analysis
+  # check_ksets comes before every analysis: it stops when alfak's and
+  # KARST's landscapes of a fit hold different karyotypes, and the analyses
+  # read its table (require_same_ksets(), R/xv_source.R)
+  steps=(sacct check_ksets collect_abm analyse_abm example_abm collect_salehi analyse_salehi cv_score_analysis
          collect_resources summary_comparison)
   # (the alfak2 era's "auto" arm, scripts/auto_criterion.R, is not a method
   # any more and has no step here)

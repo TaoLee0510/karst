@@ -52,7 +52,7 @@ if (identical(args[1], "--index")) {
 stopifnot(!is.na(arm_i), arm_i <= nrow(fig456_arms))
 arm <- fig456_arms[arm_i, ]
 exclude <- Sys.getenv("FIG456_EXCLUDE", "1") != "0"
-out <- file.path(paths$results, "analysis", "fig456", if (exclude) "fig4" else "fig4_all_inputs")
+out <- file.path(analysis_root(paths), "fig456", if (exclude) "fig4" else "fig4_all_inputs")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 cat("Fig. 4, arm", arm$key, " draws", from, "-", to, " exclusion", exclude, "\n")
 

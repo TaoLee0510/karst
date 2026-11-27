@@ -196,6 +196,13 @@ Rscript $T --split=heldout --methods=alfak_minobs10,alfak_minobs20 --landscapes=
 Rscript $T --split=heldout --methods=karst_sparse_joint_balance --sweep=far far.tsv
 ```
 
+### Rounds
+
+| KARST | Held-out landscapes | Results (HPC karst clone) | Report |
+|---|---|---|---|
+| e7e32f8 (1.0.0) | L01-L15 (3 per wavelength) | `benchmark/results/sparse_two_timepoint/` | |
+| 6ae2a24 (1.1.3) | L01-L500 (100 per wavelength; L01-L15 data copied from e7e32f8) | `benchmark/results/sparse_two_timepoint_6ae2a24/` | `docs/report_6ae2a24.md` (also compares L01-L15 with e7e32f8) |
+
 ### Adding landscapes
 
 `add_landscapes.R` makes the truth population, the datasets and the scored

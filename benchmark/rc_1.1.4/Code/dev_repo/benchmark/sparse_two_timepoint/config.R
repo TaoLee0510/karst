@@ -1,0 +1,193 @@
+# Design of the sparse two-timepoint benchmark.
+#
+# The simulated data are meant to look like real two-timepoint tumour datasets.
+# The reference is a set of 20 GBM inputs: 22 chromosomes, copy numbers 1-4,
+# 8-3889 cells per timepoint with often strongly unbalanced depths, intervals
+# of 180-3600 days, typically ~65 karyotypes of which a third are seen at both
+# timepoints, a largest clone of ~13%, and a total-variation distance of ~0.8
+# between the two time points.
+#
+# Three choices follow from matching those observables (README, "Design"):
+# - 22 chromosomes. With 8 chromosomes the simulated population is trapped on a
+#   local peak within ~700 days and the cells drawn at a time point are 98%
+#   one karyotype.
+# - First time point at day 1440. Earlier, clones replace each other
+#   completely within a year; later, the smoother landscapes also freeze.
+# - Wavelengths 0.4, 0.8, 1.2 and 1.6. The 0.4 class is the frozen,
+#   near-monoclonal regime that about one real dataset in ten resembles; the
+#   others give ongoing adaptation with real-like diversity and turnover.
+#   Wavelength 0.2, the most rugged landscapes of the ALFA-K paper's
+#   simulations, was added later as a fifth class. Its landscapes come after
+#   the others (L13-L15 of each split), so that the identifiers and seeds of
+#   the first twelve stay as they were.
+# - The held-out split has 100 landscapes per wavelength (2026-11-20), as the
+#   ALFA-K paper simulates 100 per wavelength. The first three of each class
+#   are L01-L15 as before (identifiers, seeds and data unchanged); the other 97
+#   of each class are L16-L500, class by class in the order of
+#   `wavelength_classes`. The development split keeps its fifteen.
+#
+# STT_OUTPUT_DIR names the results folder when `output_dir` is not given, so
+# that a round can have a folder of its own (the default is
+# benchmark/results/sparse_two_timepoint).
+
+stt_default_output_dir <- function() {
+  folder <- Sys.getenv("STT_OUTPUT_DIR", "")
+  if (nzchar(folder)) folder else file.path("benchmark", "results", "sparse_two_timepoint")
+}
+
+stt_config <- function(output_dir = stt_default_output_dir()) {
+  wavelength_classes <- data.frame(
+    wavelength_class = c("w0.4", "w0.8", "w1.2", "w1.6", "w0.2"),
+    wavelength = c(0.4, 0.8, 1.2, 1.6, 0.2),
+    stringsAsFactors = FALSE
+  )
+  landscapes_per_class <- 3L
+  heldout_per_class <- 100L
+  make_split <- function(split, seed_base, per_class = landscapes_per_class) {
+    classes <- seq_len(nrow(wavelength_classes))
+    grid <- wavelength_classes[c(rep(classes, each = landscapes_per_class),
+                                 rep(classes, each = per_class - landscapes_per_class)), ]
+    index <- seq_len(nrow(grid))
+    data.frame(
+      landscape_id = sprintf("%s_L%02d", split, index),
+      split = split,
+      wavelength_class = grid$wavelength_class,
+      wavelength = grid$wavelength,
+      landscape_seed = seed_base + index,
+      stringsAsFactors = FALSE
+    )
+  }
+  # `shift` is the fraction of the landscape's waves redrawn at the first
+  # time point. Core scenarios make the acceptance verdict; stress scenarios are
+  # reported beside it.
+  scenario <- function(name, depth_t0, depth_t1, interval, bottleneck = 0, shift = 0, role = "core") {
+    data.frame(scenario = name, depth_t0 = depth_t0, depth_t1 = depth_t1,
+               interval = interval, bottleneck = bottleneck, shift = shift, role = role,
+               stringsAsFactors = FALSE)
+  }
+  landscapes <- rbind(make_split("dev", 71000L), make_split("heldout", 82000L, heldout_per_class))
+  # Control cohorts ("other_landscapes") are drawn from the twelve landscapes of
+  # the four original wavelength classes (L01-L12 of each split), so that a
+  # class or landscapes added later (0.2, L13-L15; L16-L500) leave their
+  # members as they were.
+  number <- as.integer(sub("^.*_L", "", landscapes$landscape_id))
+  cohort_pool <- landscapes[landscapes$wavelength_class %in% wavelength_classes$wavelength_class[1:4] & number <= 12L,
+                            c("landscape_id", "split")]
+  # What a cohort method needs to find the other datasets of its cohort.
+  cohort_method <- function(members, ...) {
+    list(type = "karst_sparse_joint_cohort", birth_rate = 1, min_cn = 1L, max_cn = 8L, members = members,
+         dataset_dir = file.path(output_dir, "datasets"), landscapes = cohort_pool,
+         cohort_size = 8L, arguments = utils::modifyList(list(initial_state = "free"), list(...)))
+  }
+  list(
+    output_dir = output_dir,
+    n_chr = 22L,
+    founder_cn = 2L,
+    n_waves = 10L,
+    beta = 5e-5,
+    # Karyotypes with a copy number outside [min_cn, max_cn] are not viable.
+    abm = list(pop_size = 5e4, max_pop = 2e6, delta_t = 0.1, culling_survival = 0.01,
+               min_cn = 1L, max_cn = 8L, record_days = 60, end_day = 2520),
+    t0 = 1440,
+    # Development landscapes are used freely. Held-out landscapes are generated
+    # and scored only once, for the final confirmation.
+    landscapes = landscapes,
+    patients_per_landscape = 8L,
+    # Patients fitted by every method for the single-dataset scoreboard. One per
+    # landscape keeps a full development round within a few CPU-hours on a
+    # workstation; landscapes, not patients, are the independent unit.
+    scoreboard_patients = 1L,
+    scenarios = rbind(
+      scenario("very_sparse_50_50_180d", 50, 50, 180),
+      scenario("sparse_200_200_180d", 200, 200, 180),
+      scenario("sparse_200_200_360d", 200, 200, 360),
+      scenario("typical_500_700_360d", 500, 700, 360),
+      scenario("unbalanced_100_3000_360d", 100, 3000, 360),
+      scenario("unbalanced_3000_100_360d", 3000, 100, 360),
+      scenario("long_500_700_1080d", 500, 700, 1080),
+      # After the first time point only 200 cells survive and regrow.
+      scenario("bottleneck_500_700_360d", 500, 700, 360, bottleneck = 200),
+      # Few generations between the time points: 27 and 54 at the simulated
+      # division rate, as for a slowly dividing tumour sampled months apart.
+      scenario("short_500_700_30d", 500, 700, 30, role = "stress"),
+      scenario("short_500_700_60d", 500, 700, 60, role = "stress"),
+      # The landscape changes at the first time point, as when treatment starts
+      # then: half of its waves are redrawn, which leaves fitness before and
+      # after correlated. Truth is the landscape after.
+      scenario("shift_500_700_360d", 500, 700, 360, shift = 0.5, role = "stress"),
+      scenario("shift_3000_100_360d", 3000, 100, 360, shift = 0.5, role = "stress"),
+      # Worst case for anything read from the first time point: the landscape is
+      # turned about the dominant karyotype, so that which of its neighbours
+      # is fit before says nothing about after.
+      scenario("turned_500_700_360d", 500, 700, 360, shift = 1, role = "stress"),
+      scenario("turned_3000_100_360d", 3000, 100, 360, shift = 1, role = "stress")
+    ),
+    cohort_scenario = "typical_500_700_360d",
+    # Scored nodes: all observed karyotypes, and up to `d1_cap` / `d2_cap`
+    # uniformly sampled one- and two-step neighbours.
+    scoring = list(min_cn = 1L, max_cn = 8L, d1_cap = 2000L, d2_cap = 2000L, reference_min_count = 5),
+    # Roles in the acceptance rule (report.R). A candidate passes when, at
+    # distances 0, 1 and 2, its RMSE is below `zero`'s and its Spearman
+    # correlation above `alfak`'s, the setting fitted on both splits.
+    # `original` are the ALFA-K settings every method is compared with in the
+    # paired tables, which are not part of the rule.
+    acceptance = list(zero = "zero",
+                      alfak = "alfak_minobs20",
+                      original = c("alfak_minobs5", "alfak_minobs20"),
+                      candidates = c("karst_sparse_joint", "karst_sparse_joint_balance"),
+                      # Cohort methods exist for the cohort scenario only and are
+                      # compared there with the single-dataset model of the same
+                      # initial state, so that the difference is the pooling;
+                      # the cohort with balance also with the cohort without it.
+                      cohort = list(karst_sparse_joint_cohort = "karst_sparse_joint",
+                                    karst_sparse_joint_cohort_unrelated = "karst_sparse_joint",
+                                    karst_sparse_joint_cohort_shared_trend = "karst_sparse_joint",
+                                    karst_sparse_joint_cohort_unrelated_shared_trend = "karst_sparse_joint",
+                                    karst_sparse_joint_cohort_balance = c("karst_sparse_joint_balance",
+                                                                          "karst_sparse_joint_cohort"))),
+    methods = list(
+      zero = list(type = "zero"),
+      alfak_minobs5 = list(type = "alfak", minobs = 5L, nboot = 45L, n0 = 5e4, nb = 2e6,
+                            nn_prior = "empirical"),
+      alfak_minobs10 = list(type = "alfak", minobs = 10L, nboot = 45L, n0 = 5e4, nb = 2e6,
+                             nn_prior = "empirical"),
+      alfak_minobs20 = list(type = "alfak", minobs = 20L, nboot = 45L, n0 = 5e4, nb = 2e6,
+                             nn_prior = "empirical"),
+      # Candidate. One division per day is assumed for every dataset; the
+      # simulated populations divide about 0.9 times per day.
+      # `initial_state = "free"` was the package default when these were
+      # benchmarked; "balance" is the default now and has its own entry.
+      karst_sparse_joint = list(type = "karst_sparse_joint", birth_rate = 1, min_cn = 1L, max_cn = 8L,
+                                 arguments = list(initial_state = "free")),
+      # Sensitivity to the assumed baseline birth rate: half and double.
+      karst_sparse_joint_slow = list(type = "karst_sparse_joint", birth_rate = 0.5, min_cn = 1L, max_cn = 8L,
+                                      arguments = list(initial_state = "free")),
+      karst_sparse_joint_fast = list(type = "karst_sparse_joint", birth_rate = 2, min_cn = 1L, max_cn = 8L,
+                                      arguments = list(initial_state = "free")),
+      # Initial abundances of non-major karyotypes tied to mutation-selection
+      # balance, which reads the levels at the first time point as well.
+      karst_sparse_joint_balance = list(type = "karst_sparse_joint", birth_rate = 1, min_cn = 1L, max_cn = 8L,
+                                         arguments = list(initial_state = "balance")),
+      # Baseline birth rate known only within a factor of 16. The simulated
+      # rate, about 0.9, is near the centre, the top or the bottom of the range.
+      karst_sparse_joint_range = list(type = "karst_sparse_joint_rates", birth_rate_range = c(0.25, 4),
+                                       min_cn = 1L, max_cn = 8L, arguments = list(initial_state = "free")),
+      karst_sparse_joint_range_low = list(type = "karst_sparse_joint_rates", birth_rate_range = c(0.0625, 1),
+                                           min_cn = 1L, max_cn = 8L, arguments = list(initial_state = "free")),
+      karst_sparse_joint_range_high = list(type = "karst_sparse_joint_rates", birth_rate_range = c(1, 16),
+                                            min_cn = 1L, max_cn = 8L, arguments = list(initial_state = "free")),
+      # Cohort fit of the eight patients of a landscape, scored on patient 1.
+      # The trend is shared or per dataset, whichever has the higher marginal
+      # likelihood.
+      karst_sparse_joint_cohort = cohort_method("landscape", trend = "select"),
+      # Control: the same patient with patients of seven other landscapes,
+      # which share the statistics of a landscape but not the landscape.
+      karst_sparse_joint_cohort_unrelated = cohort_method("other_landscapes", trend = "select"),
+      # The same two with one trend for the whole cohort, always.
+      karst_sparse_joint_cohort_shared_trend = cohort_method("landscape", trend = "shared"),
+      karst_sparse_joint_cohort_unrelated_shared_trend = cohort_method("other_landscapes", trend = "shared"),
+      # The cohort fit with initial abundances at mutation-selection balance.
+      karst_sparse_joint_cohort_balance = cohort_method("landscape", trend = "select", initial_state = "balance")
+    )
+  )
+}

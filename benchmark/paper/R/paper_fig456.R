@@ -59,7 +59,7 @@ fig456_fit_rows <- function(arm, paths = bench_paths(), exclude = TRUE) {
     files <- list.files(file.path(paths$data, "processed", "salehi", "alfak_outputs_proc"), full.names = TRUE)
     rows <- lapply(files, readRDS)
   } else {
-    s <- readRDS(file.path(paths$results, "tables", "salehi_scores.Rds"))
+    s <- read_bench_table("salehi_scores", paths)  # KARST's scores as XV_SOURCE says (R/xv_source.R)
     two <- grepl("_l_2_", s$fi)
     want_design <- ifelse(arm$all & !two, "all", "ends")
     want_method <- ifelse(want_design == "ends" & arm$method %in% karst_other_methods, "karst", arm$method)

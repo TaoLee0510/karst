@@ -7,7 +7,45 @@ abm_sim_info <- function(sim_id) {
              pmis = as.numeric(parts[4]), abmrep = parts[6], stringsAsFactors = FALSE)
 }
 
-read_abm_sim <- function(sim_id, dir) readRDS(file.path(dir, paste0(sim_id, ".Rds")))
+read_abm_sim <- function(sim_id, dir) {
+  sim <- readRDS(file.path(dir, paste0(sim_id, ".Rds")))
+  # ABM_CELLS (scripts/fig2d_truth.R, step 2): a table of cell counts; every
+  # time point of the simulation is then subsampled to a count drawn from it,
+  # so that the fits, forecasts and scores see Salehi-sized samples.
+  cells <- Sys.getenv("ABM_CELLS", "")
+  if (nzchar(cells)) sim$abm_output$x <- abm_subsample_x(sim$abm_output$x, sim_id, utils::read.delim(cells)$cells)
+  sim
+}
+
+# Seed of a simulation ("w_0p8_m_5e-05_rep_07"): fixed by its wavelength,
+# missegregation rate and replicate, so that a subsample is the same in every
+# job. The main ABM set (rate 5e-5) keeps the seeds it had before the rates of
+# ABM_varyMisseg were added (docs/fig2d_misseg_6ae2a24.md); that set's 5e-5
+# simulations, different simulations under the same names, share them.
+abm_sim_seed <- function(sim_id) {
+  info <- abm_sim_info(sim_id)
+  rate <- match(info$pmis, c(5e-5, 1e-4, 2e-4, 4e-4, 8e-4))
+  stopifnot(!is.na(rate))
+  9100000L + 100000L * (rate - 1L) + 1000L * match(info$w, c(0.2, 0.4, 0.8, 1.6)) + as.integer(info$abmrep)
+}
+
+# Each time point (column) of the count matrix `x` subsampled without
+# replacement to a number of cells drawn from `cells` (at most the cells the
+# time point has), with the simulation's seed (abm_sim_seed()). Rows and
+# columns are kept; the class of `x` (data frame or matrix) too.
+abm_subsample_x <- function(x, sim_id, cells, seed = abm_sim_seed(sim_id)) {
+  old <- if (exists(".Random.seed", envir = globalenv())) get(".Random.seed", envir = globalenv()) else NULL
+  on.exit(if (!is.null(old)) assign(".Random.seed", old, envir = globalenv()))
+  set.seed(seed)
+  n <- sample(cells, ncol(x), replace = TRUE)
+  for (j in seq_len(ncol(x))) {
+    counts <- as.numeric(x[, j])
+    n_j <- min(n[j], sum(counts))
+    idx <- rep.int(seq_along(counts), counts)
+    x[, j] <- tabulate(idx[sample.int(length(idx), n_j)], length(counts))
+  }
+  x
+}
 
 # True fitness of karyotype labels on a Gaussian-random-field landscape
 # (utils_karyo.R getf of the paper, for many karyotypes at once).

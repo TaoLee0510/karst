@@ -1,249 +1,249 @@
-# KARST e7e32f8 与 alfak 在 ALFA-K 文章检验上的对照报告
+# Comparison report of KARST e7e32f8 and alfak on the ALFA-K paper tests
 
-日期：2026-11-18。KARST e7e32f8（1.0.0，dev，含 2026-11-17 代码审阅的修复）。alfak dev2@f93b2d2 作参照（拟合从 alfak2 时期链接），文章自己的拟合记为 alfak main@4ad82b0。结果目录在 HPC：`/share/lab_crd/taoli/Project/karst/benchmark/paper/results_e7e32f8/`。
+Date: 2026-11-18. KARST e7e32f8 (1.0.0, dev, including the fixes from the 2026-11-17 code review). alfak dev2@f93b2d2 serves as the reference (fits linked from the alfak2 era); the paper's own fits are labelled alfak main@4ad82b0. Results directory on HPC: `/share/lab_crd/taoli/Project/karst/benchmark/paper/results_e7e32f8/`.
 
-> 用语：输入的各列称"时间点"。Salehi 的一条"轨迹"由若干次传代组成。alfak2 是 KARST 在 0.2.0 之前的名字；alfak2 时期的提交号按 `doc/commit_map.tsv` 对应到现在的提交。
+> Terms: the columns of the input are called "time points". A Salehi "trajectory" consists of several passages. alfak2 is KARST's name before 0.2.0; commit ids from the alfak2 era map to current commits via `doc/commit_map.tsv`.
 
-## 0. 这一轮做了什么
+## 0. What this round did
 
-- 改名为 KARST 之后，全部 KARST 拟合重做一遍：ABM、错分率模拟和 Salehi，两种设计（两个时间点；全部时间点，含 pairwise 和 state space），共 5617 个任务。另外加 KARST `initial_state = "free"` 的 Salehi 拟合 482 个，供多时程检验用。
-- alfak 不重拟合：3107 个拟合文件夹从 alfak2 时期的 8327282 一轮链接过来，与 05a8855、348addd 两轮读的是同一批目录。
-- 同一镜像、同一 KARST 库，还重跑了多时程预测检验和开发 benchmark（含 held-out，见第 6 节）。
-- 前一轮 b9a275e（改名后、审阅修复前）在拟合基本做完、还没出表时按用户决定停掉，由本轮取代。
+- After the rename to KARST, all KARST fits were redone: ABM, missegregation-rate simulations and Salehi, two designs (two time points; all time points, including pairwise and state space), 5617 tasks in total. In addition, 482 Salehi fits of KARST with `initial_state = "free"` were added, for the multi-horizon test.
+- alfak is not refit: 3107 fit folders are linked from the alfak2-era round 8327282; these are the same directories read by the two rounds 05a8855 and 348addd.
+- With the same image and the same KARST library, the multi-horizon prediction test and the development benchmark (including held-out, see Section 6) were also rerun.
+- The previous round b9a275e (after the rename, before the review fixes) was stopped by the user's decision when the fits were mostly done but no tables had been produced yet, and is replaced by this round.
 
-审阅修复中，会改变本 benchmark 结果的只有一处：`as_alfak()` 对 pairwise 拟合做交叉验证时，每一对时间点中未见核型的先验中心改用该对起点的深度，与拟合本身一致。其余修复不在本 benchmark 的计算路径上。
+Among the review fixes, only one changes the results of this benchmark: when `as_alfak()` cross-validates a pairwise fit, the prior centre for unseen karyotypes in each pair of time points now uses the depth of that pair's starting point, consistent with the fit itself. The other fixes are not on this benchmark's computation path.
 
-## 1. 结论
+## 1. Conclusions
 
-1. **KARST 1.0.0 的拟合与 alfak2 0.2.0 相同。** 与 alfak2 05a8855 逐个比对（`analysis/compare_rounds/`）：
-   - anchored（默认）：8071 个拟合状态全部一致；两边都成功的，景观在 1e-16 以内相同，历史长度的选择、交叉验证的预测和 ABM 预报完全相同。
-   - state space：3265 个拟合同样一致。
-   - pairwise：3265 个拟合的景观、历史长度和预报都相同，只有交叉验证变了（上面那处修复），影响深度不等的输入。
-   - 与 b9a275e 比对：anchored 和 state space 完全相同（b9a275e 停掉时还缺一个 Salehi 拟合）；pairwise 只差交叉验证。
-2. **不按交叉验证挑选的表，与 alfak2 348addd 逐行相同。** 包括配对的景观和预报比较、错分率模拟、Salehi 的覆盖和失败统计、Fig. 2d 噪声检查、Fig. 5 检验、Fig. 6，以及汇总准确度表的 114 行中的 109 行（另 5 行见第 2 节）。alfak 和文章拟合的各行全部相同。
-3. **按文章规则用 CV 分数挑拟合时，并列现在按固定规则处理（第 7 节）。**
-   - 文章规则保留 CV 分数并列最优的全部 minobs。KARST 的各个 minobs 由同一次拟合派生，交叉验证的预测常常相同，分数只差浮点误差，于是一个输入被算 1、2 或 3 次，而且次数随浮点误差变化。ABM 上 KARST 的 1921 个输入，原规则留下 3282 行；alfak 从不并列。
-   - 用户 2026-11-18 决定：分数相差不到 1e-8 的算并列，取最小的 minobs，每个输入只留一个（`R/select.R`）。alfak 和文章自己的拟合挑出的结果与原规则逐个相同。
-   - 去重前的表保留在 `analysis_cv_ties_kept/` 和 `figures_cv_ties_kept/`。去重后 KARST 的样本数少了约 35–50%（ABM），合并后的比例变化约 0.03 以内（例如 Fig. 1g 第 10 次传代，窗口 2 胜过不变的比例 0.68 → 0.65），细分的小组变化更大（第 7 节）。
-   - 与 alfak2 348addd 相比，Fig. 4–6 的 19 条结论中显著性没有变化；state space 的一条（4f `treat_pairsame`，−0.0013 → +0.0009）在 0 附近换了符号，与文章一致的条数从 10 变成 11。原因是一条轨迹（SA609UnBU_X7_l_3）三个 minobs 的 CV 分数只差 1e-16，两轮各挑了一个，而这几个 minobs 列出的核型不同（minobs 5 列 6831 个，20 列 2774 个）。去重规则固定取最小的 minobs 后，这样的选择不再随浮点误差变化。
-4. **主要结论与 alfak2 时期相同。**
-   - ABM 和错分率模拟上，KARST 的景观在每个窗口都比 alfak 准，配对输入中 86–98% 更好（第 2 节）。
-   - Salehi 的 Fig. 2d 主要反映抽样噪声；固定噪声后，KARST 没有一臂与 alfak 有可靠差别（第 3 节）。
-   - 预报以后各次传代时，KARST 在两种设计上都胜过 alfak：两个时间点每个细胞 +1.01（谱系区间 0.67 到 1.40），全部时间点 anchored +1.12（0.55 到 1.47）（第 4 节）。
+1. **The fits of KARST 1.0.0 are the same as those of alfak2 0.2.0.** One-by-one comparison with alfak2 05a8855 (`analysis/compare_rounds/`):
+   - anchored (default): the status of all 8071 fits agrees; where both sides succeeded, the landscapes are identical within 1e-16, and the choice of history length, the cross-validation predictions and the ABM forecasts are exactly the same.
+   - state space: the 3265 fits agree likewise.
+   - pairwise: the landscapes, history lengths and forecasts of the 3265 fits are all the same; only the cross-validation changed (the fix above), affecting inputs with unequal depths.
+   - Comparison with b9a275e: anchored and state space are exactly the same (b9a275e still lacked one Salehi fit when it was stopped); pairwise differs only in cross-validation.
+2. **Tables that do not select by cross-validation are identical row by row to alfak2 348addd.** These include the paired landscape and forecast comparisons, the missegregation-rate simulations, the Salehi coverage and failure statistics, the Fig. 2d noise check, the Fig. 5 test, Fig. 6, and 109 of the 114 rows of the summary accuracy table (the other 5 rows are in Section 2). All rows of alfak and of the paper fits are the same.
+3. **When fits are selected by CV score under the paper rule, ties are now handled by a fixed rule (Section 7).**
+   - The paper rule keeps all minobs tied for the best CV score. KARST's minobs values are derived from the same fit, so their cross-validation predictions are often identical and the scores differ only by floating-point error; as a result one input is counted 1, 2 or 3 times, and the count changes with floating-point error. For KARST's 1921 inputs on ABM, the original rule kept 3282 rows; alfak never ties.
+   - User decision on 2026-11-18: scores that differ by less than 1e-8 count as tied, the smallest minobs is taken, and only one is kept per input (`R/select.R`). For alfak and the paper's own fits, the selections are identical one by one to those of the original rule.
+   - The tables before de-duplication are kept in `analysis_cv_ties_kept/` and `figures_cv_ties_kept/`. After de-duplication KARST has about 35–50% fewer samples (ABM); the pooled proportions change by about 0.03 or less (for example Fig. 1g at passage 10, window 2, the proportion beating no change 0.68 → 0.65), and finer subgroups change more (Section 7).
+   - Compared with alfak2 348addd, the significance of none of the 19 conclusions of Fig. 4–6 changed; one state space conclusion (4f `treat_pairsame`, −0.0013 → +0.0009) changed sign near 0, and the number agreeing with the paper went from 10 to 11. The reason is that for one trajectory (SA609UnBU_X7_l_3) the CV scores of three minobs differ by only 1e-16, the two rounds each picked one of them, and these minobs list different karyotypes (minobs 5 lists 6831, 20 lists 2774). Now that the de-duplication rule always takes the smallest minobs, such a choice no longer changes with floating-point error.
+4. **The main conclusions are the same as in the alfak2 era.**
+   - On ABM and the missegregation-rate simulations, KARST's landscapes are more accurate than alfak's in every window, and better in 86–98% of paired inputs (Section 2).
+   - Fig. 2d on Salehi mainly reflects sampling noise; with noise held fixed, no KARST arm differs reliably from alfak (Section 3).
+   - When forecasting later passages, KARST beats alfak in both designs: two time points +1.01 per cell (lineage interval 0.67 to 1.40), all time points anchored +1.12 (0.55 to 1.47) (Section 4).
 
-## 2. 文章检验：汇总准确度（`analysis/summary/summary_accuracy.tsv`）
+## 2. Paper tests: summary accuracy (`analysis/summary/summary_accuracy.tsv`)
 
-配对的输入上，中位数；最后一列是 KARST（两个时间点，或全部时间点的 anchored）比 alfak 好的输入所占比例。
+Medians over paired inputs; the last column is the fraction of inputs in which KARST (two time points, or anchored for all time points) is better than alfak.
 
-**ABM，景观 Pearson r**
+**ABM, landscape Pearson r**
 
-| 设计与窗口 | 配对 | KARST | pairwise | state space | alfak | KARST 更好 |
+| Design and window | Paired | KARST | pairwise | state space | alfak | KARST better |
 |---|---|---|---|---|---|---|
-| 两个时间点，窗口 2 | 1172 | 0.57 | | | 0.27 | 92% |
-| 两个时间点，窗口 4 | 1173 | 0.68 | | | 0.42 | 97% |
-| 两个时间点，窗口 8 | 1176 | 0.75 | | | 0.51 | 98% |
-| 全部时间点，窗口 4 | 1177 | 0.66 | 0.57 | 0.66 | 0.40 | 92% |
-| 全部时间点，窗口 8 | 1190 | 0.71 | 0.63 | 0.72 | 0.45 | 89% |
+| Two time points, window 2 | 1172 | 0.57 | | | 0.27 | 92% |
+| Two time points, window 4 | 1173 | 0.68 | | | 0.42 | 97% |
+| Two time points, window 8 | 1176 | 0.75 | | | 0.51 | 98% |
+| All time points, window 4 | 1177 | 0.66 | 0.57 | 0.66 | 0.40 | 92% |
+| All time points, window 8 | 1190 | 0.71 | 0.63 | 0.72 | 0.45 | 89% |
 
-**ABM，景观 Spearman ρ**
+**ABM, landscape Spearman ρ**
 
-| 设计与窗口 | KARST | pairwise | state space | alfak | KARST 更好 |
+| Design and window | KARST | pairwise | state space | alfak | KARST better |
 |---|---|---|---|---|---|
-| 两个时间点，窗口 2 | 0.57 | | | 0.28 | 94% |
-| 两个时间点，窗口 4 | 0.68 | | | 0.42 | 95% |
-| 两个时间点，窗口 8 | 0.74 | | | 0.50 | 98% |
-| 全部时间点，窗口 4 | 0.67 | 0.58 | 0.67 | 0.39 | 91% |
-| 全部时间点，窗口 8 | 0.71 | 0.63 | 0.72 | 0.43 | 88% |
+| Two time points, window 2 | 0.57 | | | 0.28 | 94% |
+| Two time points, window 4 | 0.68 | | | 0.42 | 95% |
+| Two time points, window 8 | 0.74 | | | 0.50 | 98% |
+| All time points, window 4 | 0.67 | 0.58 | 0.67 | 0.39 | 91% |
+| All time points, window 8 | 0.71 | 0.63 | 0.72 | 0.43 | 88% |
 
-**错分率模拟，景观 Pearson r**（125 个输入，KARST 用真实错分率）
+**Missegregation-rate simulations, landscape Pearson r** (125 inputs, KARST uses the true missegregation rate)
 
-| 设计与窗口 | KARST | pairwise | state space | alfak | KARST 更好 |
+| Design and window | KARST | pairwise | state space | alfak | KARST better |
 |---|---|---|---|---|---|
-| 两个时间点，窗口 2 | 0.67 | | | 0.39 | 95% |
-| 两个时间点，窗口 4 | 0.78 | | | 0.61 | 90% |
-| 两个时间点，窗口 8 | 0.87 | | | 0.79 | 90% |
-| 全部时间点，窗口 4 | 0.76 | 0.69 | 0.77 | 0.65 | 86% |
-| 全部时间点，窗口 8 | 0.81 | 0.74 | 0.83 | 0.80 | 66% |
+| Two time points, window 2 | 0.67 | | | 0.39 | 95% |
+| Two time points, window 4 | 0.78 | | | 0.61 | 90% |
+| Two time points, window 8 | 0.87 | | | 0.79 | 90% |
+| All time points, window 4 | 0.76 | 0.69 | 0.77 | 0.65 | 86% |
+| All time points, window 8 | 0.81 | 0.74 | 0.83 | 0.80 | 66% |
 
-**ABM，第 10 次传代时预报胜过不变的比例（欧氏距离）**
+**ABM, fraction in which the forecast beats no change at passage 10 (Euclidean distance)**
 
-| 设计与窗口 | KARST | pairwise | state space | alfak |
+| Design and window | KARST | pairwise | state space | alfak |
 |---|---|---|---|---|
-| 两个时间点，窗口 2 | 0.70 | | | 0.36 |
-| 两个时间点，窗口 4 | 0.85 | | | 0.45 |
-| 两个时间点，窗口 8 | 0.86 | | | 0.40 |
-| 全部时间点，窗口 4 | 0.86 | 0.76 | 0.84 | 0.50 |
-| 全部时间点，窗口 8 | 0.91 | 0.78 | 0.89 | 0.53 |
+| Two time points, window 2 | 0.70 | | | 0.36 |
+| Two time points, window 4 | 0.85 | | | 0.45 |
+| Two time points, window 8 | 0.86 | | | 0.40 |
+| All time points, window 4 | 0.86 | 0.76 | 0.84 | 0.50 |
+| All time points, window 8 | 0.91 | 0.78 | 0.89 | 0.53 |
 
 **Salehi**
 
-| 指标 | 设计 | 配对 | KARST | pairwise | state space | alfak |
+| Metric | Design | Paired | KARST | pairwise | state space | alfak |
 |---|---|---|---|---|---|---|
-| 子代上预报胜过亲代（Wasserstein） | 两个时间点 | 371 | 0.51 | | | 0.21 |
-| | 全部时间点（3–10 次传代） | 283 | 0.54 | 0.52 | 0.49 | 0.27 |
-| 新核型的适应度预测其出现 | 两个时间点 | 480 | 0.57 | | | 0.21 |
-| | 全部时间点 | 351 | 0.52 | 0.66 | 0.55 | 0.24 |
+| Forecast beats parent on the daughter (Wasserstein) | Two time points | 371 | 0.51 | | | 0.21 |
+| | All time points (3–10 passages) | 283 | 0.54 | 0.52 | 0.49 | 0.27 |
+| Fitness of novel karyotypes predicts their emergence | Two time points | 480 | 0.57 | | | 0.21 |
+| | All time points | 351 | 0.52 | 0.66 | 0.55 | 0.24 |
 
-这些数与 alfak2 348addd 相同，只有 5 行有小差别，都不涉及 CV 挑选：
-- Salehi 新核型一项，KARST 两个时间点 0.565 → 0.567，全部时间点 0.521 → 0.516；同一项中 pairwise 和 state space 与 anchored 的配对比例差 ≤ 0.005。原因是一条轨迹（SA039U_X51_l_3）对一个子代的逻辑回归完全分离，系数到 ±10¹⁴、p = 0，景观 1e-16 的差就让符号翻转（文章 05 脚本的做法，按原样保留）；
-- ABM 全部时间点窗口 4 的 Spearman，pairwise 比 anchored 好的比例 0.322 → 0.323（秩相关的并列）。
+These numbers are the same as in alfak2 348addd; only 5 rows have small differences, and none of them involve CV selection:
+- In the Salehi novel-karyotype item, KARST two time points 0.565 → 0.567, all time points 0.521 → 0.516; in the same item, the paired proportions of pairwise and of state space against anchored differ by ≤ 0.005. The reason is that for one trajectory (SA039U_X51_l_3) the logistic regression on one daughter is completely separated, with coefficients reaching ±10¹⁴ and p = 0, so a 1e-16 difference in the landscape flips the sign (this is how the paper's 05 script does it, kept as is);
+- ABM all time points window 4 Spearman: the fraction in which pairwise is better than anchored 0.322 → 0.323 (ties in the rank correlation).
 
-**失败与资源**（`analysis/summary/summary_performance.tsv`；alfak 的资源取自 8327282 一轮的作业记录）
+**Failures and resources** (`analysis/summary/summary_performance.tsv`; alfak's resources are taken from the job records of round 8327282)
 
-| 数据 | 设计 | 方法 | 输入 | 失败比例 | 每个输入的时间中位数（秒） | 最大（秒） | 内存中位数（MB） | 最大（MB） |
+| Data | Design | Method | Inputs | Failure fraction | Median time per input (s) | Max (s) | Median memory (MB) | Max (MB) |
 |---|---|---|---|---|---|---|---|---|
-| ABM | 两个时间点 | KARST | 1200 | 0 | 104 | 608 | 920 | 2025 |
+| ABM | Two time points | KARST | 1200 | 0 | 104 | 608 | 920 | 2025 |
 | | | alfak | 1200 | 2.2% | 1228 | 5941 | 5436 | 23469 |
-| | 全部时间点 | KARST | 800 | 0 | 281 | 2346 | 1815 | 6852 |
+| | All time points | KARST | 800 | 0 | 281 | 2346 | 1815 | 6852 |
 | | | pairwise | 800 | 0 | 412 | 4084 | 1928 | 6871 |
 | | | state space | 800 | 0 | 837 | 20297 | 2404 | 8315 |
 | | | alfak | 800 | 1.4% | 3525 | 25142 | 12577 | 88804 |
-| Salehi | 两个时间点 | KARST | 253 | 6.3% | 90 | 425 | 896 | 1725 |
+| Salehi | Two time points | KARST | 253 | 6.3% | 90 | 425 | 896 | 1725 |
 | | | alfak | 253 | 6.7% | 529 | 2688 | 2359 | 10009 |
-| | 全部时间点 | KARST | 187 | 2.7% | 237 | 1601 | 1585 | 4851 |
+| | All time points | KARST | 187 | 2.7% | 237 | 1601 | 1585 | 4851 |
 | | | state space | 187 | 2.7% | 715 | 31653 | 2351 | 13539 |
 | | | alfak | 187 | 2.7% | 1586 | 12465 | 8003 | 41358 |
 
-时间是生成全部 minobs 输出所需的拟合时间，不含预报；KARST 每个输入只拟合一次。24 条 Salehi 轨迹在拟合前就判定无法分析，所有方法一律排除。
+Time is the fit time needed to produce the outputs for all minobs, excluding forecasts; KARST fits each input only once. 24 Salehi trajectories were judged unanalysable before fitting and are excluded for all methods.
 
-## 3. Fig. 2d：原始与固定抽样噪声后
+## 3. Fig. 2d: raw and with sampling noise held fixed
 
-**文章的规则**：按 CV 分数挑拟合，并列去重（`analysis/salehi/fig2d_wasserstein.tsv`）。挑出的子集各不相同、行数少，各臂之间不能直接比。
+**The paper's rule**: fits selected by CV score, ties de-duplicated (`analysis/salehi/fig2d_wasserstein.tsv`). The selected subsets all differ and have few rows, so the arms cannot be compared directly.
 
-| 拟合 | 行数 | Spearman |
+| Fit | Rows | Spearman |
 |---|---|---|
-| KARST 两个时间点 | 50 | 0.23 |
-| KARST 全部时间点（anchored） | 49 | 0.30 |
+| KARST two time points | 50 | 0.23 |
+| KARST all time points (anchored) | 49 | 0.30 |
 | KARST pairwise | 50 | 0.56 |
 | KARST state space | 48 | 0.54 |
-| alfak dev2@f93b2d2 两个时间点 | 44 | 0.45 |
-| alfak dev2@f93b2d2 全部时间点 | 46 | 0.70 |
-| 文章（alfak main@4ad82b0） | 45 | 0.69 |
+| alfak dev2@f93b2d2 two time points | 44 | 0.45 |
+| alfak dev2@f93b2d2 all time points | 46 | 0.70 |
+| Paper (alfak main@4ad82b0) | 45 | 0.69 |
 
-**各臂共有的行，不按 CV 挑选**（`analysis/fig2d_noise/`）：
-- "噪声"是亲代与子代各自随机分成两半后，两半之间的平均距离（20 次分法），在 alfak 景观的核型上计算。
-- 区间是按 6 个谱系类型的 bootstrap 95% 区间。
+**Rows shared by all arms, no CV selection** (`analysis/fig2d_noise/`):
+- "Noise" is the mean distance between the two halves after the parent and the daughter are each randomly split into two halves (20 splits), computed on the karyotypes of the alfak landscape.
+- Intervals are bootstrap 95% intervals over the 6 lineage types.
 
-| 设计与子集 | 行 | 噪声本身 | KARST 原始 | KARST 固定噪声 | alfak 原始 | alfak 固定噪声 |
+| Design and subset | Rows | Noise itself | KARST raw | KARST noise fixed | alfak raw | alfak noise fixed |
 |---|---|---|---|---|---|---|
-| 两个时间点，全部轨迹 | 471 | 0.75 | 0.29 | 0.47 | 0.32 | 0.44 |
-| 两个时间点，一个间隔（2 次传代） | 147 | 0.77 | 0.45 | 0.49 | 0.60 | 0.55 |
-| 全部时间点，3–10 次传代：anchored | 346 | 0.73 | 0.23 | 0.40 | 0.55 | 0.52 |
-| 同上：pairwise | 346 | | 0.35 | 0.55 | | |
-| 同上：state space | 346 | | 0.45 | 0.56 | | |
+| Two time points, all trajectories | 471 | 0.75 | 0.29 | 0.47 | 0.32 | 0.44 |
+| Two time points, one interval (2 passages) | 147 | 0.77 | 0.45 | 0.49 | 0.60 | 0.55 |
+| All time points, 3–10 passages: anchored | 346 | 0.73 | 0.23 | 0.40 | 0.55 | 0.52 |
+| Same: pairwise | 346 | | 0.35 | 0.55 | | |
+| Same: state space | 346 | | 0.45 | 0.56 | | |
 
-与 alfak 的差（KARST 减 alfak）：
+Difference from alfak (KARST minus alfak):
 
-| 设计与子集 | 臂 | 原始 | 固定噪声 |
+| Design and subset | Arm | Raw | Noise fixed |
 |---|---|---|---|
-| 两个时间点，全部轨迹 | KARST | −0.03（−0.19 到 0.15） | +0.03（−0.16 到 0.21） |
-| 两个时间点，一个间隔 | KARST | −0.15（−0.19 到 −0.02） | −0.07（−0.25 到 0.04） |
-| 全部时间点 | anchored | −0.32（−0.53 到 0.09） | −0.12（−0.41 到 0.13） |
-| 全部时间点 | pairwise | −0.20（−0.37 到 0.10） | +0.03（−0.10 到 0.14） |
-| 全部时间点 | state space | −0.10（−0.27 到 0.11） | +0.04（−0.28 到 0.16） |
+| Two time points, all trajectories | KARST | −0.03 (−0.19 to 0.15) | +0.03 (−0.16 to 0.21) |
+| Two time points, one interval | KARST | −0.15 (−0.19 to −0.02) | −0.07 (−0.25 to 0.04) |
+| All time points | anchored | −0.32 (−0.53 to 0.09) | −0.12 (−0.41 to 0.13) |
+| All time points | pairwise | −0.20 (−0.37 to 0.10) | +0.03 (−0.10 to 0.14) |
+| All time points | state space | −0.10 (−0.27 to 0.11) | +0.04 (−0.28 to 0.16) |
 
-固定噪声后，没有一臂与 alfak 有可靠差别。原始 Fig. 2d 的差别主要来自预报的大小与噪声的接近程度。
+With noise held fixed, no arm differs reliably from alfak. The raw Fig. 2d differences come mainly from how close the size of the forecast is to the noise.
 
-## 4. 预报以后各次传代（`validation/sparse_joint/salehi_horizon`）
+## 4. Forecasting later passages (`validation/sparse_joint/salehi_horizon`)
 
-- 本轮的拟合（KARST 各臂与 KARST free）从输入的最后一次传代预报，用本 benchmark 的引擎（`alfakR::predict_evo` 的 ABM，5 次重复，pm 5e-5，nb 1e7），往后 4 次传代以内的每一次子代传代都作为真值。
-- alfak 的预报行沿用 alfak2 时期那次运行的结果（同一批 alfak 拟合，同一引擎），只改了方法名。
-- 分数：每个细胞的对数分数，相对于"不变"（亲代的频率），混合权重 0.01，在拟合景观的核型上计算。
-- 区间：按谱系类型的 bootstrap 95% 区间。
-- 本轮各表与 alfak2 时期那次运行的差都在 1e-14 以内。
+- This round's fits (each KARST arm and KARST free) forecast from the last passage of the input, using this benchmark's engine (the ABM of `alfakR::predict_evo`, 5 replicates, pm 5e-5, nb 1e7); every daughter passage within the next 4 passages is used as truth.
+- alfak's forecast rows reuse the results of that alfak2-era run (same alfak fits, same engine); only the method name was changed.
+- Score: log score per cell, relative to "no change" (the parent's frequencies), mixing weight 0.01, computed on the karyotypes of the fitted landscape.
+- Intervals: bootstrap 95% intervals by lineage type.
+- All tables of this round differ from that alfak2-era run by less than 1e-14.
 
-**两个时间点**：143 条轨迹共有的 986 行。
+**Two time points**: the 986 rows shared by 143 trajectories.
 
-| 往后传代 | KARST 相对"不变" | alfak 相对"不变" | KARST 减 alfak | KARST 更高的行 |
+| Passages ahead | KARST vs "no change" | alfak vs "no change" | KARST minus alfak | Rows where KARST is higher |
 |---|---|---|---|---|
-| 1 次（471 行） | +0.47（0.17 到 0.67） | −0.16（−0.76 到 0.22） | +0.63（0.34 到 0.99） | 65% |
-| 2 次（280 行） | +0.27（−0.44 到 0.79） | −1.10（−2.17 到 −0.20） | +1.37（0.90 到 2.04） | 70% |
-| 3–4 次（235 行） | −0.81（−1.96 到 0.43） | −2.14（−3.53 到 −0.73） | +1.33（1.10 到 1.63） | 71% |
-| 全部 | | | +1.01（0.67 到 1.40） | 68% |
+| 1 (471 rows) | +0.47 (0.17 to 0.67) | −0.16 (−0.76 to 0.22) | +0.63 (0.34 to 0.99) | 65% |
+| 2 (280 rows) | +0.27 (−0.44 to 0.79) | −1.10 (−2.17 to −0.20) | +1.37 (0.90 to 2.04) | 70% |
+| 3–4 (235 rows) | −0.81 (−1.96 to 0.43) | −2.14 (−3.53 to −0.73) | +1.33 (1.10 to 1.63) | 71% |
+| All | | | +1.01 (0.67 to 1.40) | 68% |
 
-KARST free 往后 1 次传代 +0.44（0.18 到 0.61），不比默认（balance）高。
+KARST free at 1 passage ahead is +0.44 (0.18 to 0.61), not higher than the default (balance).
 
-**全部时间点**：3 次及以上传代的 99 条轨迹，四臂共有的 677 行。
+**All time points**: 99 trajectories with 3 or more passages, the 677 rows shared by all four arms.
 
-| 往后传代 | anchored | pairwise | state space | alfak |
+| Passages ahead | anchored | pairwise | state space | alfak |
 |---|---|---|---|---|
-| 1 次（346 行） | +0.78（0.35 到 1.01） | +0.78（0.31 到 1.02） | +0.77（0.26 到 1.01） | +0.25（−0.15 到 0.61） |
-| 2 次（191 行） | +0.74（−0.24 到 1.38） | +0.69（−0.35 到 1.37） | +0.63（−0.37 到 1.28） | −0.66（−1.35 到 −0.25） |
-| 3–4 次（140 行） | −0.01（−1.86 到 1.39） | −0.22（−2.05 到 1.22） | −0.55（−2.08 到 0.70） | −2.18（−2.79 到 −1.80） |
+| 1 (346 rows) | +0.78 (0.35 to 1.01) | +0.78 (0.31 to 1.02) | +0.77 (0.26 to 1.01) | +0.25 (−0.15 to 0.61) |
+| 2 (191 rows) | +0.74 (−0.24 to 1.38) | +0.69 (−0.35 to 1.37) | +0.63 (−0.37 to 1.28) | −0.66 (−1.35 to −0.25) |
+| 3–4 (140 rows) | −0.01 (−1.86 to 1.39) | −0.22 (−2.05 to 1.22) | −0.55 (−2.08 to 0.70) | −2.18 (−2.79 to −1.80) |
 
-| 配对差（全部跨度） | 差 | 谱系区间 | 前者更高的行 |
+| Paired difference (all horizons) | Difference | Lineage interval | Rows where the former is higher |
 |---|---|---|---|
-| anchored 减 alfak | +1.12 | 0.55 到 1.47 | 69% |
-| pairwise 减 alfak | +1.06 | 0.47 到 1.44 | 69% |
-| state space 减 alfak | +0.96 | 0.40 到 1.31 | 69% |
-| state space 减 anchored | −0.15 | −0.20 到 −0.05 | 35% |
-| pairwise 减 anchored | −0.06 | −0.10 到 −0.03 | 46% |
-| free 减 anchored | −0.15 | −0.24 到 −0.01 | 32% |
+| anchored minus alfak | +1.12 | 0.55 to 1.47 | 69% |
+| pairwise minus alfak | +1.06 | 0.47 to 1.44 | 69% |
+| state space minus alfak | +0.96 | 0.40 to 1.31 | 69% |
+| state space minus anchored | −0.15 | −0.20 to −0.05 | 35% |
+| pairwise minus anchored | −0.06 | −0.10 to −0.03 | 46% |
+| free minus anchored | −0.15 | −0.24 to −0.01 | 32% |
 
-全部时间点对两个时间点，同一批轨迹（636 行）：anchored +0.36（0.14 到 0.49，90% 的行更高），alfak +0.01（−0.71 到 0.91）。两种设计选取景观核型的方式不同，所以跨设计只比较各自相对"不变"的增益。
+All time points vs two time points, on the same trajectories (636 rows): anchored +0.36 (0.14 to 0.49, 90% of rows higher), alfak +0.01 (−0.71 to 0.91). The two designs choose the landscape karyotypes differently, so across designs only each design's gain relative to "no change" is compared.
 
-## 5. 与 alfak2 的逐个比对（`analysis/compare_rounds/`）
+## 5. One-by-one comparison with alfak2 (`analysis/compare_rounds/`)
 
-| 方法 | 对照 | 拟合（按 minobs） | 状态相同 | 景观相同（≤1e-16） | 交叉验证的预测相同 | ABM 预报相同 |
+| Method | Compared with | Fits (by minobs) | Same status | Same landscape (≤1e-16) | Same cross-validation predictions | Same ABM forecasts |
 |---|---|---|---|---|---|---|
-| anchored | alfak2 05a8855 | 8071 | 全部 | 两边都成功的全部 | 全部 | 全部 |
-| state space | alfak2 05a8855 | 3265 | 全部 | 全部 | 全部 | 全部 |
-| pairwise | alfak2 05a8855 | 3265 | 全部 | 全部 | ABM w4 222/1200，w8 144/1200，Salehi 18/556，错分率 2/125 + 2/125 | 全部 |
-| anchored / state space / pairwise | KARST b9a275e | 同上 | 除 b9a275e 缺的 1 个 Salehi 拟合外全部 | 全部 | anchored、state space 全部；pairwise 同上 | 全部 |
+| anchored | alfak2 05a8855 | 8071 | all | all where both sides succeeded | all | all |
+| state space | alfak2 05a8855 | 3265 | all | all | all | all |
+| pairwise | alfak2 05a8855 | 3265 | all | all | ABM w4 222/1200, w8 144/1200, Salehi 18/556, missegregation rate 2/125 + 2/125 | all |
+| anchored / state space / pairwise | KARST b9a275e | as above | all except the 1 Salehi fit missing from b9a275e | all | anchored, state space all; pairwise as above | all |
 
-pairwise 交叉验证不同的拟合，都是各时间点深度不同的输入，这正是修复针对的情形。ABM 打分（含交叉验证的指标和秩相关）的最大差：anchored 0.027，state space 0.0010，pairwise 0.095。景观只差 1e-16 时，秩相关的并列也会不同。
+The pairwise fits whose cross-validation differs are all inputs whose depth differs between time points, which is exactly the case the fix targets. The largest differences in the ABM scores (including the cross-validation metrics and rank correlations): anchored 0.027, state space 0.0010, pairwise 0.095. Even when landscapes differ by only 1e-16, ties in the rank correlations can differ.
 
-## 6. 开发 benchmark（`benchmark/sparse_two_timepoint`，含 held-out）
+## 6. Development benchmark (`benchmark/sparse_two_timepoint`, including held-out)
 
-- 1908 个 KARST 拟合重做；alfak（minobs 5、20）和无信息预测器的 811 个拟合复制过来。距离 3–4 的扫描再做 1920 个 KARST 拟合。每个任务一个拟合，与本轮同一镜像、同一 KARST 库。
-- 与 b9a275e 一轮的开发 benchmark 比，除运行时间外，所有指标完全相同，生成的 tex 表格逐字节相同。
-- held-out 上，balance 的 168 个拟合与 alfak2 dbc35fe 那次重跑（2026-11-16，与 0.2.0 相同的模型代码，在 Mac 上运行）相比：146 个的适应度差 < 1e-4，最大 0.021，覆盖率完全相同（0.977 / 0.989 / 0.982）。差别来自 Mac 与 HPC 的浮点运算。
-- 与 2026-11-11 那次更早的运行相比，误差和秩相关差 ≤ 0.002；距离 1、2 的覆盖率更高（held-out balance 0.96 / 0.94 → 0.99 / 0.98），因为那批拟合早于 11-13 对"任何时间点都没见过的核型"加入的亏损项（kappa = 1.1）。
+- 1908 KARST fits were redone; the 811 fits of alfak (minobs 5, 20) and of the uninformative predictor were copied over. The distance 3–4 sweep did another 1920 KARST fits. One fit per task, with the same image and the same KARST library as this round.
+- Compared with the development benchmark of round b9a275e, all metrics except run time are exactly the same, and the generated tex tables are byte-identical.
+- On held-out, the 168 balance fits compared with the alfak2 dbc35fe rerun (2026-11-16, same model code as 0.2.0, run on a Mac): 146 have fitness differences < 1e-4, the largest is 0.021, and the coverage is exactly the same (0.977 / 0.989 / 0.982). The differences come from floating-point arithmetic on the Mac vs HPC.
+- Compared with the earlier run of 2026-11-11, errors and rank correlations differ by ≤ 0.002; coverage at distances 1 and 2 is higher (held-out balance 0.96 / 0.94 → 0.99 / 0.98), because those fits predate the deficit term for "karyotypes not seen at any time point" added on 11-13 (kappa = 1.1).
 
-| 距离 | 无信息 | 两层流程 | alfak（minobs 20） | sparse joint | balance（默认） |
+| Distance | Uninformative | Two-layer pipeline | alfak (minobs 20) | sparse joint | balance (default) |
 |---|---|---|---|---|---|
-| 开发 0 | 0.046 | 0.045 (0.30) | 1.073 (0.23) | 0.033 (0.44), 0.97 | 0.026 (0.47), 0.98 |
-| 开发 1 | 0.092 | 0.091 (0.24) | 1.186 (0.20) | 0.055 (0.43), 0.97 | 0.044 (0.45), 0.99 |
-| 开发 2 | 0.137 | 0.136 (0.15) | 1.297 (0.18) | 0.079 (0.36), 0.95 | 0.066 (0.38), 0.98 |
+| Development 0 | 0.046 | 0.045 (0.30) | 1.073 (0.23) | 0.033 (0.44), 0.97 | 0.026 (0.47), 0.98 |
+| Development 1 | 0.092 | 0.091 (0.24) | 1.186 (0.20) | 0.055 (0.43), 0.97 | 0.044 (0.45), 0.99 |
+| Development 2 | 0.137 | 0.136 (0.15) | 1.297 (0.18) | 0.079 (0.36), 0.95 | 0.066 (0.38), 0.98 |
 | held-out 0 | 0.044 | 0.043 (0.22) | 0.277 (0.16) | 0.032 (0.41), 0.97 | 0.025 (0.44), 0.98 |
 | held-out 1 | 0.090 | 0.090 (0.16) | 0.371 (0.13) | 0.058 (0.36), 0.98 | 0.046 (0.37), 0.99 |
 | held-out 2 | 0.136 | 0.135 (0.09) | 0.454 (0.12) | 0.083 (0.30), 0.96 | 0.068 (0.31), 0.98 |
 
-RMSE，括号内为 Spearman，再后是 95% 区间的覆盖率；八个核心场景合并，每格 96 个数据集。方法文档（`doc/karst_method.tex` 第 5 节和附录、`doc/generated/`）的数字取自这次重跑。
+RMSE, with Spearman in parentheses, followed by the coverage of the 95% interval; the eight core scenarios pooled, 96 datasets per cell. The numbers in the method document (`doc/karst_method.tex` Section 5 and the appendix, `doc/generated/`) are taken from this rerun.
 
-## 7. CV 分数的并列（审阅第 8 条）
+## 7. Ties in CV scores (review item 8)
 
-用户 2026-11-18 决定去重（见第 1 节第 3 条）。重跑的是按 CV 挑选的分析：`analyse_abm`、`analyse_salehi`、`summary_comparison`、Fig. 4（80 个任务）、Fig. 6（8 个任务）、`fig456_summary`（作业 22041408–22041417），不重新拟合。受影响的表：
+The user decided on 2026-11-18 to de-duplicate (see Section 1, item 3). What was rerun is the analyses that select by CV: `analyse_abm`, `analyse_salehi`, `summary_comparison`, Fig. 4 (80 tasks), Fig. 6 (8 tasks), `fig456_summary` (jobs 22041408–22041417), without refitting. Affected tables:
 
-| 文章图 | 表 | KARST 的变化 |
+| Paper figure | Table | Change for KARST |
 |---|---|---|
-| Supp. Fig. 4c | `abm/supp4c_selected_by_cv.tsv` | 选出的拟合的 r、R²、ρ 中位数变化 ≤ 0.09 |
-| Supp. Fig. 5a、5b，Fig. 1g | `abm/supp5*`、`abm/fig1g_beat_baseline.tsv` | 样本数少 35–50%；胜过不变的比例变化 ≤ 0.03（Supp. 5b），按 λ 和传代分的 Fig. 1g 各格 ≤ 0.07 |
-| Fig. 2b | `salehi/fig2b_*` | CV 中位数 0.86 → 0.89（两个时间点） |
-| Fig. 2c | `salehi/fig2c_angle_test.tsv` | 全部时间点 anchored 的角度中位数 55.3° → 66.7°，pairwise 51.7° → 64.5°；仍都显著 |
-| Fig. 2d（文章规则） | `salehi/fig2d_wasserstein.tsv` | 见第 3 节，Spearman 变化 ≤ 0.01 |
-| Fig. 2e、2f | `salehi/fig2e_*`、`salehi/fig2f_*` | 每臂少 1–3 条轨迹；合并的比例变化 ≤ 0.02，按谱系类型分的小组最多 0.25 |
-| Fig. 3e–f（文章规则的行） | `salehi/fig3ef_novel_karyotypes.tsv` | 回归数少 1–3 |
-| Fig. 4、6 | `fig456/` | 本轮内不变（这两项本来就按最小 minobs 去重，只是判断并列用严格相等） |
+| Supp. Fig. 4c | `abm/supp4c_selected_by_cv.tsv` | medians of r, R², ρ of the selected fits change by ≤ 0.09 |
+| Supp. Fig. 5a, 5b, Fig. 1g | `abm/supp5*`, `abm/fig1g_beat_baseline.tsv` | 35–50% fewer samples; the proportion beating no change changes by ≤ 0.03 (Supp. 5b), and by ≤ 0.07 in each cell of Fig. 1g split by λ and passage |
+| Fig. 2b | `salehi/fig2b_*` | CV median 0.86 → 0.89 (two time points) |
+| Fig. 2c | `salehi/fig2c_angle_test.tsv` | median angle for all time points anchored 55.3° → 66.7°, pairwise 51.7° → 64.5°; all still significant |
+| Fig. 2d (paper rule) | `salehi/fig2d_wasserstein.tsv` | see Section 3, Spearman changes by ≤ 0.01 |
+| Fig. 2e, 2f | `salehi/fig2e_*`, `salehi/fig2f_*` | 1–3 fewer trajectories per arm; pooled proportions change by ≤ 0.02, subgroups by lineage type by at most 0.25 |
+| Fig. 3e–f (rows of the paper rule) | `salehi/fig3ef_novel_karyotypes.tsv` | 1–3 fewer regressions |
+| Fig. 4, 6 | `fig456/` | unchanged within this round (these two were already de-duplicated by the smallest minobs; only ties were judged by strict equality) |
 
-审阅中标"可能"的另外两条（第 9、10 条），以及读取 alfak2 时期结果的脚本中的旧名映射，仍未改。
+The two other items marked "possible" in the review (items 9 and 10), and the old-name mapping in the scripts that read alfak2-era results, are still unchanged.
 
-## 8. 运行
+## 8. Runs
 
-作业号记在 HPC 的 `build/e7e32f8_jobs.tsv`：
-- 编译 22020580；
-- 拟合 22020610–22020636（11 档加 KARST free、开发 benchmark 两档）、距离 3–4 扫描 22020668；
-- 打分 22020638，collect_analyse 22020640，Fig. 4 22020641 / 643，Fig. 6 22020645 / 647，fig456_summary 22020649，Fig. 2d 噪声 22020650 / 652；
-- 比对 22020654–22020659；
-- 多时程检验 22020660 / 662，分析 22040335（初次 22020664 因节点上没有 X11 无法画 PNG 而失败，改用 cairo 后重跑）和 22020666；
-- 开发 benchmark 打分和报告 22020670，文档图表 22020671。
+Job ids are recorded in `build/e7e32f8_jobs.tsv` on HPC:
+- build 22020580;
+- fits 22020610–22020636 (11 groups plus KARST free and the two groups of the development benchmark), distance 3–4 sweep 22020668;
+- scoring 22020638, collect_analyse 22020640, Fig. 4 22020641 / 643, Fig. 6 22020645 / 647, fig456_summary 22020649, Fig. 2d noise 22020650 / 652;
+- comparisons 22020654–22020659;
+- multi-horizon test 22020660 / 662, analysis 22040335 (the first attempt 22020664 failed because the node had no X11 to draw PNGs; rerun after switching to cairo) and 22020666;
+- development benchmark scoring and report 22020670, document figures and tables 22020671.
 
-拟合从 2026-11-17 21:09 跑到 2026-11-18 06:31，9927 个任务全部完成；5 次 NODE_FAIL 由 Slurm 自动重排。所有作业在 qos xxlarge，每个任务 1 CPU，每个数组配加时监控。
+Fits ran from 2026-11-17 21:09 to 2026-11-18 06:31, and all 9927 tasks completed; 5 NODE_FAILs were requeued automatically by Slurm. All jobs ran in qos xxlarge, 1 CPU per task, with an add-hours monitor for each array.
 
-## 9. 文件
+## 9. Files
 
-- `analysis/compare_rounds/`：与 alfak2 05a8855 和 KARST b9a275e 的逐个比对。
-- `analysis/summary/`、`analysis/abm/`、`analysis/salehi/`、`analysis/fig456/`：文章检验。
-- `analysis/fig2d_noise/`：Fig. 2d 的原始与固定噪声版本。
-- `validation/sparse_joint/salehi_horizon/results/`（HPC 上 karst 克隆内）：多时程检验的行与报告。
-- `benchmark/results/sparse_two_timepoint/`（同上）：开发 benchmark 的指标、报告和 `generated/`；`round_b9a275e/` 是停掉那一轮的结果。
+- `analysis/compare_rounds/`: one-by-one comparisons with alfak2 05a8855 and KARST b9a275e.
+- `analysis/summary/`, `analysis/abm/`, `analysis/salehi/`, `analysis/fig456/`: paper tests.
+- `analysis/fig2d_noise/`: raw and noise-fixed versions of Fig. 2d.
+- `validation/sparse_joint/salehi_horizon/results/` (inside the karst clone on HPC): rows and report of the multi-horizon test.
+- `benchmark/results/sparse_two_timepoint/` (same): metrics, report and `generated/` of the development benchmark; `round_b9a275e/` holds the results of the stopped round.

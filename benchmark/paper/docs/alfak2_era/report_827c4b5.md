@@ -1,175 +1,175 @@
-# alfak2 827c4b5：两个时间点时自动选择初始状态（退步记录）
+# alfak2 827c4b5: automatic choice of the initial state with two time points (record of a regression)
 
-日期：2026-11-17。alfak2 827c4b5（dev），alfakR dev2 f93b2d2。结果目录 `results_827c4b5/`。
+Date: 2026-11-17. alfak2 827c4b5 (dev), alfakR dev2 f93b2d2. Results directory `results_827c4b5/`.
 
-> **这一轮不是正式结果。** 它记录的是一次退步：827c4b5 的默认设置在一次传代的窗口上降低了景观准确度，用户因此在 348addd 把默认改回 `"balance"`。正式结果见 `docs/report_348addd.md`（与 05a8855 相同）。
+> **This round is not an official result.** It records a regression: the default setting of 827c4b5 lowered landscape accuracy on windows of one passage, and the user therefore changed the default back to `"balance"` in 348addd. For the official results see `docs/report_348addd.md` (the same as 05a8855).
 >
-> 用语：输入的各列称"时间点"。Salehi 的一条"轨迹"由若干次传代组成。
+> Terms: the columns of the input are called "time points". A Salehi "trajectory" consists of several passages.
 
-## 0. 这一轮测的是什么
+## 0. What this round tests
 
-827c4b5 起，两个时间点时 `fit_sparse_joint()` 默认 `initial_state = "auto"`：
-1. 先在间隔上做一次核查拟合：balance 先验，非主要核型的整体水平留作一个自由的对数因子（`balance_level = "free"`），历史设为间隔本身。
-2. 这个对数水平高于 `auto_level = 1` 时改用 `"free"`（每个核型的初始丰度各自估计），否则仍用 `"balance"`。
-3. 超过两个时间点时，`"auto"` 就是 `"balance"`。
+From 827c4b5 on, with two time points `fit_sparse_joint()` defaults to `initial_state = "auto"`:
+1. First a check fit is done on the interval: balance prior, the overall level of the non-major karyotypes kept as one free log factor (`balance_level = "free"`), and the history set to the interval itself.
+2. When this log level is above `auto_level = 1`, `"free"` is used instead (the initial abundance of each karyotype estimated separately); otherwise `"balance"` is kept.
+3. With more than two time points, `"auto"` is simply `"balance"`.
 
-`run.Rds` 记录 `initial_state` 和 `initial_state_check`（水平、标准差、阈值、选择、核查拟合是否收敛）。
+`run.Rds` records `initial_state` and `initial_state_check` (level, standard deviation, threshold, choice, whether the check fit converged).
 
-**这一轮怎么跑的**
-- alfak2 默认臂全部重拟合：3107 个任务，两个时间点和全部时间点（anchored）。
-- pairwise 和 state_space 各重拟合 44 个核对输入。与 05a8855 相同后，其余从 `results_05a8855/` 链接。
-- alfakR 从 `results/` 链接。
+**How this round was run**
+- All of the alfak2 default arm refitted: 3107 tasks, two time points and all time points (anchored).
+- pairwise and state_space each refitted on 44 check inputs. After they were found identical to 05a8855, the rest were linked from `results_05a8855/`.
+- alfakR linked from `results/`.
 
-## 1. 结论
+## 1. Conclusions
 
-1. **改用 free 几乎只发生在一次传代的窗口（w2）和 Salehi 的 PDX 轨迹上**（第 2 节）。
-   - ABM w2：54%（λ 0.8 时 97%）。w4、w8：0%。
-   - misseg w2：95%。这些拟合用的就是真实错分率。
-   - Salehi：PDX 72%，体外 0%。
-2. **改用 free 的拟合，景观准确度明显下降**（第 4 节）。与同一输入在 05a8855 的 balance 拟合配对，都对照真值：
-   - ABM w2：景观 r 中位数 0.58 对 0.75，93% 的拟合更差；交叉验证留出预测对真值 0.47 对 0.66。
-   - misseg w2：每个真实错分率都更差。在 5e-5（错分率设对，本不该改）时，0.53 对 0.72。
-3. **原因**：核查拟合把历史设为间隔本身。窗口只有一次传代时，种群在整个历史中积累的"云"远大于一次传代能积累的。所以水平测到的主要是"真实历史远长于间隔"，而不是错分率设错。
-   - 各真实错分率下改用的比例几乎一样（31%–33%，几乎都在 w2）。
-   - 同一批模拟在 w4、w8 上水平都低。
-4. **预报分数略有提高，但不足以抵消。**
-   - ABM w2 第 10 次传代胜过基线：Euclidean 0.71 → 0.75，Wasserstein 0.70 → 0.74。
-   - Salehi 两个时间点：预报胜过亲代（Wasserstein）0.51 → 0.55；Fig. 2d（文章规则）0.25 → 0.58。
-   - 但 Salehi 的"适应度预测新核型出现"0.57 → 0.38。
-   - Fig. 4–6 与文章一致的结论：alfak2 两个时间点 11 → 12 条（共 19 条）。Fig. 4d 的 PDX_v 仍与文章方向相反（−1.15 → −0.80）。
-5. **决定**（用户）：
-   - 默认改回 `"balance"`（348addd）；`"auto"` 保留为可选项，文档写明它在一次传代的间隔上的局限。
-   - 这一轮只作为这次退步的记录。
+1. **Switching to free happens almost only on windows of one passage (w2) and on Salehi PDX trajectories** (Section 2).
+   - ABM w2: 54% (97% at λ 0.8). w4, w8: 0%.
+   - misseg w2: 95%. These fits use the true missegregation rate.
+   - Salehi: PDX 72%, in vitro 0%.
+2. **Fits that switched to free have clearly lower landscape accuracy** (Section 4). Paired with the balance fit of the same input in 05a8855, both against the truth:
+   - ABM w2: median landscape r 0.58 vs 0.75, 93% of fits worse; cross-validation held-out prediction against truth 0.47 vs 0.66.
+   - misseg w2: worse at every true missegregation rate. At 5e-5 (missegregation rate set correctly, where it should not switch), 0.53 vs 0.72.
+3. **Cause**: the check fit sets the history to the interval itself. When the window is only one passage, the "cloud" the population has accumulated over its whole history is much larger than what one passage can accumulate. So the level mainly measures "the true history is much longer than the interval", not a wrongly set missegregation rate.
+   - The fraction switched is almost the same at every true missegregation rate (31%–33%, almost all in w2).
+   - On the same simulations, the level is low in w4 and w8.
+4. **Forecast scores rise slightly, but not enough to offset this.**
+   - ABM w2 passage 10 beating the baseline: Euclidean 0.71 → 0.75, Wasserstein 0.70 → 0.74.
+   - Salehi two time points: forecast beating the parent (Wasserstein) 0.51 → 0.55; Fig. 2d (paper rule) 0.25 → 0.58.
+   - But Salehi "fitness predicts the appearance of new karyotypes" 0.57 → 0.38.
+   - Fig. 4–6 conclusions agreeing with the paper: alfak2 two time points 11 → 12 (of 19). Fig. 4d PDX_v is still in the direction opposite to the paper (−1.15 → −0.80).
+5. **Decision** (user):
+   - the default is changed back to `"balance"` (348addd); `"auto"` is kept as an option, and the documentation states its limitation on intervals of one passage.
+   - This round serves only as the record of this regression.
 
-## 2. 选择（`analysis/initial_state/choice.tsv`，`tables/initial_state.tsv`）
+## 2. Choice (`analysis/initial_state/choice.tsv`, `tables/initial_state.tsv`)
 
-两个时间点的输入，按来源和设计分组：
+Two-time-point inputs, grouped by source and design:
 
-| 来源 | 设计 | 输入 | 改用 free | 水平中位数（5% / 95%） | 核查拟合未收敛 |
+| Source | Design | Inputs | Switched to free | Median level (5% / 95%) | Check fit not converged |
 |---|---|---|---|---|---|
-| ABM | w2_ends | 400 | 54% | 1.07（−0.33 / 1.61） | 47 |
-| ABM | w4_ends | 400 | 0% | 0.09（−0.64 / 0.57） | 38 |
-| ABM | w8_ends | 400 | 0% | −0.82（−1.66 / −0.04） | 84 |
-| misseg | w2_ends | 125 | 95% | 1.38（1.03 / 1.79） | 26 |
-| misseg | w4_ends | 125 | 2 个 | 0.31（−0.19 / 0.76） | 23 |
-| misseg | w8_ends | 125 | 1 个 | −0.72（−1.31 / −0.07） | 26 |
-| Salehi | ends | 253 | 57% | 1.21（−1.43 / 2.78） | 28 |
+| ABM | w2_ends | 400 | 54% | 1.07 (−0.33 / 1.61) | 47 |
+| ABM | w4_ends | 400 | 0% | 0.09 (−0.64 / 0.57) | 38 |
+| ABM | w8_ends | 400 | 0% | −0.82 (−1.66 / −0.04) | 84 |
+| misseg | w2_ends | 125 | 95% | 1.38 (1.03 / 1.79) | 26 |
+| misseg | w4_ends | 125 | 2 | 0.31 (−0.19 / 0.76) | 23 |
+| misseg | w8_ends | 125 | 1 | −0.72 (−1.31 / −0.07) | 26 |
+| Salehi | ends | 253 | 57% | 1.21 (−1.43 / 2.78) | 28 |
 
-**ABM w2，按 λ**
-- λ 0.2：0%（水平中位数 −0.04）；
-- λ 0.4：31%（0.87）；
-- λ 0.8：97%（1.32）；
-- λ 1.6：86%（1.26）。
+**ABM w2, by λ**
+- λ 0.2: 0% (median level −0.04);
+- λ 0.4: 31% (0.87);
+- λ 0.8: 97% (1.32);
+- λ 1.6: 86% (1.26).
 
-**misseg w2，按真实错分率**：5e-5 92%，1e-4 100%，2e-4 100%，4e-4 100%，8e-4 84%。
+**misseg w2, by true missegregation rate**: 5e-5 92%, 1e-4 100%, 2e-4 100%, 4e-4 100%, 8e-4 84%.
 
 **Salehi**
-- 体外（SA039、SA906 两系）55 个输入，0%；PDX 198 个，72%。
-- PDX 按传代次数：2 次 90%，3 次 72%，4–5 次 64%，6 次及以上 64%。
-- 拟合所用的间隔（首尾两次传代之间的天数）：
-  - 体外中位数 100 天（10% / 90%：25 / 175）；PDX 45 天（15 / 90）。
-  - PDX 中，改用 free 的中位数 30 天，未改的 60 天。
-  - 水平与间隔的 Spearman 为 −0.63。
-- 所以体外不改、PDX 改，至少部分是间隔造成的，不能读成两类样本的生物学差别。
+- In vitro (the two lines SA039, SA906): 55 inputs, 0%; PDX: 198, 72%.
+- PDX by number of passages: 2 passages 90%, 3 passages 72%, 4–5 passages 64%, 6 or more 64%.
+- The interval used by the fit (days between the first and last passages):
+  - in vitro median 100 days (10% / 90%: 25 / 175); PDX 45 days (15 / 90).
+  - Within PDX, the median is 30 days for those switched to free and 60 days for those not switched.
+  - The Spearman between level and interval is −0.63.
+- So in vitro not switching and PDX switching is at least partly caused by the interval, and cannot be read as a biological difference between the two kinds of samples.
 
-## 3. 与 05a8855 的比对（`analysis/compare_rounds/`）
+## 3. Comparison with 05a8855 (`analysis/compare_rounds/`)
 
-**alfak2 默认臂**
-- 所有全部时间点的拟合与 05a8855 相同，景观差 ≤ 2.2e-16，交叉验证和 ABM 预报一致：ABM w4_all / w8_all 各 1200 个，misseg 各 125 个，Salehi all 546 个（按 minobs 计）。
-- 两个时间点中仍用 balance 的拟合也全部相同：历史、景观、预报都一样。
-- 只有改用 free 的拟合变了：Salehi 429 个、ABM w2 642 个、misseg w2 119 个、misseg w4/w8 3 个。
-- 没有一个拟合的状态（成功或失败）改变。
+**alfak2 default arm**
+- All all-time-point fits are identical to 05a8855, landscape difference ≤ 2.2e-16, and cross-validation and ABM forecasts agree: ABM w4_all / w8_all 1200 each, misseg 125 each, Salehi all 546 (counted by minobs).
+- The two-time-point fits that still use balance are also all identical: history, landscape, forecast all the same.
+- Only the fits that switched to free changed: Salehi 429, ABM w2 642, misseg w2 119, misseg w4/w8 3.
+- No fit changed its status (success or failure).
 
-**pairwise / state_space**：44 + 44 个核对输入与 05a8855 相同，景观差 ≤ 3.3e-16，其余链接。
+**pairwise / state_space**: the 44 + 44 check inputs are identical to 05a8855, landscape difference ≤ 3.3e-16; the rest linked.
 
-**打分的差别**：仍用 balance 的拟合，打分最大差到 0.03。05a8855 对 8512694 时也有同样大小的差别（0.039），是重复跑之间一直存在的打分波动，不是本轮的改动。
+**Differences in scoring**: for fits still using balance, scores differ by up to 0.03. 05a8855 against 8512694 had a difference of the same size (0.039); it is a scoring fluctuation that always exists between repeated runs, not a change of this round.
 
-## 4. 对照真值：改用 free 的拟合与它们的 balance 拟合（`analysis/initial_state/vs_truth.tsv`）
+## 4. Against the truth: fits switched to free and their balance fits (`analysis/initial_state/vs_truth.tsv`)
 
-`scripts/initial_state_vs_truth.R` 把每个改用 free 的拟合（827c4b5）与同一输入、同一设计和 minobs 在 05a8855 的 balance 拟合配对，两者都对照真值打分。表中是中位数。
+`scripts/initial_state_vs_truth.R` pairs each fit switched to free (827c4b5) with the balance fit of the same input, same design and minobs in 05a8855, and scores both against the truth. The table gives medians.
 
 **ABM w2**
 
-| 组 | 输入（拟合） | 景观 r | 一步邻居 rnn | 交叉验证留出预测对真值 |
+| Group | Inputs (fits) | Landscape r | One-step neighbours rnn | Cross-validation held-out prediction against truth |
 |---|---|---|---|---|
-| 全部 | 214（642） | 0.58 对 0.75（93% 更差） | 0.62 对 0.77 | 0.47 对 0.66（83% 更差） |
-| λ 0.4 | 31 | 0.25 对 0.42 | 0.28 对 0.48 | 0.09 对 0.30 |
-| λ 0.8 | 97 | 0.62 对 0.75 | 0.67 对 0.78 | 0.56 对 0.69 |
-| λ 1.6 | 86 | 0.62 对 0.80 | 0.65 对 0.80 | 0.44 对 0.67 |
+| All | 214 (642) | 0.58 vs 0.75 (93% worse) | 0.62 vs 0.77 | 0.47 vs 0.66 (83% worse) |
+| λ 0.4 | 31 | 0.25 vs 0.42 | 0.28 vs 0.48 | 0.09 vs 0.30 |
+| λ 0.8 | 97 | 0.62 vs 0.75 | 0.67 vs 0.78 | 0.56 vs 0.69 |
+| λ 1.6 | 86 | 0.62 vs 0.80 | 0.65 vs 0.80 | 0.44 vs 0.67 |
 
-ABM w2 的预报（Fig. 1g 的分数）：
-- 第 10 次传代胜过基线：Euclidean 14% 更好、6% 更差，Wasserstein 13% 对 7%；
-- 第 1–10 次传代平均胜出：23% 更好、12% 更差；
-- 第 10 次传代的夹角：37.6° 对 43.2°。λ 1.6 时更好（p = 8e-5），λ 0.4 和 0.8 时没有差别。
+Forecasts of ABM w2 (the scores of Fig. 1g):
+- passage 10 beating the baseline: Euclidean 14% better, 6% worse; Wasserstein 13% vs 7%;
+- average win over passages 1–10: 23% better, 12% worse;
+- angle at passage 10: 37.6° vs 43.2°. Better at λ 1.6 (p = 8e-5); no difference at λ 0.4 and 0.8.
 
-**misseg w2**（拟合用真实错分率）
+**misseg w2** (fits use the true missegregation rate)
 
-| 真实错分率 | 改用的输入 | 景观 r | 交叉验证留出预测对真值 |
+| True missegregation rate | Inputs switched | Landscape r | Cross-validation held-out prediction against truth |
 |---|---|---|---|
-| 5e-5 | 23 / 25 | 0.53 对 0.72（91% 更差） | 0.40 对 0.62 |
-| 1e-4 | 25 / 25 | 0.63 对 0.74 | 0.58 对 0.71 |
-| 2e-4 | 25 / 25 | 0.61 对 0.70 | 0.49 对 0.72 |
-| 4e-4 | 25 / 25 | 0.37 对 0.60 | 0.26 对 0.63 |
-| 8e-4 | 21 / 25 | 0.34 对 0.54 | 0.09 对 0.45 |
+| 5e-5 | 23 / 25 | 0.53 vs 0.72 (91% worse) | 0.40 vs 0.62 |
+| 1e-4 | 25 / 25 | 0.63 vs 0.74 | 0.58 vs 0.71 |
+| 2e-4 | 25 / 25 | 0.61 vs 0.70 | 0.49 vs 0.72 |
+| 4e-4 | 25 / 25 | 0.37 vs 0.60 | 0.26 vs 0.63 |
+| 8e-4 | 21 / 25 | 0.34 vs 0.54 | 0.09 vs 0.45 |
 
-每组 p ≤ 1e-3。仍用 balance 的输入（ABM 186 个、misseg 6 个）各项分数完全相同。
+p ≤ 1e-3 in every group. Inputs still using balance (ABM 186, misseg 6) have exactly the same scores on every measure.
 
-**核查拟合的收敛**
-- ABM w2：改用的 214 个中 17% 未收敛，未改的 186 个中 6%。
-- misseg w2：改用的 119 个中 21%。
-- 改用输入的水平与核查拟合是否收敛无关：ABM 中位数都是 1.29，misseg 1.37–1.40。所以改用不是未收敛造成的。
-- 最终拟合反而更常收敛：ABM 642 个中，未收敛从 126 个降到 48 个。
+**Convergence of the check fit**
+- ABM w2: 17% of the 214 switched did not converge, 6% of the 186 not switched.
+- misseg w2: 21% of the 119 switched.
+- The level of switched inputs is unrelated to whether the check fit converged: the median is 1.29 for both in ABM, 1.37–1.40 in misseg. So switching is not caused by non-convergence.
+- The final fits converge more often instead: in the 642 of ABM, non-converged went down from 126 to 48.
 
-## 5. 文章检验上的变化（`analysis/summary/summary_accuracy.tsv`）
+## 5. Changes in the paper tests (`analysis/summary/summary_accuracy.tsv`)
 
-与 05a8855 相比，114 行准确度中只有 10 行变了，都是 alfak2 两个时间点（另有一行是 Salehi 全部时间点的新核型，0.521 → 0.519）：
+Compared with 05a8855, only 10 of the 114 accuracy rows changed, all alfak2 two time points (plus one row for new karyotypes of Salehi all time points, 0.521 → 0.519):
 
-| 检验 | 05a8855 | 827c4b5 |
+| Test | 05a8855 | 827c4b5 |
 |---|---|---|
-| ABM w2 景观 Pearson r（1172 对） | 0.57 | 0.42 |
-| ABM w2 景观 Spearman rho | 0.57 | 0.44 |
+| ABM w2 landscape Pearson r (1172 pairs) | 0.57 | 0.42 |
+| ABM w2 landscape Spearman rho | 0.57 | 0.44 |
 | ABM w2 rescaled R² | 0.26 | 0.14 |
-| misseg w2 景观 r（125 对） | 0.67 | 0.47 |
-| ABM w2 第 10 次传代胜过基线，Euclidean | 0.71 | 0.75 |
-| ABM w2 第 10 次传代胜过基线，Wasserstein | 0.70 | 0.74 |
-| Salehi 两个时间点，预报胜过亲代，Wasserstein（371 对） | 0.51 | 0.55 |
-| Salehi 两个时间点，预报胜过亲代，Euclidean | 0.44 | 0.44 |
-| Salehi 两个时间点，适应度预测新核型出现（480 对） | 0.57 | 0.38 |
+| misseg w2 landscape r (125 pairs) | 0.67 | 0.47 |
+| ABM w2 passage 10 beating the baseline, Euclidean | 0.71 | 0.75 |
+| ABM w2 passage 10 beating the baseline, Wasserstein | 0.70 | 0.74 |
+| Salehi two time points, forecast beating the parent, Wasserstein (371 pairs) | 0.51 | 0.55 |
+| Salehi two time points, forecast beating the parent, Euclidean | 0.44 | 0.44 |
+| Salehi two time points, fitness predicting the appearance of new karyotypes (480 pairs) | 0.57 | 0.38 |
 
-**Salehi 改用 free 的输入**（`analysis/initial_state/effect.tsv`）：预报胜过亲代，Wasserstein 0.63 对 0.54（p = 0.004），Euclidean 0.43 对 0.44。
+**Salehi inputs switched to free** (`analysis/initial_state/effect.tsv`): forecast beating the parent, Wasserstein 0.63 vs 0.54 (p = 0.004), Euclidean 0.43 vs 0.44.
 
 **Fig. 2d**
-- 文章规则（`analysis/salehi/fig2d_wasserstein.tsv`）：alfak2 两个时间点 0.25 → 0.58（55 个拟合）。
-- 共有的行（`analysis/fig2d_noise/`）：
-  - 一个间隔：原始 0.45 → 0.59，与 alfakR 0.60 持平；固定抽样噪声后与 alfakR 的差 −0.07 → −0.04（−0.20 到 0.11）。
-  - 全部轨迹：原始 0.29 → 0.37（alfakR 0.32）。
-- Fig. 2d 主要反映抽样噪声（`docs/report_348addd.md` 第 4 节），所以这里的提高不说明景观更准。在有真值的模拟上，景观反而变差了。
+- Paper rule (`analysis/salehi/fig2d_wasserstein.tsv`): alfak2 two time points 0.25 → 0.58 (55 fits).
+- Shared rows (`analysis/fig2d_noise/`):
+  - one interval: raw 0.45 → 0.59, level with alfakR's 0.60; after fixing the sampling noise, the difference from alfakR −0.07 → −0.04 (−0.20 to 0.11).
+  - All trajectories: raw 0.29 → 0.37 (alfakR 0.32).
+- Fig. 2d mainly reflects sampling noise (`docs/report_348addd.md` Section 4), so the gain here does not mean the landscape is more accurate. On simulations with truth, the landscape got worse instead.
 
-**Fig. 4–6**（`analysis/fig456/conclusions.tsv`）
-- alfak2 两个时间点与文章一致的结论 12 / 19（05a8855：11）。多出的一条是 Fig. 4f 的 `log1p(dk):pair_typeparallel`。
-- Fig. 4d 的 PDX_v：−1.15 → −0.80，仍显著，方向与文章相反。
-- 其余各臂与 05a8855 相同。
-- Fig. 6 中"主导核型随错分率改变的景观"比例，各 alfak2 臂都略有变化（例如两个时间点 0.60 → 0.40），但结论一致。
+**Fig. 4–6** (`analysis/fig456/conclusions.tsv`)
+- alfak2 two time points, conclusions agreeing with the paper 12 / 19 (05a8855: 11). The extra one is `log1p(dk):pair_typeparallel` of Fig. 4f.
+- Fig. 4d PDX_v: −1.15 → −0.80, still significant, direction opposite to the paper.
+- All other arms are the same as 05a8855.
+- In Fig. 6, the fraction of "landscapes whose dominant karyotype changes with the missegregation rate" changes slightly for every alfak2 arm (for example two time points 0.60 → 0.40), but the conclusions agree.
 
-## 6. 运行
+## 6. Runs
 
-作业号记在 HPC 的 `build/827c4b5_jobs.tsv`：
-- 编译 21975233；
-- alfak2 五个数组 21975243 / 346 / 348 / 350 / 352；
-- 核对数组 21975354 / 356；
-- 打分 21980388；
-- collect_analyse 21992955，Fig. 4 21992958 / 962，Fig. 6 21992964 / 966，fig456_summary 21992968。
+Job numbers are recorded in `build/827c4b5_jobs.tsv` on HPC:
+- build 21975233;
+- five alfak2 arrays 21975243 / 346 / 348 / 350 / 352;
+- check arrays 21975354 / 356;
+- scoring 21980388;
+- collect_analyse 21992955, Fig. 4 21992958 / 962, Fig. 6 21992964 / 966, fig456_summary 21992968.
 
-运行中的问题：
-- **NODE_FAIL**：28 个任务。Slurm 会自动重排 NODE_FAIL 的任务，我又重交了其中 24 个，其中 13 个 ABM 任务的两份同时写同一个拟合文件夹。这 13 个已删除后各重拟合一次。以后先查 `sacct -D`，不再手动重交。
-- **链接**：有 3 个 state_space 核对任务还在跑时就做了链接，它们的位置被链到 05a8855。两分钟内发现并删掉了这 3 个链接；05a8855 的文件当天没有被改动。以后在所有核对任务结束后才链接。
-- **collect_analyse 第一次失败**（21980728）：free 拟合只有一个历史，没有 `history_profile`，`alfak2_chosen_history()` 遇到候选数 NA 时出错。已改为把它记作 "dt"（`R/coverage.R`），以前各轮的表不受影响。
+Problems during the run:
+- **NODE_FAIL**: 28 tasks. Slurm requeues NODE_FAIL tasks automatically; I resubmitted 24 of them as well, and for 13 ABM tasks among them two copies wrote to the same fit folder at the same time. These 13 were deleted and each refitted once. From now on check `sacct -D` first, and do not resubmit by hand.
+- **Links**: the links were made while 3 state_space check tasks were still running, so their locations were linked to 05a8855. These 3 links were found and deleted within two minutes; the files of 05a8855 were not changed that day. From now on, link only after all check tasks have finished.
+- **collect_analyse failed the first time** (21980728): free fits have only one history and no `history_profile`, and `alfak2_chosen_history()` failed when the number of candidates was NA. It now records it as "dt" (`R/coverage.R`); the tables of earlier rounds are not affected.
 
-## 7. 文件
+## 7. Files
 
-- `tables/initial_state.tsv`、`analysis/initial_state/choice.tsv`：选择与水平。
-- `analysis/initial_state/effect.tsv`：与 05a8855 配对的分数，按选择分组。
-- `analysis/initial_state/vs_truth.tsv`、`vs_truth_fits.tsv`：对照真值。
-- `analysis/compare_rounds/`：与 05a8855 的比对。
-- `analysis/fig2d_noise/`：Fig. 2d 原始与固定噪声后。
-- `analysis/summary/`、`analysis/abm/`、`analysis/salehi/`、`analysis/fig456/`：文章检验。
+- `tables/initial_state.tsv`, `analysis/initial_state/choice.tsv`: choice and level.
+- `analysis/initial_state/effect.tsv`: scores paired with 05a8855, grouped by choice.
+- `analysis/initial_state/vs_truth.tsv`, `vs_truth_fits.tsv`: against the truth.
+- `analysis/compare_rounds/`: comparison with 05a8855.
+- `analysis/fig2d_noise/`: Fig. 2d raw and after fixing the noise.
+- `analysis/summary/`, `analysis/abm/`, `analysis/salehi/`, `analysis/fig456/`: paper tests.

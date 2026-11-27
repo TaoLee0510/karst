@@ -19,7 +19,12 @@ bench_paths <- function() {
     commit <- sub("^KARST_COMMIT=", "", grep("^KARST_COMMIT=", lock, value = TRUE))
     results <- file.path("/share/lab_crd/taoli/Project/karst/benchmark/paper", paste0("results_", commit))
   }
-  list(data = data,
+  # ALIGN=karst (R/align.R): version B of the tests writes and reads a round
+  # of its own inside the round, <round>/align_karst/; `results_base` is the
+  # round, whose fits it is made from.
+  results_base <- results
+  if (align_mode() == "karst") results <- file.path(results, "align_karst")
+  list(data = data, results_base = results_base,
        abm_raw = file.path(data, "raw", "ABM"),
        misseg_raw = file.path(data, "raw", "ABM_varyMisseg"),
        salehi_inputs = file.path(data, "processed", "salehi", "alfak_inputs"),
@@ -44,7 +49,9 @@ bench_settings <- list(
   # bound is lowered to admit them (the ABM never produces them).
   salehi = list(n0 = 1e5, nb = 1e7, pm = 5e-5, karst_args = list(min_cn = 0)),
   # forecasts: ABM as S03, Salehi as 02_run_alfak.R; replicate r uses seed r
-  forecast_abm = list(reps = 5, horizon = 10, abm_pop_size = 2e5, abm_max_pop = 2e7, abm_delta_t = 0.1,
+  # (ABM_FORECAST_HORIZON: fewer sampling times, scripts/fig2d_truth.R)
+  forecast_abm = list(reps = 5, horizon = as.integer(Sys.getenv("ABM_FORECAST_HORIZON", "10")),
+                      abm_pop_size = 2e5, abm_max_pop = 2e7, abm_delta_t = 0.1,
                       abm_culling_survival = 0.01, abm_record_interval = 10),
   # (the Salehi forecasts take abm_max_pop = nb, as 02_run_alfak.R)
   forecast_salehi = list(reps = 5, abm_pop_size = 1e5, abm_delta_t = 0.1,

@@ -1,177 +1,177 @@
-# alfak2 348addd 与 alfakR 在 ALFA-K 文章检验上的对照报告（正式结果）
+# alfak2 348addd versus alfakR on the ALFA-K paper tests: comparison report (official results)
 
-日期：2026-11-17。alfak2 348addd（dev），alfakR dev2 f93b2d2。结果目录 `results_348addd/`。
+Date: 2026-11-17. alfak2 348addd (dev), alfakR dev2 f93b2d2. Results directory `results_348addd/`.
 
-> 用语：输入的各列称"时间点"。Salehi 的一条"轨迹"由若干次传代组成；SA609 等是"系"。
+> Terms: the input columns are called "time points". A Salehi "trajectory" consists of several passages; SA609 and the like are "lines".
 
-## 0. 这一轮测的是什么
+## 0. What this round tests
 
-| commit | 改动 | 对本 benchmark 的影响 |
+| commit | Change | Effect on this benchmark |
 |---|---|---|
-| 827c4b5 | 两个时间点时，默认 `initial_state = "auto"`：先在间隔上做一次核查拟合，非主要核型的整体水平（log level）高于 1 就改用 `"free"`，否则仍用 `"balance"` | 一次传代的窗口上，景观准确度明显下降，见 `docs/report_827c4b5.md`；不作为正式结果 |
-| 348addd | 默认改回 `initial_state = "balance"`；`"auto"` 保留为可选项，文档写明它在一次传代的间隔上的局限 | 所有拟合应与 05a8855 相同 |
+| 827c4b5 | With two time points, the default is `initial_state = "auto"`: first run a check fit on the interval; if the overall level (log level) of the non-major karyotypes is above 1, switch to `"free"`, otherwise keep `"balance"` | On one-passage windows the landscape accuracy drops clearly, see `docs/report_827c4b5.md`; not taken as official results |
+| 348addd | Default changed back to `initial_state = "balance"`; `"auto"` kept as an option, with the documentation stating its limitation on one-passage intervals | All fits should be the same as in 05a8855 |
 
-用户决定：这一轮不全部重拟合。先重拟合一个核对子集，与 05a8855 逐个比对；相同的话，其余拟合从 `results_05a8855/` 链接过来。打分、汇总和 Fig. 4–6 在本轮的目录里重新跑。
+User decision: this round does not refit everything. First refit a verification subset and compare it fit by fit with 05a8855; if they are the same, link the remaining fits from `results_05a8855/`. Scoring, summaries and Fig. 4–6 are rerun in this round's directory.
 
-## 1. 结论
+## 1. Conclusions
 
-1. **348addd 的结果与 05a8855 相同。**
-   - 104 个核对任务与 05a8855 逐个相同：状态一致，景观差 ≤ 1.1e-16，交叉验证和 ABM 预报完全一致（第 2 节）。这 104 个包括 827c4b5 改成 free 的输入。
-   - 汇总表的 114 行准确度数值，与 05a8855 逐行相同。Fig. 4–6 的结论也相同。唯一的差别是本轮没有 auto 这一臂。
-   - 因此文章各项检验的结果仍以 `docs/report_05a8855.md` 第 3–6 节为准，本报告不重复。
-2. **Salehi 的 Fig. 2d 主要反映抽样噪声。**
-   - 把一次传代的细胞随机分成两半，两半之间的距离与观测变化的 Spearman 为 0.73–0.77，比任何方法的预报都高。
-   - 固定这个噪声后（偏 Spearman），alfak2 没有一臂与 alfakR 有可靠差别。
-   - 原始 Fig. 2d 上 alfakR 领先（全部时间点：0.55 对 anchored 0.23），这个领先不能当作景观更准的证据（第 4 节）。
-3. **预报以后各次传代时，alfak2 在两种设计上都胜过 alfakR。** 这是多时间点会话的检验，读取 05a8855 的拟合（第 5 节）。
-   - 两个时间点：每个细胞的对数分数比 alfakR 高 1.01（谱系区间 0.67 到 1.40），每个预报跨度都更高。
-   - 全部时间点：anchored 高 1.12（0.55 到 1.47）。alfak2 三臂中 anchored 最好。
-   - 往后 1 次传代时，alfak2 胜过"不变"，alfakR 不胜过。
-4. **827c4b5 的教训**：两个时间点时，核查拟合把历史设为间隔本身。在一次传代的窗口上，测到的整体水平主要反映"真实历史远长于间隔"，而不是错分率设错。
-   - 错分率设对时也改用了 free，景观准确度因此下降。
-   - 详见 `docs/report_827c4b5.md`。
+1. **The results of 348addd are the same as those of 05a8855.**
+   - The 104 verification tasks are identical to 05a8855 one by one: same status, landscape differences ≤ 1.1e-16, cross-validation and ABM forecasts exactly the same (Section 2). These 104 include the inputs that 827c4b5 switched to free.
+   - The 114 rows of accuracy values in the summary table are the same as in 05a8855 row by row. The conclusions of Fig. 4–6 are also the same. The only difference is that this round has no auto arm.
+   - Therefore the results of the paper tests are still those in Sections 3–6 of `docs/report_05a8855.md`, and this report does not repeat them.
+2. **Salehi's Fig. 2d mainly reflects sampling noise.**
+   - Splitting the cells of one passage at random into two halves, the Spearman between the distance between the two halves and the observed change is 0.73–0.77, higher than for any method's forecast.
+   - After fixing this noise (partial Spearman), no alfak2 arm differs reliably from alfakR.
+   - In the raw Fig. 2d alfakR leads (all time points: 0.55 vs anchored 0.23); this lead cannot be taken as evidence of a more accurate landscape (Section 4).
+3. **When forecasting later passages, alfak2 beats alfakR in both designs.** This is the test from the multi-time-point session, reading the fits of 05a8855 (Section 5).
+   - Two time points: the log score per cell is 1.01 higher than alfakR's (lineage interval 0.67 to 1.40), and higher at every forecast horizon.
+   - All time points: anchored is 1.12 higher (0.55 to 1.47). Among the three alfak2 arms, anchored is best.
+   - 1 passage ahead, alfak2 beats "no change" and alfakR does not.
+4. **The lesson of 827c4b5**: with two time points, the check fit sets the history to the interval itself. On a one-passage window, the measured overall level mainly reflects that "the true history is much longer than the interval", not that the missegregation rate is set wrongly.
+   - free was used even when the missegregation rate was set correctly, so the landscape accuracy dropped.
+   - See `docs/report_827c4b5.md` for details.
 
-## 2. 拟合：核对子集加链接
+## 2. Fits: verification subset plus links
 
-核对子集（`tasks/348addd/`）：
+Verification subset (`tasks/348addd/`):
 
-| 组 | 输入 | 说明 |
+| Group | Inputs | Notes |
 |---|---|---|
-| ABM w2_ends | 28 | 827c4b5 改成 free 的输入，λ 0.4 / 0.8 / 1.6 各 8 个；λ 0.2（未改）4 个 |
-| misseg w2_ends | 20 | 827c4b5 改成 free 的输入，5 个真实错分率各 4 个 |
-| Salehi ends | 20 | 827c4b5 改成 free 的 16 个，未改的 4 个 |
-| 对照 | 28 | ABM w4/w8 ends 与 all 各 4 个，misseg 各 2 个，Salehi all 4 个 |
+| ABM w2_ends | 28 | inputs that 827c4b5 switched to free, 8 each for λ 0.4 / 0.8 / 1.6; 4 for λ 0.2 (not switched) |
+| misseg w2_ends | 20 | inputs that 827c4b5 switched to free, 4 for each of the 5 true missegregation rates |
+| Salehi ends | 20 | 16 switched to free by 827c4b5, 4 not switched |
+| Controls | 28 | 4 each for ABM w4/w8 ends and all, 2 each for misseg, 4 for Salehi all |
 | pairwise / state_space | 4 + 4 | ABM w4_all |
 
-`scripts/compare_rounds.R` 与 `results_05a8855` 比对（`analysis/compare_rounds/`）：
-- 每个拟合的状态都相同，两边都成功的拟合景观差都 ≤ 1.1e-16；
-- 交叉验证和 ABM 预报完全相同，所有拟合都用 `"balance"`；
-- 两边都没有成功的，按 minobs 计有 11 个：Salehi ends 8 个、Salehi all 3 个。它们的失败状态与 05a8855 一致。
+`scripts/compare_rounds.R` compares against `results_05a8855` (`analysis/compare_rounds/`):
+- every fit has the same status, and for fits that succeeded on both sides the landscape differences are all ≤ 1.1e-16;
+- cross-validation and ABM forecasts are exactly the same, and all fits use `"balance"`;
+- fits that succeeded on neither side number 11 by minobs: 8 Salehi ends, 3 Salehi all. Their failure status agrees with 05a8855.
 
-链接是在全部核对任务结束后做的：alfak2 3011 个、pairwise 1251 个、state_space 1251 个，alfakR 3107 个（来自 `results/`）。打分和分析只写入本轮的 `scores/`、`tables/` 和 `analysis/`，不写进被链接的拟合文件夹。
+The links were made after all verification tasks had finished: 3011 for alfak2, 1251 for pairwise, 1251 for state_space, 3107 for alfakR (from `results/`). Scoring and analysis write only to this round's `scores/`, `tables/` and `analysis/`, not into the linked fit folders.
 
-## 3. 文章检验
+## 3. Paper tests
 
-本轮重新打分并汇总，结果与 05a8855 逐行相同，见 `docs/report_05a8855.md`。
-- 第 3 节：汇总准确度。`analysis/summary/summary_accuracy.tsv` 的 114 行，数值和配对数全部相同。
-- 第 4 节：各项文章检验。
-- 第 5–6 节：Fig. 4–6。与文章结论一致的条数：
-  - alfak2 两个时间点 11/19，anchored 10/19，pairwise 9/19，state_space 10/19；
-  - alfakR 两个时间点 14/19，全部时间点 15/19；
-  - 文章自己的拟合（本代码重算）19/19。
+This round rescored and resummarised; the results are the same as in 05a8855 row by row, see `docs/report_05a8855.md`.
+- Section 3: summary accuracy. The 114 rows of `analysis/summary/summary_accuracy.tsv`, values and pair counts all the same.
+- Section 4: the individual paper tests.
+- Sections 5–6: Fig. 4–6. Number of conclusions agreeing with the paper:
+  - alfak2 two time points 11/19, anchored 10/19, pairwise 9/19, state_space 10/19;
+  - alfakR two time points 14/19, all time points 15/19;
+  - the paper's own fits (recomputed with this code) 19/19.
 
-## 4. Fig. 2d：原始与固定抽样噪声后（`analysis/fig2d_noise/`）
+## 4. Fig. 2d: raw and after fixing sampling noise (`analysis/fig2d_noise/`)
 
-Fig. 2d 把每个预报在下一次传代时的两个距离做跨轨迹的 Spearman：观测的变化（亲代到子代）和预测的变化（亲代到预报），都用 Wasserstein 距离。
+Fig. 2d computes a Spearman correlation across trajectories between two distances of each forecast at the next passage: the observed change (parent to daughter) and the predicted change (parent to forecast), both in Wasserstein distance.
 
-**文章的规则**：按 CV 分数挑拟合（`analysis/salehi/fig2d_wasserstein.tsv`）。
+**The paper's rule**: fits selected by CV score (`analysis/salehi/fig2d_wasserstein.tsv`).
 
-| 拟合 | 行数 | Spearman |
+| Fit | Rows | Spearman |
 |---|---|---|
-| alfak2 两个时间点 | 53 | 0.25 |
-| alfak2 全部时间点（anchored） | 52 | 0.33 |
+| alfak2 two time points | 53 | 0.25 |
+| alfak2 all time points (anchored) | 52 | 0.33 |
 | alfak2 pairwise | 53 | 0.57 |
 | alfak2 state space | 49 | 0.56 |
-| alfakR 两个时间点 | 44 | 0.45 |
-| alfakR 全部时间点 | 46 | 0.70 |
-| 文章 | 45 | 0.69 |
+| alfakR two time points | 44 | 0.45 |
+| alfakR all time points | 46 | 0.70 |
+| Paper | 45 | 0.69 |
 
-文章规则挑出的子集不同，行数又少，只覆盖 6 个谱系类型，所以各臂之间不能直接比。
+The subsets selected by the paper's rule differ, the row counts are small, and they cover only 6 lineage types, so the arms cannot be compared directly.
 
-**各臂共有的行**，不按 CV 挑选（`scripts/fig2d_noise.R`）：
-- 噪声 = 亲代与子代各自随机分成两半后，两半之间距离的平均（20 次分法），在 alfakR 景观的核型上计算。
-- 区间 = 按 6 个谱系类型的 bootstrap 95% 区间。
+**Rows shared by all arms**, without CV selection (`scripts/fig2d_noise.R`):
+- Noise = after splitting the parent and the daughter each at random into two halves, the mean distance between the halves (20 splits), computed on the karyotypes of the alfakR landscape.
+- Interval = bootstrap 95% interval over the 6 lineage types.
 
-| 设计与子集 | 行 | 噪声本身 | alfak2 原始 | alfak2 固定噪声 | alfakR 原始 | alfakR 固定噪声 |
+| Design and subset | Rows | Noise itself | alfak2 raw | alfak2 noise fixed | alfakR raw | alfakR noise fixed |
 |---|---|---|---|---|---|---|
-| 两个时间点，全部轨迹 | 471 | 0.75 | 0.29 | 0.47 | 0.32 | 0.44 |
-| 两个时间点，一个间隔（2 次传代） | 147 | 0.77 | 0.45 | 0.49 | 0.60 | 0.55 |
-| 全部时间点，3–10 次传代：anchored | 346 | 0.73 | 0.23 | 0.40 | 0.55 | 0.52 |
-| 同上：pairwise | 346 | | 0.35 | 0.55 | | |
-| 同上：state_space | 346 | | 0.45 | 0.56 | | |
+| Two time points, all trajectories | 471 | 0.75 | 0.29 | 0.47 | 0.32 | 0.44 |
+| Two time points, one interval (2 passages) | 147 | 0.77 | 0.45 | 0.49 | 0.60 | 0.55 |
+| All time points, 3–10 passages: anchored | 346 | 0.73 | 0.23 | 0.40 | 0.55 | 0.52 |
+| Same as above: pairwise | 346 | | 0.35 | 0.55 | | |
+| Same as above: state_space | 346 | | 0.45 | 0.56 | | |
 
-与 alfakR 的差（alfak2 减 alfakR）：
+Difference from alfakR (alfak2 minus alfakR):
 
-| 设计与子集 | 臂 | 原始 | 固定噪声 |
+| Design and subset | Arm | Raw | Noise fixed |
 |---|---|---|---|
-| 两个时间点，全部轨迹 | alfak2 | −0.03（−0.19 到 0.15） | +0.03（−0.16 到 0.21） |
-| 两个时间点，一个间隔 | alfak2 | −0.15（−0.19 到 −0.02） | −0.07（−0.25 到 0.04） |
-| 全部时间点 | anchored | −0.32（−0.53 到 0.09） | −0.12（−0.41 到 0.13） |
-| 全部时间点 | pairwise | −0.20（−0.37 到 0.10） | +0.03（−0.10 到 0.14） |
-| 全部时间点 | state_space | −0.10（−0.27 到 0.11） | +0.04（−0.28 到 0.16） |
+| Two time points, all trajectories | alfak2 | −0.03 (−0.19 to 0.15) | +0.03 (−0.16 to 0.21) |
+| Two time points, one interval | alfak2 | −0.15 (−0.19 to −0.02) | −0.07 (−0.25 to 0.04) |
+| All time points | anchored | −0.32 (−0.53 to 0.09) | −0.12 (−0.41 to 0.13) |
+| All time points | pairwise | −0.20 (−0.37 to 0.10) | +0.03 (−0.10 to 0.14) |
+| All time points | state_space | −0.10 (−0.27 to 0.11) | +0.04 (−0.28 to 0.16) |
 
-固定噪声后，没有一臂与 alfakR 有可靠差别。原始 Fig. 2d 的差别主要是预报的大小跟噪声走得有多近。这与多时间点会话的结果一致（alfak2 `validation/sparse_joint/cloud_level`，第 2 步）：一个间隔 −0.07（−0.25 到 0.04），anchored −0.13（−0.46 到 0.12），state_space +0.03。本轮重算得到相同的数。
+After fixing the noise, no arm differs reliably from alfakR. The differences in the raw Fig. 2d are mainly about how closely the size of the forecast follows the noise. This agrees with the result of the multi-time-point session (alfak2 `validation/sparse_joint/cloud_level`, step 2): one interval −0.07 (−0.25 to 0.04), anchored −0.13 (−0.46 to 0.12), state_space +0.03. This round's recomputation gives the same numbers.
 
-## 5. 预报以后各次传代（多时间点会话的检验）
+## 5. Forecasting later passages (test from the multi-time-point session)
 
-**来源**
-- alfak2 b9a3b9e，`validation/sparse_joint/salehi_horizon/`。表格复制在 HPC 的 `build/salehi_horizon_from_alfak2/`，列的含义见那里的 `COLUMNS.md`。
-- 只读 05a8855 的拟合，与本轮相同。用本 benchmark 的预报引擎重新预报：`alfakR::predict_evo` 的 ABM，5 次重复，pm 5e-5，nb 1e7。
+**Source**
+- alfak2 b9a3b9e, `validation/sparse_joint/salehi_horizon/`. The tables are copied to `build/salehi_horizon_from_alfak2/` on HPC; for the meaning of the columns see `COLUMNS.md` there.
+- Only the fits of 05a8855 are read, the same as in this round. Forecasts are redone with this benchmark's forecast engine: the ABM of `alfakR::predict_evo`, 5 replicates, pm 5e-5, nb 1e7.
 
-**设计**
-- 输入的最后一次传代往后 4 次传代以内，每一次子代传代都作为真值。
-- 分数：每个细胞的对数分数，相对于"不变"（亲代的频率）。正数表示预报在细胞实际所在的地方放了更多概率。
-- 在拟合景观的核型上计算；三个方法的景观核型相同。
-- 区间：按谱系类型的 bootstrap 95% 区间。
+**Design**
+- Within 4 passages after the last passage of the input, every daughter passage serves as truth.
+- Score: log score per cell, relative to "no change" (the parent's frequencies). A positive number means the forecast put more probability where the cells actually are.
+- Computed on the karyotypes of the fitted landscape; the three methods have the same landscape karyotypes.
+- Interval: bootstrap 95% interval over lineage types.
 
-**两个时间点**：143 条轨迹共有的 986 行。
+**Two time points**: the 986 rows shared across 143 trajectories.
 
-| 往后传代 | alfak2 相对"不变" | alfakR 相对"不变" | alfak2 减 alfakR | alfak2 更高的行 |
+| Passages ahead | alfak2 vs "no change" | alfakR vs "no change" | alfak2 minus alfakR | Rows where alfak2 is higher |
 |---|---|---|---|---|
-| 1 次（471 行） | +0.47（0.17 到 0.67） | −0.16（−0.76 到 0.22） | +0.63（0.34 到 0.99） | 65% |
-| 2 次（280 行） | +0.27（−0.44 到 0.79） | −1.10（−2.17 到 −0.20） | +1.37（0.90 到 2.04） | 70% |
-| 3–4 次（235 行） | −0.81（−1.96 到 0.43） | −2.14（−3.53 到 −0.73） | +1.33（1.10 到 1.63） | 71% |
-| 全部 | | | +1.01（0.67 到 1.40） | 68% |
+| 1 (471 rows) | +0.47 (0.17 to 0.67) | −0.16 (−0.76 to 0.22) | +0.63 (0.34 to 0.99) | 65% |
+| 2 (280 rows) | +0.27 (−0.44 to 0.79) | −1.10 (−2.17 to −0.20) | +1.37 (0.90 to 2.04) | 70% |
+| 3–4 (235 rows) | −0.81 (−1.96 to 0.43) | −2.14 (−3.53 to −0.73) | +1.33 (1.10 to 1.63) | 71% |
+| All | | | +1.01 (0.67 to 1.40) | 68% |
 
-- 按输入的间隔数分：一个间隔 +1.36（1.10 到 1.75），多于一个间隔 +0.81（0.38 到 1.33）。
-- 往后 2 次及以上，两种方法都不胜过"不变"。
+- By the number of intervals in the input: one interval +1.36 (1.10 to 1.75), more than one interval +0.81 (0.38 to 1.33).
+- 2 or more passages ahead, neither method beats "no change".
 
-**全部时间点**：3 次及以上传代的 99 条轨迹，四臂共有的 677 行。
+**All time points**: 99 trajectories with 3 or more passages, 677 rows shared by the four arms.
 
-| 往后传代 | anchored | pairwise | state_space | alfakR 全部时间点 |
+| Passages ahead | anchored | pairwise | state_space | alfakR all time points |
 |---|---|---|---|---|
-| 1 次（346 行），相对"不变" | +0.78（0.35 到 1.01） | +0.78 | +0.77 | +0.25（−0.15 到 0.61） |
-| 2 次（191 行） | +0.74 | +0.69 | +0.63 | −0.66（−1.35 到 −0.25） |
-| 3–4 次（140 行） | −0.01 | −0.22 | −0.55 | −2.18（−2.79 到 −1.80） |
+| 1 (346 rows), vs "no change" | +0.78 (0.35 to 1.01) | +0.78 | +0.77 | +0.25 (−0.15 to 0.61) |
+| 2 (191 rows) | +0.74 | +0.69 | +0.63 | −0.66 (−1.35 to −0.25) |
+| 3–4 (140 rows) | −0.01 | −0.22 | −0.55 | −2.18 (−2.79 to −1.80) |
 
-| 配对差（全部跨度） | 差 | 区间 | 前者更高的行 |
+| Paired difference (all horizons) | Difference | Interval | Rows where the first is higher |
 |---|---|---|---|
-| anchored 减 alfakR | +1.12 | 0.55 到 1.47 | 69% |
-| pairwise 减 alfakR | +1.06 | 0.47 到 1.44 | 69% |
-| state_space 减 alfakR | +0.96 | 0.40 到 1.31 | 69% |
-| state_space 减 anchored | −0.15 | −0.20 到 −0.05 | 35% |
-| pairwise 减 anchored | −0.06 | −0.10 到 −0.03 | 46% |
-| free 减 anchored | −0.15 | −0.24 到 −0.01 | 32% |
+| anchored minus alfakR | +1.12 | 0.55 to 1.47 | 69% |
+| pairwise minus alfakR | +1.06 | 0.47 to 1.44 | 69% |
+| state_space minus alfakR | +0.96 | 0.40 to 1.31 | 69% |
+| state_space minus anchored | −0.15 | −0.20 to −0.05 | 35% |
+| pairwise minus anchored | −0.06 | −0.10 to −0.03 | 46% |
+| free minus anchored | −0.15 | −0.24 to −0.01 | 32% |
 
-全部时间点对两个时间点，同一批轨迹（636 行）：
+All time points versus two time points, same set of trajectories (636 rows):
 
-| 方法 | 差 | 区间 | 前者更高的行 |
+| Method | Difference | Interval | Rows where the first is higher |
 |---|---|---|---|
-| alfak2（anchored 对两个时间点） | +0.36 | 0.14 到 0.49 | 90% |
-| alfakR | +0.01 | −0.71 到 0.91 | 54% |
+| alfak2 (anchored vs two time points) | +0.36 | 0.14 to 0.49 | 90% |
+| alfakR | +0.01 | −0.71 to 0.91 | 54% |
 
-两种设计选取景观核型的方式不同，所以跨设计只比较各自相对"不变"的增益，不比较原始对数似然。这个检验把全部时间点上原始 Fig. 2d 的排序倒了过来：Fig. 2d 是 alfakR 0.55 对 anchored 0.23，而对以后各次传代的预报，anchored 比 alfakR 高 1.12。
+The two designs choose landscape karyotypes in different ways, so across designs only each one's gain relative to "no change" is compared, not the raw log-likelihood. This test reverses the ranking of the raw Fig. 2d on all time points: in Fig. 2d it is alfakR 0.55 vs anchored 0.23, whereas for forecasts of later passages anchored is 1.12 higher than alfakR.
 
-## 6. 运行
+## 6. Runs
 
-作业号记在 HPC 的 `build/348addd_jobs.tsv`：
-- 编译 21986108；
-- 核对数组 21986131（alfak2，96 个任务，8G）和 21986133（pairwise / state_space，8 个任务，32G）；
-- 比对 21987401 / 403 / 405；
-- 打分 21987448；
-- collect_analyse 21987450；
-- Fig. 4 21987451 / 453，Fig. 6 21987455 / 457，fig456_summary 21987459；
-- Fig. 2d 噪声 21987525 / 527。
+Job IDs are recorded in `build/348addd_jobs.tsv` on HPC:
+- build 21986108;
+- verification arrays 21986131 (alfak2, 96 tasks, 8G) and 21986133 (pairwise / state_space, 8 tasks, 32G);
+- comparisons 21987401 / 403 / 405;
+- scoring 21987448;
+- collect_analyse 21987450;
+- Fig. 4 21987451 / 453, Fig. 6 21987455 / 457, fig456_summary 21987459;
+- Fig. 2d noise 21987525 / 527.
 
-所有作业都在 qos xxlarge，每个任务 1 CPU，每个数组配加时监控。没有 TIMEOUT、OOM 或 NODE_FAIL。
+All jobs ran on qos xxlarge, 1 CPU per task, with an add-hours monitor for every array. No TIMEOUT, OOM or NODE_FAIL.
 
-827c4b5 的作业排队时仍读 `hpc/alfak2.lock`，所以本轮通过 `ALFAK2_LOCK=hpc/locks/alfak2_348addd.lock` 指定自己的锁文件（`hpc/env.sh`）。827c4b5 跑完后，`hpc/alfak2.lock` 改为 348addd。
+The 827c4b5 jobs still read `hpc/alfak2.lock` while queued, so this round specifies its own lock file via `ALFAK2_LOCK=hpc/locks/alfak2_348addd.lock` (`hpc/env.sh`). After 827c4b5 finished, `hpc/alfak2.lock` was changed to 348addd.
 
-资源表（`tables/resources.Rds`）的 alfak2 部分取自 05a8855 的作业记录（`RESOURCES_ARGS="alfakR=8327282 alfak2=05a8855"`），因为绝大部分拟合是那一轮跑的。
+The alfak2 part of the resource table (`tables/resources.Rds`) is taken from the job records of 05a8855 (`RESOURCES_ARGS="alfakR=8327282 alfak2=05a8855"`), because the vast majority of the fits were run in that round.
 
-## 7. 文件
+## 7. Files
 
-- `analysis/compare_rounds/results_05a8855*_summary.tsv`：核对子集与 05a8855 的比对。
-- `analysis/summary/`、`analysis/abm/`、`analysis/salehi/`、`analysis/fig456/`：与 05a8855 相同的检验。
-- `analysis/fig2d_noise/`：`fig2d_noise.tsv`、`fig2d_noise_differences.tsv`、`figures/fig2d_noise.pdf`。
-- HPC `build/salehi_horizon_from_alfak2/`：多时间点会话的以后各次传代检验，包括 `all_time_points/`。
+- `analysis/compare_rounds/results_05a8855*_summary.tsv`: comparison of the verification subset with 05a8855.
+- `analysis/summary/`, `analysis/abm/`, `analysis/salehi/`, `analysis/fig456/`: the same tests as in 05a8855.
+- `analysis/fig2d_noise/`: `fig2d_noise.tsv`, `fig2d_noise_differences.tsv`, `figures/fig2d_noise.pdf`.
+- HPC `build/salehi_horizon_from_alfak2/`: the later-passage test of the multi-time-point session, including `all_time_points/`.

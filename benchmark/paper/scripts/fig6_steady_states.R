@@ -20,7 +20,7 @@ arm_i <- if (identical(args[1], "--index")) as.integer(args[2]) else match(args[
 stopifnot(!is.na(arm_i), arm_i <= nrow(fig456_arms))
 arm <- fig456_arms[arm_i, ]
 exclude <- Sys.getenv("FIG456_EXCLUDE", "1") != "0"
-out <- file.path(paths$results, "analysis", "fig456", if (exclude) "fig6" else "fig6_all_inputs")
+out <- file.path(analysis_root(paths), "fig456", if (exclude) "fig6" else "fig6_all_inputs")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 cat("Fig. 6, arm", arm$key, " exclusion", exclude, "\n")
 
@@ -37,13 +37,20 @@ x <- select_by_cv(x, "clean_id", "fi", "xv")
 x <- x[!duplicated(x$fi), ]
 cat("landscapes:", nrow(x), "\n")
 p <- 0.00002 * 2^(1:8)
+# version B (ALIGN=karst): landscapes on E, too long for alfakR's matrix
+# builder; the same steady state by align_find_steady_state() (R/align.R),
+# and only the karyotypes with a share above zero at some rate are kept
+align <- align_mode() == "karst"
+steady_state <- if (align) align_find_steady_state else
+  function(lscape, p) alfakR::find_steady_state(lscape = lscape, p = p, Nmax = 1)
 started <- proc.time()[["elapsed"]]
 df <- lapply(seq_len(nrow(x)), function(i) {
   lscape <- fig456_landscape(fig456_fit_dir(arm, x$fi[i], x$min_obs[i], paths))
   if (is.null(lscape)) return(NULL)
-  res <- do.call(cbind, lapply(p, function(p0) alfakR::find_steady_state(lscape = lscape, p = p0, Nmax = 1)))
+  res <- do.call(cbind, lapply(p, function(p0) steady_state(lscape, p0)))
   colnames(res) <- p
   res <- res[order(rowSums(res), decreasing = TRUE), ]
+  if (align) res <- res[rowSums(res) > 0, , drop = FALSE]
   attr(res, "min_obs") <- x$min_obs[i]
   attr(res, "fi") <- x$fi[i]
   cat(sprintf("%d %s: %d karyotypes, %d dominant, %.0f s\n", i, x$fi[i], nrow(res),

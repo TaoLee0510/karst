@@ -52,7 +52,7 @@ wdist <- function(ka, ma, kb, mb) {
   a <- is.finite(ma) & ma > 0
   b <- is.finite(mb) & mb > 0
   if (!any(a) || !any(b)) return(NaN)
-  tryCatch(transport::wasserstein(transport::wpp(s2m(ka[a]), mass = ma[a] / sum(ma[a])),
+  tryCatch(wasserstein_safe(transport::wpp(s2m(ka[a]), mass = ma[a] / sum(ma[a])),
                                   transport::wpp(s2m(kb[b]), mass = mb[b] / sum(mb[b]))),
            error = function(e) NaN)
 }

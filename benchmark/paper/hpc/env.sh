@@ -22,7 +22,9 @@ BENCH_SIF="${BENCH_SIF:-/share/lab_crd/taoli/Docker/cancer_kfl_r44_hpc_amd64_alf
 # the submitting shell (hpc/submit.sh exports ALL).
 KARST_LOCK="${KARST_LOCK:-${BENCH_DIR}/hpc/karst.lock}"
 source "${KARST_LOCK}"
-KARST_LIB="${BENCH_DIR}/lib/karst_${KARST_COMMIT}"
+# KARST_LIB (from the environment) names another library, e.g. an
+# uncommitted karst built into a staging folder for a study.
+KARST_LIB="${KARST_LIB:-${BENCH_DIR}/lib/karst_${KARST_COMMIT}}"
 # CRAN packages the image lacks, for the analyses of the paper's Fig. 4-6
 # (glmmTMB; hpc/build_extra_r.sh), after karst's library on the path.
 EXTRA_LIB="${BENCH_DIR}/lib/extra_r"
@@ -46,14 +48,18 @@ load_hpc_environment() {
 
 # Rscript inside the image, with the karst side library first on the
 # library path and the extra packages last. Arguments are passed to Rscript;
-# it runs in CONTAINER_PWD (default BENCH_DIR).
+# it runs in CONTAINER_PWD (default BENCH_DIR). BENCH_EXTRA_BIND binds one
+# more folder, read only (e.g. the dev results scripts/align_check.R reads).
 container_rscript() {
+  local extra_bind=()
+  [[ -z "${BENCH_EXTRA_BIND:-}" ]] || extra_bind=(--bind "${BENCH_EXTRA_BIND}:${BENCH_EXTRA_BIND}:ro")
   apptainer exec --cleanenv \
     --pwd "${CONTAINER_PWD:-${BENCH_DIR}}" \
     --bind "${KARST_DIR}:${KARST_DIR}" \
     --bind "${BENCH_DIR}:${BENCH_DIR}" \
     --bind "${PAPER_DATA}:${PAPER_DATA}:ro" \
     --bind "${ALFAK2_ERA_DIR}:${ALFAK2_ERA_DIR}:ro" \
+    ${extra_bind[@]+"${extra_bind[@]}"} \
     --env "KARST_LIB=${KARST_LIB}" \
     --env "EXTRA_LIB=${EXTRA_LIB}" \
     --env "PAPER_DATA=${PAPER_DATA}" \
@@ -67,6 +73,16 @@ container_rscript() {
     --env "COMPARE_METHOD=${COMPARE_METHOD:-karst}" \
     --env "COMPARE_OLD_METHOD=${COMPARE_OLD_METHOD:-${COMPARE_METHOD:-karst}}" \
     --env "STT_OUTPUT_DIR=${STT_OUTPUT_DIR:-}" \
+    --env "XV_SOURCE=${XV_SOURCE:-}" \
+    --env "ALIGN=${ALIGN:-}" \
+    --env "ALIGN_RESULTS=${ALIGN_RESULTS:-}" \
+    --env "DEV_EXTEND_ALFAK=${DEV_EXTEND_ALFAK:-}" \
+    --env "OWN_CHUNK_DIR=${OWN_CHUNK_DIR:-}" \
+    --env "CHECK_ALL=${CHECK_ALL:-}" \
+    --env "ABM_CELLS=${ABM_CELLS:-}" \
+    --env "ABM_FORECAST_HORIZON=${ABM_FORECAST_HORIZON:-10}" \
+    --env "F2T_ROOT=${F2T_ROOT:-}" \
+    --env "MISSEG_FORECAST=${MISSEG_FORECAST:-}" \
     --env "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID:-}" \
     --env "OMP_NUM_THREADS=1" \
     --env "OPENBLAS_NUM_THREADS=1" \

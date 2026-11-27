@@ -4,7 +4,10 @@
 #
 # After collect_abm.R, collect_salehi.R, analyse_salehi.R (per_fit.Rds) and
 # collect_resources.R. Writes to BENCH_RESULTS/analysis/summary/ and the
-# figure BENCH_RESULTS/figures/summary_comparison.{pdf,png}.
+# figure BENCH_RESULTS/figures/summary_comparison.{pdf,png} (with
+# XV_SOURCE=alfak_target: KARST's cross-validation scored against alfak's
+# targets, into analysis_xv_alfak_target/ and figures_xv_alfak_target/,
+# reading that run's per_fit.Rds; R/xv_source.R).
 #
 # Two groups of inputs, each method fitted to the same time points:
 #   2 time points    first and last time point: ABM and missegregation windows of 2,
@@ -55,8 +58,9 @@ for (f in list.files("R", full.names = TRUE)) source(f)
 suppressPackageStartupMessages(library(ggplot2))
 paths <- bench_paths()
 tab <- file.path(paths$results, "tables")
-out <- file.path(paths$results, "analysis", "summary")
-fig <- file.path(paths$results, "figures")
+out <- file.path(analysis_root(paths), "summary")
+fig <- figures_root(paths)
+require_same_ksets(c("abm", "misseg", "salehi"), paths)
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 dir.create(fig, recursive = TRUE, showWarnings = FALSE)
 options(width = 200)
@@ -142,7 +146,7 @@ excluded <- function(source, dataset, design) input_key(source, dataset, design)
 ## ABM and missegregation landscapes --------------------------------------------------
 abm_x <- function(window) function(g) paste0(g, "\nwindow ", window)
 landscape <- function(file, source_name, metrics) {
-  d <- label_abm_fits(readRDS(file.path(tab, file)))
+  d <- label_abm_fits(read_bench_table(sub("\\.Rds$", "", file), paths))
   d <- d[d$method %in% methods & !excluded(d$source, d$sim_id, d$design), ]
   do.call(rbind, lapply(names(metrics), function(v) {
     do.call(rbind, lapply(c(2L, 4L, 8L), function(w) {
@@ -166,7 +170,7 @@ acc <- rbind(
 
 # ABM forecasts: does the forecast beat the no-evolution baseline 10 passages
 # after the last time point (Euclidean and Wasserstein distance)?
-dfp <- label_abm_fits(readRDS(file.path(tab, "abm_dfp.Rds")))
+dfp <- label_abm_fits(read_bench_table("abm_dfp", paths))
 dfp <- dfp[dfp$method %in% methods & dfp$passage == 10 & !excluded(dfp$source, dfp$sim_id, dfp$design), ]
 for (mt in c("euclidean", "wasserstein")) {
   for (w in c(2L, 4L, 8L)) {
@@ -203,7 +207,7 @@ salehi_rows <- function(x, keys, panel, share = TRUE) {
   r$subset <- ifelse(grepl("sweeps", r$x), "sweeps", "all")
   r
 }
-per_fit <- readRDS(file.path(paths$results, "analysis", "salehi", "per_fit.Rds"))
+per_fit <- readRDS(file.path(analysis_root(paths), "salehi", "per_fit.Rds"))
 per_fit <- per_fit[!(fit_group(per_fit$fit) == "all time points" & !multi(per_fit$fi)), ]
 for (mt in c("wasserstein", "euclidean")) {
   x <- per_fit[per_fit$metric == mt, ]
@@ -319,18 +323,22 @@ cv_rows <- function(d, s, value) {
     cv_median = round(stats::median(x$value), 3), cv_share_pos = round(mean(x$value > 0), 3),
     stringsAsFactors = FALSE)))
 }
-abm_dfl <- label_abm_fits(readRDS(file.path(tab, "abm_dfl.Rds")))
+abm_dfl <- label_abm_fits(read_bench_table("abm_dfl", paths))
 abm_dfl <- abm_dfl[!(fit_group(abm_dfl$fit) == "all time points" & abm_dfl$window == 2L) &
                      !excluded(abm_dfl$source, abm_dfl$sim_id, abm_dfl$design), ]
-mis_dfl <- label_abm_fits(readRDS(file.path(tab, "misseg_dfl.Rds")))
+mis_dfl <- label_abm_fits(read_bench_table("misseg_dfl", paths))
 mis_dfl <- mis_dfl[!(fit_group(mis_dfl$fit) == "all time points" & mis_dfl$window == 2L) &
                      !excluded(mis_dfl$source, mis_dfl$sim_id, mis_dfl$design), ]
-sal <- label_salehi_fits(readRDS(file.path(tab, "salehi_scores.Rds")))
+sal <- label_salehi_fits(read_bench_table("salehi_scores", paths))
 sal <- sal[!excluded("salehi", sal$fi, sal$design) & !(fit_group(sal$fit) == "all time points" & !multi(sal$fi)), ]
 sal <- sal[!duplicated(sal[c("fit", "fi", "min_obs")]), ]
 cv <- rbind(cv_rows(abm_dfl, "abm", abm_dfl$Rxv), cv_rows(mis_dfl, "misseg", mis_dfl$Rxv),
             cv_rows(sal, "salehi", sal$xv))
-cv$note <- "R2R against each method's own full-data estimates; not comparable between methods"
+cv$note <- if (xv_source() == "own") {
+  "R2R against each method's own targets (alfak: a bootstrap draw of its first-stage fitness; KARST: its estimate from all the data); not comparable between methods"
+} else {
+  "R2R against alfak's targets for both methods (KARST: held-out predictions on the karyotypes both tested)"
+}
 write_tab(cv, "summary_cv")
 
 ## Figure ------------------------------------------------------------------------------

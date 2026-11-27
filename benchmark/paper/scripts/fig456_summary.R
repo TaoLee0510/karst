@@ -45,8 +45,9 @@
 for (f in list.files("R", full.names = TRUE)) source(f)
 suppressPackageStartupMessages(library(ggplot2))
 paths <- bench_paths()
-dir <- file.path(paths$results, "analysis", "fig456")
-fig <- file.path(paths$results, "figures")
+dir <- file.path(analysis_root(paths), "fig456")
+fig <- figures_root(paths)
+require_same_ksets("salehi", paths)
 dir.create(fig, recursive = TRUE, showWarnings = FALSE)
 write_tab <- function(d, name) utils::write.table(d, file.path(dir, paste0(name, ".tsv")), sep = "\t", quote = FALSE,
                                                   row.names = FALSE)
